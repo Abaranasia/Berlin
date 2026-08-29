@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="Bt1Test" name="BerlinTests" projectType="consoleapp"
+              defines="JUCE_UNIT_TESTS=1" useAppConfig="0"
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
+  <MAINGROUP id="Bt2Main" name="BerlinTests">
+    <GROUP id="{7F2A1C3D-9B4E-4A11-8C2F-3D5E6A7B8C9D}" name="Source">
+      <FILE id="btMainC" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="btSmkeC" name="SmokeTests.cpp" compile="1" resource="0" file="Source/SmokeTests.cpp"/>
+    </GROUP>
+  </MAINGROUP>
+  <MODULES>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+  </MODULES>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
+  <EXPORTFORMATS>
+    <VS2026 targetFolder="Builds/VisualStudio2026">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="BerlinTests" headerPath="../../Source"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="BerlinTests" headerPath="../../Source"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../Projucer/modules"/>
+      </MODULEPATHS>
+    </VS2026>
+  </EXPORTFORMATS>
+</JUCERPROJECT>
