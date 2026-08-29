@@ -1,0 +1,109 @@
+# Troubleshooting Documentation Schema
+# Adapted from Millenia's .claude/skills/troubleshooting-docs/schema.yaml
+# (itself adapted from https://github.com/glittercowboy/plugin-freedom-system)
+# for a single-application JUCE project. Validate frontmatter against this before writing any troubleshooting doc.
+
+required_fields:
+  project:
+    type: string
+    description: "Always 'Berlin' unless the issue is generic JUCE/toolchain knowledge with no project tie."
+    examples:
+      - "Berlin"
+      - "JUCE"  # for generic issues not specific to this codebase
+
+  date:
+    type: string
+    pattern: '^\d{4}-\d{2}-\d{2}$'
+    description: "Date the problem was solved (YYYY-MM-DD)."
+
+  problem_type:
+    type: enum
+    values:
+      - build_error          # CMake/Projucer, linker, compiler errors
+      - runtime_error        # crashes, exceptions during execution
+      - api_misuse           # incorrect JUCE API usage
+      - audio_device_issue   # device selection, driver, dropout/glitch issues (ASIO/WASAPI/CoreAudio)
+      - ui_layout            # visual/layout issues
+      - dsp_issue            # audio processing problems
+      - state_management     # app settings/preset saving/loading
+      - performance          # CPU spikes, memory issues
+      - thread_violation     # real-time safety violations
+    category_mapping:
+      build_error: build-failures
+      runtime_error: runtime-issues
+      api_misuse: api-usage
+      audio_device_issue: audio-device-issues
+      ui_layout: gui-issues
+      dsp_issue: dsp-issues
+      state_management: settings-issues
+      performance: performance-issues
+      thread_violation: thread-safety
+    description: "Primary category — also determines the troubleshooting/<category>/ directory."
+
+  component:
+    type: enum
+    values:
+      - projucer_build        # Projucer / generated build files
+      - juce_audio_app         # AudioAppComponent / MainComponent
+      - juce_dsp               # juce::dsp namespace
+      - juce_gui_basics        # Slider, Button, Label, FlexBox, etc.
+      - audio_device_manager    # juce::AudioDeviceManager, device selection
+      - custom_dsp              # project-owned DSP classes
+      - system                  # OS/toolchain-level issues
+    description: "JUCE module or project component involved."
+
+  symptoms:
+    type: array[string]
+    min_items: 1
+    max_items: 5
+    description: "Observable symptoms — exact error text, not paraphrased."
+
+  root_cause:
+    type: enum
+    values:
+      - missing_module           # JUCE module not linked
+      - wrong_api                # deprecated/incorrect API usage
+      - thread_violation         # real-time unsafe operation
+      - missing_constraint       # layout missing size constraints
+      - state_sync                # app state not syncing
+      - memory_issue               # leak, double-free, etc.
+      - config_error                # build config wrong
+      - version_incompatibility     # JUCE version mismatch
+      - logic_error                  # algorithm/logic bug
+      - event_timing                  # event sequencing or timing issue
+    description: "The actual mechanism, not the symptom."
+
+  resolution_type:
+    type: enum
+    values:
+      - code_fix
+      - config_change
+      - environment_setup
+      - api_migration
+    description: "Type of fix applied."
+
+  severity:
+    type: enum
+    values:
+      - critical    # blocks development (build fails, app crashes)
+      - moderate    # impairs functionality (DSP incorrect, UI broken)
+      - minor       # cosmetic or edge case
+    description: "Impact severity."
+
+optional_fields:
+  juce_version:
+    type: string
+    pattern: '^\d+\.\d+\.\d+$'
+  related_components:
+    type: array[string]
+  tags:
+    type: array[string]
+    max_items: 8
+    description: "lowercase, hyphen-separated"
+
+validation_rules:
+  - "project must be 'Berlin' or 'JUCE'"
+  - "date must be YYYY-MM-DD"
+  - "problem_type, component, root_cause, resolution_type, severity must match an enum value exactly"
+  - "symptoms must be specific and observable (exact error text), not vague"
+  - "root_cause must be the actual mechanism, not a restatement of the symptom"
