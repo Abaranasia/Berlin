@@ -156,10 +156,16 @@
     <ClCompile Include="..\..\Source\RhythmGeneratorTests.cpp"/>
     <ClCompile Include="..\..\Source\ReproducibilityTests.cpp"/>
     <ClCompile Include="..\..\Source\StepEventTests.cpp"/>
+    <ClCompile Include="..\..\Source\StepEventBufferTests.cpp"/>
+    <ClCompile Include="..\..\Source\TransportTests.cpp"/>
+    <ClCompile Include="..\..\Source\SequencePlayerTests.cpp"/>
+    <ClCompile Include="..\..\Source\PlaybackTimingTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\RhythmGenerator.cpp"/>
+    <ClCompile Include="..\..\..\Source\playback\Transport.cpp"/>
+    <ClCompile Include="..\..\..\Source\playback\SequencePlayer.cpp"/>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -543,6 +549,9 @@
     <ClInclude Include="..\..\..\Source\generation\PitchGenerator.h"/>
     <ClInclude Include="..\..\..\Source\generation\RhythmGenerator.h"/>
     <ClInclude Include="..\..\..\Source\playback\StepEvent.h"/>
+    <ClInclude Include="..\..\..\Source\playback\StepEventBuffer.h"/>
+    <ClInclude Include="..\..\..\Source\playback\Transport.h"/>
+    <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_Array.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_ArrayAllocationBase.h"/>

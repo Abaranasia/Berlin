@@ -15,6 +15,10 @@
       <FILE id="btRgnC" name="RhythmGeneratorTests.cpp" compile="1" resource="0" file="Source/RhythmGeneratorTests.cpp"/>
       <FILE id="btRprC" name="ReproducibilityTests.cpp" compile="1" resource="0" file="Source/ReproducibilityTests.cpp"/>
       <FILE id="btSevC" name="StepEventTests.cpp" compile="1" resource="0" file="Source/StepEventTests.cpp"/>
+      <FILE id="btSebC" name="StepEventBufferTests.cpp" compile="1" resource="0" file="Source/StepEventBufferTests.cpp"/>
+      <FILE id="btTrnC" name="TransportTests.cpp" compile="1" resource="0" file="Source/TransportTests.cpp"/>
+      <FILE id="btSplC" name="SequencePlayerTests.cpp" compile="1" resource="0" file="Source/SequencePlayerTests.cpp"/>
+      <FILE id="btPtmC" name="PlaybackTimingTests.cpp" compile="1" resource="0" file="Source/PlaybackTimingTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -32,6 +36,11 @@
     </GROUP>
     <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
       <FILE id="tpEvtH" name="StepEvent.h" compile="0" resource="0" file="../Source/playback/StepEvent.h"/>
+      <FILE id="tpBufH" name="StepEventBuffer.h" compile="0" resource="0" file="../Source/playback/StepEventBuffer.h"/>
+      <FILE id="tpTrnH" name="Transport.h" compile="0" resource="0" file="../Source/playback/Transport.h"/>
+      <FILE id="tpTrnC" name="Transport.cpp" compile="1" resource="0" file="../Source/playback/Transport.cpp"/>
+      <FILE id="tpSplH" name="SequencePlayer.h" compile="0" resource="0" file="../Source/playback/SequencePlayer.h"/>
+      <FILE id="tpSplC" name="SequencePlayer.cpp" compile="1" resource="0" file="../Source/playback/SequencePlayer.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
