@@ -127,6 +127,9 @@
     <ClCompile Include="..\..\Source\TransportTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\SequencePlayerTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
@@ -140,6 +143,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\playback\Transport.cpp">
+      <Filter>BerlinTests\playback</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\playback\SequencePlayer.cpp">
       <Filter>BerlinTests\playback</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
@@ -571,6 +577,9 @@
       <Filter>BerlinTests\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\playback\Transport.h">
+      <Filter>BerlinTests\playback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h">
       <Filter>BerlinTests\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h">

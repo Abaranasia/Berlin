@@ -17,6 +17,7 @@
       <FILE id="btSevC" name="StepEventTests.cpp" compile="1" resource="0" file="Source/StepEventTests.cpp"/>
       <FILE id="btSebC" name="StepEventBufferTests.cpp" compile="1" resource="0" file="Source/StepEventBufferTests.cpp"/>
       <FILE id="btTrnC" name="TransportTests.cpp" compile="1" resource="0" file="Source/TransportTests.cpp"/>
+      <FILE id="btSplC" name="SequencePlayerTests.cpp" compile="1" resource="0" file="Source/SequencePlayerTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -37,6 +38,8 @@
       <FILE id="tpBufH" name="StepEventBuffer.h" compile="0" resource="0" file="../Source/playback/StepEventBuffer.h"/>
       <FILE id="tpTrnH" name="Transport.h" compile="0" resource="0" file="../Source/playback/Transport.h"/>
       <FILE id="tpTrnC" name="Transport.cpp" compile="1" resource="0" file="../Source/playback/Transport.cpp"/>
+      <FILE id="tpSplH" name="SequencePlayer.h" compile="0" resource="0" file="../Source/playback/SequencePlayer.h"/>
+      <FILE id="tpSplC" name="SequencePlayer.cpp" compile="1" resource="0" file="../Source/playback/SequencePlayer.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
