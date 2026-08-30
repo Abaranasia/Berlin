@@ -13,6 +13,8 @@
       <FILE id="coStpH" name="Step.h" compile="0" resource="0" file="Source/core/Step.h"/>
       <FILE id="coSeqH" name="Sequence.h" compile="0" resource="0" file="Source/core/Sequence.h"/>
       <FILE id="coSeqC" name="Sequence.cpp" compile="1" resource="0" file="Source/core/Sequence.cpp"/>
+      <FILE id="coSclH" name="Scale.h" compile="0" resource="0" file="Source/core/Scale.h"/>
+      <FILE id="coSclC" name="Scale.cpp" compile="1" resource="0" file="Source/core/Scale.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

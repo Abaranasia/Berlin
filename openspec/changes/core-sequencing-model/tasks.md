@@ -45,9 +45,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: Scale
 
-- [ ] 3.1 RED: `Tests/Source/ScaleTests.cpp` (major/minor factories, `contains` incl. notes below root, `getDegree`); register+resave+build: confirm failure.
-- [ ] 3.2 GREEN: `Source/core/Scale.h`/`.cpp` (private ctor, floored-modulo `contains`).
-- [ ] 3.3 Full registration checklist; `BerlinTests.exe --category=Berlin` exit 0.
+- [x] 3.1 RED: `Tests/Source/ScaleTests.cpp` (major/minor factories, `contains` incl. notes below root, `getDegree`); register+resave+build: confirm failure. **Deviation**: same pattern as 1.1/2.1 — actual RED proof was a compile-time error (`C1083: cannot open include file 'core/Scale.h'`), not a link error, because `ScaleTests.cpp` `#include`s `"core/Scale.h"` directly. Still exit code 1, still proves `Scale.h` doesn't exist yet.
+- [x] 3.2 GREEN: `Source/core/Scale.h`/`.cpp` (private ctor, floored-modulo `contains`).
+- [x] 3.3 Full registration checklist; `BerlinTests.exe --category=Berlin` exit 0.
 
 ## Phase 4: DeterministicRandom
 

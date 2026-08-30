@@ -97,7 +97,13 @@
     <ClCompile Include="..\..\Source\SequenceTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\ScaleTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
+      <Filter>BerlinTests\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\core\Scale.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
@@ -508,6 +514,9 @@
       <Filter>BerlinTests\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\core\Sequence.h">
+      <Filter>BerlinTests\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\core\Scale.h">
       <Filter>BerlinTests\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h">
