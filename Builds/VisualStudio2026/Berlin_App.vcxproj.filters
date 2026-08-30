@@ -829,6 +829,12 @@
     <ClCompile Include="..\..\Source\MainComponent.cpp">
       <Filter>Berlin\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\core\Sequence.cpp">
+      <Filter>Berlin\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\core\Scale.cpp">
+      <Filter>Berlin\core</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
     </ClCompile>
@@ -3970,6 +3976,12 @@
       <Filter>Berlin\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\core\Step.h">
+      <Filter>Berlin\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\core\Sequence.h">
+      <Filter>Berlin\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\core\Scale.h">
       <Filter>Berlin\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">

@@ -39,15 +39,15 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2: Sequence
 
-- [ ] 2.1 RED: `Tests/Source/SequenceTests.cpp` (resize grow/shrink, indexed access); register+resave+build: confirm link failure.
-- [ ] 2.2 GREEN: `Source/core/Sequence.h`/`.cpp` (`std::vector<Step>` backing).
-- [ ] 2.3 Run full 6-step registration checklist (both `.jucer` FILE entries, both `--resave`, sync-check, both builds); `BerlinTests.exe --category=Berlin` exit 0.
+- [x] 2.1 RED: `Tests/Source/SequenceTests.cpp` (resize grow/shrink, indexed access); register+resave+build: confirm link failure. **Deviation**: same pattern as 1.1 — actual RED proof was a compile-time error (`C1083: cannot open include file 'core/Sequence.h'`), not a link error, because `SequenceTests.cpp` `#include`s `"core/Sequence.h"` directly. Still exit code 1, still proves `Sequence.h` doesn't exist yet.
+- [x] 2.2 GREEN: `Source/core/Sequence.h`/`.cpp` (`std::vector<Step>` backing).
+- [x] 2.3 Run full 6-step registration checklist (both `.jucer` FILE entries, both `--resave`, sync-check, both builds); `BerlinTests.exe --category=Berlin` exit 0.
 
 ## Phase 3: Scale
 
-- [ ] 3.1 RED: `Tests/Source/ScaleTests.cpp` (major/minor factories, `contains` incl. notes below root, `getDegree`); register+resave+build: confirm failure.
-- [ ] 3.2 GREEN: `Source/core/Scale.h`/`.cpp` (private ctor, floored-modulo `contains`).
-- [ ] 3.3 Full registration checklist; `BerlinTests.exe --category=Berlin` exit 0.
+- [x] 3.1 RED: `Tests/Source/ScaleTests.cpp` (major/minor factories, `contains` incl. notes below root, `getDegree`); register+resave+build: confirm failure. **Deviation**: same pattern as 1.1/2.1 — actual RED proof was a compile-time error (`C1083: cannot open include file 'core/Scale.h'`), not a link error, because `ScaleTests.cpp` `#include`s `"core/Scale.h"` directly. Still exit code 1, still proves `Scale.h` doesn't exist yet.
+- [x] 3.2 GREEN: `Source/core/Scale.h`/`.cpp` (private ctor, floored-modulo `contains`).
+- [x] 3.3 Full registration checklist; `BerlinTests.exe --category=Berlin` exit 0.
 
 ## Phase 4: DeterministicRandom
 

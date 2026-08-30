@@ -8,9 +8,15 @@
       <FILE id="btMainC" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="btSmkeC" name="SmokeTests.cpp" compile="1" resource="0" file="Source/SmokeTests.cpp"/>
       <FILE id="btStepC" name="StepTests.cpp" compile="1" resource="0" file="Source/StepTests.cpp"/>
+      <FILE id="btSeqC" name="SequenceTests.cpp" compile="1" resource="0" file="Source/SequenceTests.cpp"/>
+      <FILE id="btSclC" name="ScaleTests.cpp" compile="1" resource="0" file="Source/ScaleTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
+      <FILE id="tcSeqH" name="Sequence.h" compile="0" resource="0" file="../Source/core/Sequence.h"/>
+      <FILE id="tcSeqC" name="Sequence.cpp" compile="1" resource="0" file="../Source/core/Sequence.cpp"/>
+      <FILE id="tcSclH" name="Scale.h" compile="0" resource="0" file="../Source/core/Scale.h"/>
+      <FILE id="tcSclC" name="Scale.cpp" compile="1" resource="0" file="../Source/core/Scale.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
