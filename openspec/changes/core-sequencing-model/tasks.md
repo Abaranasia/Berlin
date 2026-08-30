@@ -75,7 +75,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 8: Final Gate
 
-- [ ] 8.1 Run `Projucer.exe --resave Berlin.jucer`; check exit code 0.
-- [ ] 8.2 Build `Berlin.jucer` (GUI app) in `Builds/VisualStudio2026`; check build succeeds.
-- [ ] 8.3 Run `git diff --stat -- Source/Main.cpp Source/MainComponent.*`: confirm empty output (untouched).
-- [ ] 8.4 Run `git diff --stat` overall and confirm only the file set from design's "File Changes" table appears.
+- [x] 8.1 Run `Projucer.exe --resave Berlin.jucer`; check exit code 0. Confirmed: `Projucer.exe --resave Berlin.jucer` -> "Finished saving: Visual Studio 2026", exit 0.
+- [x] 8.2 Build `Berlin.jucer` (GUI app) in `Builds/VisualStudio2026`; check build succeeds. Confirmed: MSBuild `Berlin.sln` Debug|x64, exit 0, 0 errors (only pre-existing C4100 unreferenced-parameter warnings in `Source/Main.cpp`/`Source/MainComponent.cpp`, unrelated to this change and present before it).
+- [x] 8.3 Run `git diff --stat -- Source/Main.cpp Source/MainComponent.*`: confirm empty output (untouched). Confirmed empty — these two files remain byte-identical across the entire change (Phases 0-8).
+- [x] 8.4 Run `git diff --stat` overall and confirm only the file set from design's "File Changes" table appears. Confirmed via `git diff --stat 19ac138..HEAD` (pre-change base commit, generated `Builds/`/`JuceLibraryCode/`/`Tests/Builds/`/`Tests/JuceLibraryCode/` excluded): 30 files changed, all authored — `Source/core/*`, `Source/generation/*`, `Berlin.jucer` (14 lines, additive `<GROUP>` entries only), `Tests/BerlinTests.jucer`, `Tests/Source/*Tests.cpp` + `Main.cpp`, plus `openspec/changes/core-sequencing-model/*` planning artifacts. Matches design.md's File Changes table exactly. **Minor note**: design.md's file list does not explicitly enumerate `Tests/Source/SmokeTests.cpp` (the Phase 0 harness red/green proof file) alongside the other `*Tests.cpp` files — this is an incomplete enumeration in that design.md list, not an unexpected file; `SmokeTests.cpp` was planned and tracked as task 0.3 from the start. No stray/unplanned files present.
+
+### Full Suite Confirmation
+`BerlinTests.exe --category=Berlin` exit 0, all 8 suites passed (Smoke, Step, Sequence, Scale, DeterministicRandom, PitchGenerator, RhythmGenerator, Reproducibility = 34 beginTest blocks). `Berlin.jucer` GUI app rebuilt clean, 0 errors.
