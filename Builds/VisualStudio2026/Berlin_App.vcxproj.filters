@@ -5,6 +5,9 @@
     <Filter Include="Berlin\Source">
       <UniqueIdentifier>{26BD0066-08EB-4AB5-35A8-458BEBA6CCEB}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\core">
+      <UniqueIdentifier>{59A0A563-A163-2CA4-DBB4-9C401FCB3BD2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -3965,6 +3968,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\Source\MainComponent.h">
       <Filter>Berlin\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\core\Step.h">
+      <Filter>Berlin\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>

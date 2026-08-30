@@ -7,6 +7,10 @@
     <GROUP id="{7F2A1C3D-9B4E-4A11-8C2F-3D5E6A7B8C9D}" name="Source">
       <FILE id="btMainC" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="btSmkeC" name="SmokeTests.cpp" compile="1" resource="0" file="Source/SmokeTests.cpp"/>
+      <FILE id="btStepC" name="StepTests.cpp" compile="1" resource="0" file="Source/StepTests.cpp"/>
+    </GROUP>
+    <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
+      <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
@@ -16,8 +20,8 @@
   <EXPORTFORMATS>
     <VS2026 targetFolder="Builds/VisualStudio2026">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="BerlinTests" headerPath="../../Source"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="BerlinTests" headerPath="../../Source"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="BerlinTests" headerPath="../../../Source"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="BerlinTests" headerPath="../../../Source"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="../../../Projucer/modules"/>
