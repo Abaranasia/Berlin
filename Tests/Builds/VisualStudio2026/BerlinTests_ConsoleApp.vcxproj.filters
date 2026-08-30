@@ -124,6 +124,9 @@
     <ClCompile Include="..\..\Source\StepEventBufferTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\TransportTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
@@ -135,6 +138,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\generation\RhythmGenerator.cpp">
       <Filter>BerlinTests\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\playback\Transport.cpp">
+      <Filter>BerlinTests\playback</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
       <Filter>JUCE Modules\juce_core\containers</Filter>
@@ -562,6 +568,9 @@
       <Filter>BerlinTests\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\playback\StepEventBuffer.h">
+      <Filter>BerlinTests\playback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\playback\Transport.h">
       <Filter>BerlinTests\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h">

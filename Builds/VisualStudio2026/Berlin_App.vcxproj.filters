@@ -847,6 +847,9 @@
     <ClCompile Include="..\..\Source\generation\RhythmGenerator.cpp">
       <Filter>Berlin\generation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\playback\Transport.cpp">
+      <Filter>Berlin\playback</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
     </ClCompile>
@@ -4009,6 +4012,9 @@
       <Filter>Berlin\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\playback\StepEventBuffer.h">
+      <Filter>Berlin\playback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\playback\Transport.h">
       <Filter>Berlin\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
