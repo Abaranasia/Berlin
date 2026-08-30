@@ -154,6 +154,7 @@
     <ClCompile Include="..\..\Source\DeterministicRandomTests.cpp"/>
     <ClCompile Include="..\..\Source\PitchGeneratorTests.cpp"/>
     <ClCompile Include="..\..\Source\RhythmGeneratorTests.cpp"/>
+    <ClCompile Include="..\..\Source\ReproducibilityTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>

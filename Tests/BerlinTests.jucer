@@ -13,6 +13,7 @@
       <FILE id="btDrnC" name="DeterministicRandomTests.cpp" compile="1" resource="0" file="Source/DeterministicRandomTests.cpp"/>
       <FILE id="btPgnC" name="PitchGeneratorTests.cpp" compile="1" resource="0" file="Source/PitchGeneratorTests.cpp"/>
       <FILE id="btRgnC" name="RhythmGeneratorTests.cpp" compile="1" resource="0" file="Source/RhythmGeneratorTests.cpp"/>
+      <FILE id="btRprC" name="ReproducibilityTests.cpp" compile="1" resource="0" file="Source/ReproducibilityTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>

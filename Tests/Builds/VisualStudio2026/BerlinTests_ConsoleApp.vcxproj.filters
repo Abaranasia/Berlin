@@ -112,6 +112,9 @@
     <ClCompile Include="..\..\Source\RhythmGeneratorTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\ReproducibilityTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
