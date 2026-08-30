@@ -159,6 +159,7 @@
     <ClCompile Include="..\..\Source\StepEventBufferTests.cpp"/>
     <ClCompile Include="..\..\Source\TransportTests.cpp"/>
     <ClCompile Include="..\..\Source\SequencePlayerTests.cpp"/>
+    <ClCompile Include="..\..\Source\PlaybackTimingTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
