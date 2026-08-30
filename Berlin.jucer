@@ -25,6 +25,7 @@
     </GROUP>
     <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
       <FILE id="pbEvtH" name="StepEvent.h" compile="0" resource="0" file="Source/playback/StepEvent.h"/>
+      <FILE id="pbBufH" name="StepEventBuffer.h" compile="0" resource="0" file="Source/playback/StepEventBuffer.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

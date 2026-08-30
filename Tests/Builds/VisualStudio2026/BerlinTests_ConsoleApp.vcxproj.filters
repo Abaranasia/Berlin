@@ -121,6 +121,9 @@
     <ClCompile Include="..\..\Source\StepEventTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\StepEventBufferTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
@@ -556,6 +559,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\playback\StepEvent.h">
+      <Filter>BerlinTests\playback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\playback\StepEventBuffer.h">
       <Filter>BerlinTests\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h">
