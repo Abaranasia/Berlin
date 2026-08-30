@@ -3093,6 +3093,7 @@
     <ClInclude Include="..\..\Source\core\Step.h"/>
     <ClInclude Include="..\..\Source\core\Sequence.h"/>
     <ClInclude Include="..\..\Source\core\Scale.h"/>
+    <ClInclude Include="..\..\Source\generation\DeterministicRandom.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

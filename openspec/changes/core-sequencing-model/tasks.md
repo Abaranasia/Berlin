@@ -51,9 +51,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4: DeterministicRandom
 
-- [ ] 4.1 RED: `Tests/Source/DeterministicRandomTests.cpp` (`getSeed()`, same-seed same-draws, `static_assert(!std::is_default_constructible_v<DeterministicRandom>)`); register+resave+build: confirm failure.
-- [ ] 4.2 GREEN: `Source/generation/DeterministicRandom.h` (header-only wrapper over `juce::Random`).
-- [ ] 4.3 Full registration checklist; exit 0.
+- [x] 4.1 RED: `Tests/Source/DeterministicRandomTests.cpp` (`getSeed()`, same-seed same-draws, `static_assert(!std::is_default_constructible_v<DeterministicRandom>)`); register+resave+build: confirm failure. **Deviation**: same pattern as Phases 1-3 — actual RED proof was a compile-time error (`C1083: cannot open include file 'generation/DeterministicRandom.h'`), not a link error, because `DeterministicRandomTests.cpp` `#include`s `"generation/DeterministicRandom.h"` directly. Still exit code 1, still proves `DeterministicRandom.h` doesn't exist yet.
+- [x] 4.2 GREEN: `Source/generation/DeterministicRandom.h` (header-only wrapper over `juce::Random`; deleted default constructor; `getSeed`/`nextInt`/`nextFloat` per design.md's interface exactly).
+- [x] 4.3 Full registration checklist; exit 0. New `generation` `<GROUP>` added to both `Berlin.jucer` and `Tests/BerlinTests.jucer` (mirrors the `core` group's convention, `../` prefix only). Sync-check passed (`Source/generation/DeterministicRandom.h` present in both, modulo `../`). Both projects resaved and built clean (0 warnings/0 errors); `BerlinTests.exe --category=Berlin` exit 0, all 20 beginTest blocks passed (1 Smoke + 4 Step + 5 Sequence + 6 Scale + 4 DeterministicRandom). `Berlin.jucer` GUI app also rebuilt clean.
 
 ## Phase 5: PitchGenerator
 

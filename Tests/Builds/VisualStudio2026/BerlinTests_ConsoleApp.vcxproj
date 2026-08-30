@@ -151,6 +151,7 @@
     <ClCompile Include="..\..\Source\StepTests.cpp"/>
     <ClCompile Include="..\..\Source\SequenceTests.cpp"/>
     <ClCompile Include="..\..\Source\ScaleTests.cpp"/>
+    <ClCompile Include="..\..\Source\DeterministicRandomTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
@@ -532,6 +533,7 @@
     <ClInclude Include="..\..\..\Source\core\Step.h"/>
     <ClInclude Include="..\..\..\Source\core\Sequence.h"/>
     <ClInclude Include="..\..\..\Source\core\Scale.h"/>
+    <ClInclude Include="..\..\..\Source\generation\DeterministicRandom.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_Array.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_ArrayAllocationBase.h"/>
