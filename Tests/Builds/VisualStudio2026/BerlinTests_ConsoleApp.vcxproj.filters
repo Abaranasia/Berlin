@@ -5,6 +5,9 @@
     <Filter Include="BerlinTests\Source">
       <UniqueIdentifier>{BA9DD50F-5C9D-185C-B794-CF4A8A08DC74}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BerlinTests\core">
+      <UniqueIdentifier>{DE2BB033-EEFC-04B6-2C59-AABA516C015D}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BerlinTests">
       <UniqueIdentifier>{99B26223-EE90-F7C5-C12F-435CBF576C49}</UniqueIdentifier>
     </Filter>
@@ -86,6 +89,9 @@
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\SmokeTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\StepTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
@@ -492,6 +498,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Source\core\Step.h">
+      <Filter>BerlinTests\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h">
       <Filter>JUCE Modules\juce_core\containers</Filter>
     </ClInclude>

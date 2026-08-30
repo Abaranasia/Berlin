@@ -9,6 +9,9 @@
       <FILE id="LaJPY9" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
     </GROUP>
+    <GROUP id="{4C7B2E3A-8D1F-4B6A-9E2C-1A3F5D7E9B0C}" name="core">
+      <FILE id="coStpH" name="Step.h" compile="0" resource="0" file="Source/core/Step.h"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

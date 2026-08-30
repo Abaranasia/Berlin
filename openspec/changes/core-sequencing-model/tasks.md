@@ -33,9 +33,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 1: Step (first shared-source slice — retires `../` path risk)
 
-- [ ] 1.1 RED: `Tests/Source/StepTests.cpp` — construct/equality/no-extra-field-review-note tests; register `<FILE>` in `Tests/BerlinTests.jucer` only. `--resave` + build: confirm link failure (no `Step.h` yet).
-- [ ] 1.2 GREEN: Create `Source/core/Step.h` (`berlin::Step{note,active}` + non-member `operator==`); `static_assert(std::is_aggregate_v<Step>)`.
-- [ ] 1.3 Register `<FILE file="Source/core/Step.h">` in `Berlin.jucer` and `<FILE file="../Source/core/Step.h">` in `Tests/BerlinTests.jucer`. Run `Projucer.exe --resave Berlin.jucer` then `Projucer.exe --resave Tests/BerlinTests.jucer`, check both exit codes 0. Sync-check the two FILE lists match modulo `../`. Build both projects, run `BerlinTests.exe --category=Berlin`: exit 0.
+- [x] 1.1 RED: `Tests/Source/StepTests.cpp` — construct/equality/no-extra-field-review-note tests; register `<FILE>` in `Tests/BerlinTests.jucer` only. `--resave` + build: confirm link failure (no `Step.h` yet). **Deviation**: the actual RED proof was a compile-time error (`C1083: cannot open include file 'core/Step.h'`), not a link error, because `StepTests.cpp` `#include`s `"core/Step.h"` directly rather than only referencing `berlin::Step` symbols. Still exit code 1, still proves `Step.h` doesn't exist yet — same RED intent, earlier failure point.
+- [x] 1.2 GREEN: Create `Source/core/Step.h` (`berlin::Step{note,active}` + non-member `operator==`); `static_assert(std::is_aggregate_v<Step>)`.
+- [x] 1.3 Register `<FILE file="Source/core/Step.h">` in `Berlin.jucer` and `<FILE file="../Source/core/Step.h">` in `Tests/BerlinTests.jucer`. Run `Projucer.exe --resave Berlin.jucer` then `Projucer.exe --resave Tests/BerlinTests.jucer`, check both exit codes 0. Sync-check the two FILE lists match modulo `../`. Build both projects, run `BerlinTests.exe --category=Berlin`: exit 0. **Deviation**: discovered and fixed a latent Phase-0 defect — `Tests/BerlinTests.jucer`'s `headerPath` was `"../../Source"` (2 levels), which resolves relative to the generated vcxproj directory (`Tests/Builds/VisualStudio2026`) to `Tests/Source`, not the repo-root `Source`. Corrected to `"../../../Source"` (3 levels). This is exactly the `../Source/...` path risk the design flagged Phase 1 as retiring.
 
 ## Phase 2: Sequence
 
