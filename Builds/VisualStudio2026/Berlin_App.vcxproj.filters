@@ -841,6 +841,9 @@
     <ClCompile Include="..\..\Source\generation\PitchGenerator.cpp">
       <Filter>Berlin\generation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\generation\RhythmGenerator.cpp">
+      <Filter>Berlin\generation</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
     </ClCompile>
@@ -3994,6 +3997,9 @@
       <Filter>Berlin\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\generation\PitchGenerator.h">
+      <Filter>Berlin\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\generation\RhythmGenerator.h">
       <Filter>Berlin\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">

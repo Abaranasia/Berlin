@@ -20,6 +20,8 @@
       <FILE id="geDrnH" name="DeterministicRandom.h" compile="0" resource="0" file="Source/generation/DeterministicRandom.h"/>
       <FILE id="gePgnH" name="PitchGenerator.h" compile="0" resource="0" file="Source/generation/PitchGenerator.h"/>
       <FILE id="gePgnC" name="PitchGenerator.cpp" compile="1" resource="0" file="Source/generation/PitchGenerator.cpp"/>
+      <FILE id="geRgnH" name="RhythmGenerator.h" compile="0" resource="0" file="Source/generation/RhythmGenerator.h"/>
+      <FILE id="geRgnC" name="RhythmGenerator.cpp" compile="1" resource="0" file="Source/generation/RhythmGenerator.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
