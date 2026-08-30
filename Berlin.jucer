@@ -11,6 +11,8 @@
     </GROUP>
     <GROUP id="{4C7B2E3A-8D1F-4B6A-9E2C-1A3F5D7E9B0C}" name="core">
       <FILE id="coStpH" name="Step.h" compile="0" resource="0" file="Source/core/Step.h"/>
+      <FILE id="coSeqH" name="Sequence.h" compile="0" resource="0" file="Source/core/Sequence.h"/>
+      <FILE id="coSeqC" name="Sequence.cpp" compile="1" resource="0" file="Source/core/Sequence.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

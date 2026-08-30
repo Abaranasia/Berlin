@@ -39,9 +39,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2: Sequence
 
-- [ ] 2.1 RED: `Tests/Source/SequenceTests.cpp` (resize grow/shrink, indexed access); register+resave+build: confirm link failure.
-- [ ] 2.2 GREEN: `Source/core/Sequence.h`/`.cpp` (`std::vector<Step>` backing).
-- [ ] 2.3 Run full 6-step registration checklist (both `.jucer` FILE entries, both `--resave`, sync-check, both builds); `BerlinTests.exe --category=Berlin` exit 0.
+- [x] 2.1 RED: `Tests/Source/SequenceTests.cpp` (resize grow/shrink, indexed access); register+resave+build: confirm link failure. **Deviation**: same pattern as 1.1 — actual RED proof was a compile-time error (`C1083: cannot open include file 'core/Sequence.h'`), not a link error, because `SequenceTests.cpp` `#include`s `"core/Sequence.h"` directly. Still exit code 1, still proves `Sequence.h` doesn't exist yet.
+- [x] 2.2 GREEN: `Source/core/Sequence.h`/`.cpp` (`std::vector<Step>` backing).
+- [x] 2.3 Run full 6-step registration checklist (both `.jucer` FILE entries, both `--resave`, sync-check, both builds); `BerlinTests.exe --category=Berlin` exit 0.
 
 ## Phase 3: Scale
 
