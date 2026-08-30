@@ -23,6 +23,9 @@
       <FILE id="geRgnH" name="RhythmGenerator.h" compile="0" resource="0" file="Source/generation/RhythmGenerator.h"/>
       <FILE id="geRgnC" name="RhythmGenerator.cpp" compile="1" resource="0" file="Source/generation/RhythmGenerator.cpp"/>
     </GROUP>
+    <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
+      <FILE id="pbEvtH" name="StepEvent.h" compile="0" resource="0" file="Source/playback/StepEvent.h"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
