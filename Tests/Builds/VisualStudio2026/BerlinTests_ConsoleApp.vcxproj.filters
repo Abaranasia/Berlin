@@ -8,6 +8,9 @@
     <Filter Include="BerlinTests\core">
       <UniqueIdentifier>{DE2BB033-EEFC-04B6-2C59-AABA516C015D}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BerlinTests\generation">
+      <UniqueIdentifier>{7FF81254-78B5-1D8D-600D-21CDF5C347C7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BerlinTests">
       <UniqueIdentifier>{99B26223-EE90-F7C5-C12F-435CBF576C49}</UniqueIdentifier>
     </Filter>
@@ -100,11 +103,29 @@
     <ClCompile Include="..\..\Source\ScaleTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\DeterministicRandomTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\PitchGeneratorTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\RhythmGeneratorTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\ReproducibilityTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp">
       <Filter>BerlinTests\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp">
+      <Filter>BerlinTests\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\generation\RhythmGenerator.cpp">
+      <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
       <Filter>JUCE Modules\juce_core\containers</Filter>
@@ -518,6 +539,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\core\Scale.h">
       <Filter>BerlinTests\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\generation\DeterministicRandom.h">
+      <Filter>BerlinTests\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\generation\PitchGenerator.h">
+      <Filter>BerlinTests\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\generation\RhythmGenerator.h">
+      <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h">
       <Filter>JUCE Modules\juce_core\containers</Filter>

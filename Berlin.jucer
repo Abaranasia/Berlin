@@ -16,6 +16,13 @@
       <FILE id="coSclH" name="Scale.h" compile="0" resource="0" file="Source/core/Scale.h"/>
       <FILE id="coSclC" name="Scale.cpp" compile="1" resource="0" file="Source/core/Scale.cpp"/>
     </GROUP>
+    <GROUP id="{9A1E3B5C-2D4F-4E7A-B3C6-8F0A2D4E6C8B}" name="generation">
+      <FILE id="geDrnH" name="DeterministicRandom.h" compile="0" resource="0" file="Source/generation/DeterministicRandom.h"/>
+      <FILE id="gePgnH" name="PitchGenerator.h" compile="0" resource="0" file="Source/generation/PitchGenerator.h"/>
+      <FILE id="gePgnC" name="PitchGenerator.cpp" compile="1" resource="0" file="Source/generation/PitchGenerator.cpp"/>
+      <FILE id="geRgnH" name="RhythmGenerator.h" compile="0" resource="0" file="Source/generation/RhythmGenerator.h"/>
+      <FILE id="geRgnC" name="RhythmGenerator.cpp" compile="1" resource="0" file="Source/generation/RhythmGenerator.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

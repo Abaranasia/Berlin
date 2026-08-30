@@ -1,3 +1,5 @@
+> **SUPERSEDED**: This report covers ONLY Phase 0 (PR1 test-harness slice). The authoritative full-change verification (Phases 0-8, all 29 tasks) lives in `verify-report.md` in this same directory. Kept here as the historical PR1 record.
+
 # Verification Report: core-sequencing-model — PR1 slice (Phase 0, test harness only)
 
 **Scope**: Verifies ONLY Phase 0 (tasks 0.1-0.4, unit-test-harness capability). Phases 1-8 (sequencing-core, deterministic-generation) are explicitly out of scope — not started, not flagged as incomplete.

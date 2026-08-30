@@ -150,6 +150,8 @@
     <ClCompile Include="..\..\Source\MainComponent.cpp"/>
     <ClCompile Include="..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\Source\core\Scale.cpp"/>
+    <ClCompile Include="..\..\Source\generation\PitchGenerator.cpp"/>
+    <ClCompile Include="..\..\Source\generation\RhythmGenerator.cpp"/>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3093,6 +3095,9 @@
     <ClInclude Include="..\..\Source\core\Step.h"/>
     <ClInclude Include="..\..\Source\core\Sequence.h"/>
     <ClInclude Include="..\..\Source\core\Scale.h"/>
+    <ClInclude Include="..\..\Source\generation\DeterministicRandom.h"/>
+    <ClInclude Include="..\..\Source\generation\PitchGenerator.h"/>
+    <ClInclude Include="..\..\Source\generation\RhythmGenerator.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>
