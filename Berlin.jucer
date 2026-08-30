@@ -18,6 +18,8 @@
     </GROUP>
     <GROUP id="{9A1E3B5C-2D4F-4E7A-B3C6-8F0A2D4E6C8B}" name="generation">
       <FILE id="geDrnH" name="DeterministicRandom.h" compile="0" resource="0" file="Source/generation/DeterministicRandom.h"/>
+      <FILE id="gePgnH" name="PitchGenerator.h" compile="0" resource="0" file="Source/generation/PitchGenerator.h"/>
+      <FILE id="gePgnC" name="PitchGenerator.cpp" compile="1" resource="0" file="Source/generation/PitchGenerator.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

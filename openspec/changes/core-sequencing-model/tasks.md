@@ -57,9 +57,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 5: PitchGenerator
 
-- [ ] 5.1 RED: `Tests/Source/PitchGeneratorTests.cpp` (in-range/in-scale, empty-range clamp + lower-note tie-break); register+resave+build: confirm failure.
-- [ ] 5.2 GREEN: `Source/generation/PitchGenerator.h`/`.cpp` (ctor-time candidate list + fallback).
-- [ ] 5.3 Full registration checklist; exit 0.
+- [x] 5.1 RED: `Tests/Source/PitchGeneratorTests.cpp` (in-range/in-scale, empty-range clamp + lower-note tie-break); register+resave+build: confirm failure. **Deviation**: same pattern as Phases 1-4 — actual RED proof was a compile-time error (`C1083: cannot open include file 'generation/PitchGenerator.h'`), not a link error, because `PitchGeneratorTests.cpp` `#include`s `"generation/PitchGenerator.h"` directly. Still exit code 1, still proves `PitchGenerator.h` doesn't exist yet.
+- [x] 5.2 GREEN: `Source/generation/PitchGenerator.h`/`.cpp` (ctor-time candidate list within `[rangeLow, rangeHigh]`; ctor swaps an inverted range; empty-candidate fallback expands outward one semitone at a time, checking the lower side first at each radius so an exact tie resolves to the LOWER note per design.md; `generateNextNote` spends one RNG draw to index candidates, or returns the fallback note consuming NO draw).
+- [x] 5.3 Full registration checklist; exit 0. New `<FILE>` entries added to the existing `generation` `<GROUP>` in both `Berlin.jucer` (`Source/generation/PitchGenerator.h`/`.cpp`) and `Tests/BerlinTests.jucer` (`../Source/generation/PitchGenerator.h`/`.cpp`). Both projects resaved and sync-checked (identical entries modulo `../`), both built clean (0 warnings/0 errors); `BerlinTests.exe --category=Berlin` exit 0, all suites passed (Smoke, Step, Sequence, Scale, DeterministicRandom, PitchGenerator = 25 beginTest blocks). `Berlin.jucer` GUI app also rebuilt clean.
 
 ## Phase 6: RhythmGenerator
 

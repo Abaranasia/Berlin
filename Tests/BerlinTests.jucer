@@ -11,6 +11,7 @@
       <FILE id="btSeqC" name="SequenceTests.cpp" compile="1" resource="0" file="Source/SequenceTests.cpp"/>
       <FILE id="btSclC" name="ScaleTests.cpp" compile="1" resource="0" file="Source/ScaleTests.cpp"/>
       <FILE id="btDrnC" name="DeterministicRandomTests.cpp" compile="1" resource="0" file="Source/DeterministicRandomTests.cpp"/>
+      <FILE id="btPgnC" name="PitchGeneratorTests.cpp" compile="1" resource="0" file="Source/PitchGeneratorTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -21,6 +22,8 @@
     </GROUP>
     <GROUP id="{1B3D5F7A-4C6E-4A9B-8D1F-3E5A7C9B1D3F}" name="generation">
       <FILE id="tgDrnH" name="DeterministicRandom.h" compile="0" resource="0" file="../Source/generation/DeterministicRandom.h"/>
+      <FILE id="tgPgnH" name="PitchGenerator.h" compile="0" resource="0" file="../Source/generation/PitchGenerator.h"/>
+      <FILE id="tgPgnC" name="PitchGenerator.cpp" compile="1" resource="0" file="../Source/generation/PitchGenerator.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
