@@ -3098,6 +3098,7 @@
     <ClInclude Include="..\..\Source\generation\DeterministicRandom.h"/>
     <ClInclude Include="..\..\Source\generation\PitchGenerator.h"/>
     <ClInclude Include="..\..\Source\generation\RhythmGenerator.h"/>
+    <ClInclude Include="..\..\Source\playback\StepEvent.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

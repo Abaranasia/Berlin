@@ -11,6 +11,9 @@
     <Filter Include="Berlin\generation">
       <UniqueIdentifier>{B3FB2091-8CB6-2BE3-4690-695C23C9A419}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\playback">
+      <UniqueIdentifier>{B061D483-A72E-DAB6-BF95-EF6BEBA70D55}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -4001,6 +4004,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\generation\RhythmGenerator.h">
       <Filter>Berlin\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\playback\StepEvent.h">
+      <Filter>Berlin\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
