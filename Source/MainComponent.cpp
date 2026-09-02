@@ -1,11 +1,42 @@
 #include "MainComponent.h"
 
+#include "core/Scale.h"
+#include "generation/DeterministicRandom.h"
+#include "generation/PitchGenerator.h"
+#include "generation/RhythmGenerator.h"
+
+namespace
+{
+    constexpr double kBpm         = 120.0;
+    constexpr int    kStepsPerBeat = 4;
+    constexpr int    kNumSteps     = 16;
+    constexpr int    kSeed         = 12345;
+}
+
+berlin::Sequence MainComponent::buildSeededSequence()
+{
+    berlin::DeterministicRandom rng (kSeed);
+    auto sequence = berlin::RhythmGenerator (kNumSteps, 0.5f).generate (rng);
+
+    berlin::PitchGenerator pitch (berlin::Scale::minor (48), 36, 72);
+    for (int i = 0; i < sequence.size(); ++i)
+    {
+        if (sequence[i].active)
+            sequence[i].note = pitch.generateNextNote (rng);
+    }
+
+    return sequence;
+}
+
 //==============================================================================
 MainComponent::MainComponent()
+    : player (buildSeededSequence(), berlin::Transport (kBpm, kStepsPerBeat))
 {
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
+
+    player.start();
 
     // Some platforms require permissions to open input channels so request that here
     if (juce::RuntimePermissions::isRequired (juce::RuntimePermissions::recordAudio)
@@ -30,24 +61,14 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
-    // This function will be called when the audio device is started, or when
-    // its settings (i.e. sample rate, block size, etc) are changed.
-
-    // You can use this function to initialise any resources you might need,
-    // but be careful - it will be called on the audio thread, not the GUI thread.
-
-    // For more details, see the help for AudioProcessor::prepareToPlay()
+    juce::ignoreUnused (samplesPerBlockExpected);
+    player.prepare (sampleRate);
 }
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
 {
-    // Your audio-processing code goes here!
-
-    // For more details, see the help for AudioProcessor::getNextAudioBlock()
-
-    // Right now we are not producing any data, in which case we need to clear the buffer
-    // (to prevent the output of random noise)
     bufferToFill.clearActiveBufferRegion();
+    player.process (bufferToFill.numSamples, blockEvents);
 }
 
 void MainComponent::releaseResources()
