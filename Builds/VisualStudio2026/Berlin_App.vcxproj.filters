@@ -14,6 +14,9 @@
     <Filter Include="Berlin\playback">
       <UniqueIdentifier>{B061D483-A72E-DAB6-BF95-EF6BEBA70D55}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\midi">
+      <UniqueIdentifier>{3D01CC66-E599-9AF3-FBE0-16A308C16D2C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -852,6 +855,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\playback\SequencePlayer.cpp">
       <Filter>Berlin\playback</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\midi\MidiEventTranslator.cpp">
+      <Filter>Berlin\midi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\midi\MidiOutputSink.cpp">
+      <Filter>Berlin\midi</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -4022,6 +4031,15 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\playback\SequencePlayer.h">
       <Filter>Berlin\playback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\midi\MidiMessageBytes.h">
+      <Filter>Berlin\midi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\midi\MidiEventTranslator.h">
+      <Filter>Berlin\midi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\midi\MidiOutputSink.h">
+      <Filter>Berlin\midi</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>

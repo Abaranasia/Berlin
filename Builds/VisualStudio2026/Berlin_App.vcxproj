@@ -154,6 +154,8 @@
     <ClCompile Include="..\..\Source\generation\RhythmGenerator.cpp"/>
     <ClCompile Include="..\..\Source\playback\Transport.cpp"/>
     <ClCompile Include="..\..\Source\playback\SequencePlayer.cpp"/>
+    <ClCompile Include="..\..\Source\midi\MidiEventTranslator.cpp"/>
+    <ClCompile Include="..\..\Source\midi\MidiOutputSink.cpp"/>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3104,6 +3106,9 @@
     <ClInclude Include="..\..\Source\playback\StepEventBuffer.h"/>
     <ClInclude Include="..\..\Source\playback\Transport.h"/>
     <ClInclude Include="..\..\Source\playback\SequencePlayer.h"/>
+    <ClInclude Include="..\..\Source\midi\MidiMessageBytes.h"/>
+    <ClInclude Include="..\..\Source\midi\MidiEventTranslator.h"/>
+    <ClInclude Include="..\..\Source\midi\MidiOutputSink.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

@@ -31,6 +31,13 @@
       <FILE id="pbSplH" name="SequencePlayer.h" compile="0" resource="0" file="Source/playback/SequencePlayer.h"/>
       <FILE id="pbSplC" name="SequencePlayer.cpp" compile="1" resource="0" file="Source/playback/SequencePlayer.cpp"/>
     </GROUP>
+    <GROUP id="{3F7A9C2D-6E4B-481A-B5C3-7D9E1F0A4B26}" name="midi">
+      <FILE id="mdMsgH" name="MidiMessageBytes.h" compile="0" resource="0" file="Source/midi/MidiMessageBytes.h"/>
+      <FILE id="mdTrnH" name="MidiEventTranslator.h" compile="0" resource="0" file="Source/midi/MidiEventTranslator.h"/>
+      <FILE id="mdTrnC" name="MidiEventTranslator.cpp" compile="1" resource="0" file="Source/midi/MidiEventTranslator.cpp"/>
+      <FILE id="mdSnkH" name="MidiOutputSink.h" compile="0" resource="0" file="Source/midi/MidiOutputSink.h"/>
+      <FILE id="mdSnkC" name="MidiOutputSink.cpp" compile="1" resource="0" file="Source/midi/MidiOutputSink.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

@@ -160,6 +160,8 @@
     <ClCompile Include="..\..\Source\TransportTests.cpp"/>
     <ClCompile Include="..\..\Source\SequencePlayerTests.cpp"/>
     <ClCompile Include="..\..\Source\PlaybackTimingTests.cpp"/>
+    <ClCompile Include="..\..\Source\SequencePlayerStopTests.cpp"/>
+    <ClCompile Include="..\..\Source\MidiMessageBytesTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
@@ -552,6 +554,7 @@
     <ClInclude Include="..\..\..\Source\playback\StepEventBuffer.h"/>
     <ClInclude Include="..\..\..\Source\playback\Transport.h"/>
     <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h"/>
+    <ClInclude Include="..\..\..\Source\midi\MidiMessageBytes.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_Array.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_ArrayAllocationBase.h"/>

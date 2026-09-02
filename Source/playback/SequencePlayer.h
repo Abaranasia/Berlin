@@ -55,6 +55,15 @@ public:
 
     void process (int numSamples, StepEventBuffer& out) noexcept;   // AUDIO THREAD, RT-safe
 
+    // Clears `out`, then pushes at most one StepEvent { 0, pendingStep, pendingNote, false }
+    // if a note is currently sounding, and clears the pending-note state. Idempotent: a
+    // second call with no processing in between emits nothing and returns false. NOT for
+    // the audio callback (midi-output-routing spec); the single production call site is
+    // MainComponent::releaseResources(). MUST be called BEFORE reset(), which discards
+    // pendingNote; stop() preserves it, so flush-after-stop still emits. Returns true iff
+    // it emitted.
+    bool flushPendingNoteOff (StepEventBuffer& out) noexcept;
+
     int getPlayheadStep() const noexcept;   // atomic load, any thread; the ONLY observability seam
 
 private:
