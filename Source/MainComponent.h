@@ -1,6 +1,8 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "playback/SequencePlayer.h"
+#include "playback/StepEventBuffer.h"
 
 //==============================================================================
 /*
@@ -26,7 +28,10 @@ public:
 private:
     //==============================================================================
     // Your private member variables go here...
+    static berlin::Sequence buildSeededSequence();
 
+    berlin::SequencePlayer  player;
+    berlin::StepEventBuffer blockEvents;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
