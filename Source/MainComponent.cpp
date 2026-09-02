@@ -11,6 +11,8 @@ namespace
     constexpr int    kStepsPerBeat = 4;
     constexpr int    kNumSteps     = 16;
     constexpr int    kSeed         = 12345;
+    constexpr int    kMidiChannel     = 1;
+    constexpr int    kMidiBufferBytes = 1024;
 }
 
 berlin::Sequence MainComponent::buildSeededSequence()
@@ -30,13 +32,15 @@ berlin::Sequence MainComponent::buildSeededSequence()
 
 //==============================================================================
 MainComponent::MainComponent()
-    : player (buildSeededSequence(), berlin::Transport (kBpm, kStepsPerBeat))
+    : player (buildSeededSequence(), berlin::Transport (kBpm, kStepsPerBeat)),
+      midiTranslator (kMidiChannel), midiSink (kMidiChannel)
 {
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
 
     player.start();
+    midiSink.openFirstAvailableDevice();   // return ignored: false is the valid silent state
 
     // Some platforms require permissions to open input channels so request that here
     if (juce::RuntimePermissions::isRequired (juce::RuntimePermissions::recordAudio)
@@ -56,6 +60,7 @@ MainComponent::~MainComponent()
 {
     // This shuts down the audio device and clears the audio source.
     shutdownAudio();
+    midiSink.closeDevice();
 }
 
 //==============================================================================
@@ -63,20 +68,31 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
 {
     juce::ignoreUnused (samplesPerBlockExpected);
     player.prepare (sampleRate);
+    midiSink.prepare (sampleRate);
+    midiBlock.ensureSize (kMidiBufferBytes);
 }
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
 {
     bufferToFill.clearActiveBufferRegion();
     player.process (bufferToFill.numSamples, blockEvents);
+    midiTranslator.translate (blockEvents, midiBlock);
+    midiSink.dispatch (midiBlock, bufferToFill.numSamples);
 }
 
 void MainComponent::releaseResources()
 {
     // This will be called when the audio device stops, or when it is being
-    // restarted due to a setting change.
-
-    // For more details, see the help for AudioProcessor::releaseResources()
+    // restarted due to a setting change. Flush any currently-sounding note so
+    // it cannot hang; deliberately does NOT call player.stop() (Decision 3 -
+    // preserves the device-restart-resumes behaviour playback-transport-clock
+    // established: running state is set once at construction and prepare()
+    // preserves it across a device restart).
+    if (player.flushPendingNoteOff (blockEvents))
+    {
+        midiTranslator.translate (blockEvents, midiBlock);
+        midiSink.sendImmediately (midiBlock);
+    }
 }
 
 //==============================================================================

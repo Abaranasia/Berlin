@@ -19,6 +19,8 @@
       <FILE id="btTrnC" name="TransportTests.cpp" compile="1" resource="0" file="Source/TransportTests.cpp"/>
       <FILE id="btSplC" name="SequencePlayerTests.cpp" compile="1" resource="0" file="Source/SequencePlayerTests.cpp"/>
       <FILE id="btPtmC" name="PlaybackTimingTests.cpp" compile="1" resource="0" file="Source/PlaybackTimingTests.cpp"/>
+      <FILE id="btSpsC" name="SequencePlayerStopTests.cpp" compile="1" resource="0" file="Source/SequencePlayerStopTests.cpp"/>
+      <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0" file="Source/MidiMessageBytesTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -41,6 +43,9 @@
       <FILE id="tpTrnC" name="Transport.cpp" compile="1" resource="0" file="../Source/playback/Transport.cpp"/>
       <FILE id="tpSplH" name="SequencePlayer.h" compile="0" resource="0" file="../Source/playback/SequencePlayer.h"/>
       <FILE id="tpSplC" name="SequencePlayer.cpp" compile="1" resource="0" file="../Source/playback/SequencePlayer.cpp"/>
+    </GROUP>
+    <GROUP id="{3F7A9C2D-6E4B-481A-B5C3-7D9E1F0A4B26}" name="midi">
+      <FILE id="tmMsgH" name="MidiMessageBytes.h" compile="0" resource="0" file="../Source/midi/MidiMessageBytes.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

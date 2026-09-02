@@ -73,6 +73,18 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
     transport.advance (numSamples);
 }
 
+bool SequencePlayer::flushPendingNoteOff (StepEventBuffer& out) noexcept
+{
+    out.clear();
+
+    if (pendingNote < 0)
+        return false;
+
+    out.push ({ 0, pendingStep, pendingNote, false });
+    pendingNote = -1;
+    return true;
+}
+
 int SequencePlayer::getPlayheadStep() const noexcept
 {
     return playhead.load (std::memory_order_relaxed);
