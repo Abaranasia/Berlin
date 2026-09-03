@@ -162,12 +162,14 @@
     <ClCompile Include="..\..\Source\PlaybackTimingTests.cpp"/>
     <ClCompile Include="..\..\Source\SequencePlayerStopTests.cpp"/>
     <ClCompile Include="..\..\Source\MidiMessageBytesTests.cpp"/>
+    <ClCompile Include="..\..\Source\MidiExportTimelineTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\RhythmGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\playback\Transport.cpp"/>
     <ClCompile Include="..\..\..\Source\playback\SequencePlayer.cpp"/>
+    <ClCompile Include="..\..\..\Source\export\MidiExportTimeline.cpp"/>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -555,6 +557,7 @@
     <ClInclude Include="..\..\..\Source\playback\Transport.h"/>
     <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h"/>
     <ClInclude Include="..\..\..\Source\midi\MidiMessageBytes.h"/>
+    <ClInclude Include="..\..\..\Source\export\MidiExportTimeline.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_AbstractFifo.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_Array.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\containers\juce_ArrayAllocationBase.h"/>

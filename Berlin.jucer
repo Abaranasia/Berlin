@@ -38,6 +38,12 @@
       <FILE id="mdSnkH" name="MidiOutputSink.h" compile="0" resource="0" file="Source/midi/MidiOutputSink.h"/>
       <FILE id="mdSnkC" name="MidiOutputSink.cpp" compile="1" resource="0" file="Source/midi/MidiOutputSink.cpp"/>
     </GROUP>
+    <GROUP id="{6B2D4F8A-1C3E-49D5-8A7B-0F2C4E6A8D10}" name="export">
+      <FILE id="exTmlH" name="MidiExportTimeline.h" compile="0" resource="0" file="Source/export/MidiExportTimeline.h"/>
+      <FILE id="exTmlC" name="MidiExportTimeline.cpp" compile="1" resource="0" file="Source/export/MidiExportTimeline.cpp"/>
+      <FILE id="exWrtH" name="MidiFileWriter.h" compile="0" resource="0" file="Source/export/MidiFileWriter.h"/>
+      <FILE id="exWrtC" name="MidiFileWriter.cpp" compile="1" resource="0" file="Source/export/MidiFileWriter.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

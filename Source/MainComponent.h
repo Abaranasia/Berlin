@@ -5,6 +5,8 @@
 #include "playback/StepEventBuffer.h"
 #include "midi/MidiEventTranslator.h"
 #include "midi/MidiOutputSink.h"
+#include "export/MidiExportTimeline.h"
+#include "export/MidiFileWriter.h"
 
 //==============================================================================
 /*
@@ -31,7 +33,9 @@ private:
     //==============================================================================
     // Your private member variables go here...
     static berlin::Sequence buildSeededSequence();
+    static juce::File       resolveExportFile();     // TEMPORARY hook - deleted in Phase 7
 
+    const berlin::Sequence      sequence;            // MUST precede `player` (Decision 2)
     berlin::SequencePlayer      player;
     berlin::StepEventBuffer     blockEvents;
     berlin::MidiEventTranslator midiTranslator;

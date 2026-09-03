@@ -13,6 +13,8 @@ namespace
     constexpr int    kSeed         = 12345;
     constexpr int    kMidiChannel     = 1;
     constexpr int    kMidiBufferBytes = 1024;
+    constexpr int    kExportRepeats   = 4;   // 4 x 16 steps @ 16ths = 16 beats = exactly 4 bars of 4/4
+    const char*      kExportFileName  = "berlin-export.mid";
 }
 
 berlin::Sequence MainComponent::buildSeededSequence()
@@ -30,9 +32,17 @@ berlin::Sequence MainComponent::buildSeededSequence()
     return sequence;
 }
 
+juce::File MainComponent::resolveExportFile()
+{
+    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+        .getChildFile ("Berlin")
+        .getChildFile (kExportFileName);
+}
+
 //==============================================================================
 MainComponent::MainComponent()
-    : player (buildSeededSequence(), berlin::Transport (kBpm, kStepsPerBeat)),
+    : sequence (buildSeededSequence()),
+      player (sequence, berlin::Transport (kBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel), midiSink (kMidiChannel)
 {
     // Make sure you set the size of the component after
@@ -41,6 +51,26 @@ MainComponent::MainComponent()
 
     player.start();
     midiSink.openFirstAvailableDevice();   // return ignored: false is the valid silent state
+
+    // ---- One-shot MIDI export (Decision 1): message thread, before any audio
+    // thread exists, so `sequence` has provably zero concurrent readers here.
+    // Temporary hook - deleted in Phase 7 when export gains a UI trigger.
+    berlin::MidiExportTimeline exportTimeline;
+    const auto exportStatus = berlin::buildMidiExportTimeline (sequence, kStepsPerBeat, kExportRepeats, exportTimeline);
+
+    if (exportStatus != berlin::MidiExportStatus::ok)
+    {
+        juce::Logger::writeToLog ("Berlin: MIDI export timeline build failed, status = "
+                                  + juce::String ((int) exportStatus));
+    }
+    else
+    {
+        const berlin::MidiFileWriter exportWriter (kMidiChannel, berlin::MidiEventTranslator::kNoteVelocity);
+        const auto writeResult = exportWriter.writeToFile (exportTimeline, kBpm, resolveExportFile());
+
+        if (writeResult != berlin::MidiFileWriteResult::ok)
+            juce::Logger::writeToLog ("Berlin: MIDI export write failed, result = " + juce::String ((int) writeResult));
+    }
 
     // Some platforms require permissions to open input channels so request that here
     if (juce::RuntimePermissions::isRequired (juce::RuntimePermissions::recordAudio)

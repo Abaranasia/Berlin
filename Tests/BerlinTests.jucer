@@ -21,6 +21,7 @@
       <FILE id="btPtmC" name="PlaybackTimingTests.cpp" compile="1" resource="0" file="Source/PlaybackTimingTests.cpp"/>
       <FILE id="btSpsC" name="SequencePlayerStopTests.cpp" compile="1" resource="0" file="Source/SequencePlayerStopTests.cpp"/>
       <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0" file="Source/MidiMessageBytesTests.cpp"/>
+      <FILE id="btMxtC" name="MidiExportTimelineTests.cpp" compile="1" resource="0" file="Source/MidiExportTimelineTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -46,6 +47,10 @@
     </GROUP>
     <GROUP id="{3F7A9C2D-6E4B-481A-B5C3-7D9E1F0A4B26}" name="midi">
       <FILE id="tmMsgH" name="MidiMessageBytes.h" compile="0" resource="0" file="../Source/midi/MidiMessageBytes.h"/>
+    </GROUP>
+    <GROUP id="{6B2D4F8A-1C3E-49D5-8A7B-0F2C4E6A8D10}" name="export">
+      <FILE id="teTmlH" name="MidiExportTimeline.h" compile="0" resource="0" file="../Source/export/MidiExportTimeline.h"/>
+      <FILE id="teTmlC" name="MidiExportTimeline.cpp" compile="1" resource="0" file="../Source/export/MidiExportTimeline.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

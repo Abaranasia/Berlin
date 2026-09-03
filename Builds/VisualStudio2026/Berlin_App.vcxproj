@@ -156,6 +156,8 @@
     <ClCompile Include="..\..\Source\playback\SequencePlayer.cpp"/>
     <ClCompile Include="..\..\Source\midi\MidiEventTranslator.cpp"/>
     <ClCompile Include="..\..\Source\midi\MidiOutputSink.cpp"/>
+    <ClCompile Include="..\..\Source\export\MidiExportTimeline.cpp"/>
+    <ClCompile Include="..\..\Source\export\MidiFileWriter.cpp"/>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3109,6 +3111,8 @@
     <ClInclude Include="..\..\Source\midi\MidiMessageBytes.h"/>
     <ClInclude Include="..\..\Source\midi\MidiEventTranslator.h"/>
     <ClInclude Include="..\..\Source\midi\MidiOutputSink.h"/>
+    <ClInclude Include="..\..\Source\export\MidiExportTimeline.h"/>
+    <ClInclude Include="..\..\Source\export\MidiFileWriter.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>
