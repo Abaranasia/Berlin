@@ -103,14 +103,14 @@ Settled by exploration (`sdd/midi-export/explore`) plus an explicit user decisio
 
 ## Success Criteria
 
-- [ ] A generated `Sequence` exports to a `.mid` file that a DAW opens without error or repair prompt.
-- [ ] The file reports the transport BPM and 4/4 time signature.
-- [ ] Every exported note carries the fixed velocity constant and the fixed MIDI channel; no `Step` velocity/gate field was added.
-- [ ] Each active step's note lasts exactly one step and ends where the next step begins; the final sounding note has a matching note-off — no unmatched note-on exists in the file.
-- [ ] With repeat count *N*, the file contains *N* contiguous passes of the pattern with correct seams and a total length of `N × sequence.size()` steps.
-- [ ] Step boundaries land on exact integer ticks with no accumulated rounding at the last repeat.
-- [ ] An empty or all-inactive sequence exports a valid, note-free `.mid`; an invalid repeat count is rejected rather than reinterpreted.
-- [ ] Export is invoked through a JUCE-free-core API with no new UI component; `resized()` is unchanged.
-- [ ] `Tests/BerlinTests.jucer` still links `juce_core` only; its module list is unchanged in the final diff.
-- [ ] `BerlinTests.exe --category=Berlin` exits 0 with the previous suites plus `MidiExportTimelineTests`.
-- [ ] Live playback behaviour is byte-for-byte unchanged: no file under `Source/playback/` or `Source/midi/` is modified.
+- [x] A generated `Sequence` exports to a `.mid` file that a DAW opens without error or repair prompt.
+- [x] The file reports the transport BPM and 4/4 time signature.
+- [x] Every exported note carries the fixed velocity constant and the fixed MIDI channel; no `Step` velocity/gate field was added.
+- [x] Each active step's note lasts exactly one step and ends where the next step begins; the final sounding note has a matching note-off — no unmatched note-on exists in the file.
+- [x] With repeat count *N*, the file contains *N* contiguous passes of the pattern with correct seams and a total length of `N × sequence.size()` steps.
+- [x] Step boundaries land on exact integer ticks with no accumulated rounding at the last repeat.
+- [x] An empty or all-inactive sequence exports a valid, note-free `.mid`; an invalid repeat count is rejected rather than reinterpreted.
+- [x] Export is invoked through a JUCE-free-core API with no new UI component; `resized()` is unchanged.
+- [x] `Tests/BerlinTests.jucer` still links `juce_core` only; its module list is unchanged in the final diff.
+- [x] `BerlinTests.exe --category=Berlin` exits 0 with the previous suites plus `MidiExportTimelineTests`.
+- [x] Live playback behaviour is byte-for-byte unchanged: no file under `Source/playback/` or `Source/midi/` is modified.
