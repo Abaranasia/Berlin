@@ -15,6 +15,24 @@ namespace
     constexpr int    kMidiBufferBytes = 1024;
     constexpr int    kExportRepeats   = 4;   // 4 x 16 steps @ 16ths = 16 beats = exactly 4 bars of 4/4
     const char*      kExportFileName  = "berlin-export.mid";
+
+    constexpr int kMargin = 12, kControlHeight = 28, kButtonWidth = 140;
+
+    juce::String describeWriteFailure (berlin::MidiFileWriteResult result)
+    {
+        switch (result)
+        {
+            case berlin::MidiFileWriteResult::invalidTimeline:
+                return "Export failed: the timeline was invalid.";
+            case berlin::MidiFileWriteResult::pathUnavailable:
+                return "Export failed: destination folder unavailable.";
+            case berlin::MidiFileWriteResult::writeFailed:
+                return "Export failed: could not write the file.";
+            case berlin::MidiFileWriteResult::ok:
+            default:
+                return {};
+        }
+    }
 }
 
 berlin::Sequence MainComponent::buildSeededSequence()
@@ -32,7 +50,7 @@ berlin::Sequence MainComponent::buildSeededSequence()
     return sequence;
 }
 
-juce::File MainComponent::resolveExportFile()
+juce::File MainComponent::defaultExportFile()
 {
     return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
         .getChildFile ("Berlin")
@@ -45,32 +63,16 @@ MainComponent::MainComponent()
       player (sequence, berlin::Transport (kBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel), midiSink (kMidiChannel)
 {
+    addAndMakeVisible (exportButton);
+    addAndMakeVisible (statusLabel);
+    exportButton.onClick = [this] { launchExportChooser(); };
+
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
 
     player.start();
     midiSink.openFirstAvailableDevice();   // return ignored: false is the valid silent state
-
-    // ---- One-shot MIDI export (Decision 1): message thread, before any audio
-    // thread exists, so `sequence` has provably zero concurrent readers here.
-    // Temporary hook - deleted in Phase 7 when export gains a UI trigger.
-    berlin::MidiExportTimeline exportTimeline;
-    const auto exportStatus = berlin::buildMidiExportTimeline (sequence, kStepsPerBeat, kExportRepeats, exportTimeline);
-
-    if (exportStatus != berlin::MidiExportStatus::ok)
-    {
-        juce::Logger::writeToLog ("Berlin: MIDI export timeline build failed, status = "
-                                  + juce::String ((int) exportStatus));
-    }
-    else
-    {
-        const berlin::MidiFileWriter exportWriter (kMidiChannel, berlin::MidiEventTranslator::kNoteVelocity);
-        const auto writeResult = exportWriter.writeToFile (exportTimeline, kBpm, resolveExportFile());
-
-        if (writeResult != berlin::MidiFileWriteResult::ok)
-            juce::Logger::writeToLog ("Berlin: MIDI export write failed, result = " + juce::String ((int) writeResult));
-    }
 
     // Some platforms require permissions to open input channels so request that here
     if (juce::RuntimePermissions::isRequired (juce::RuntimePermissions::recordAudio)
@@ -88,6 +90,8 @@ MainComponent::MainComponent()
 
 MainComponent::~MainComponent()
 {
+    exportChooser.reset();
+
     // This shuts down the audio device and clears the audio source.
     shutdownAudio();
     midiSink.closeDevice();
@@ -139,4 +143,67 @@ void MainComponent::resized()
     // This is called when the MainContentComponent is resized.
     // If you add any child components, this is where you should
     // update their positions.
+    auto area = getLocalBounds().reduced (kMargin);
+    exportButton.setBounds (area.removeFromTop (kControlHeight).removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+    statusLabel .setBounds (area.removeFromTop (kControlHeight));
+}
+
+//==============================================================================
+void MainComponent::launchExportChooser()
+{
+    exportButton.setEnabled (false);   // guard against re-entrant clicks while the dialog is open
+
+    exportChooser = std::make_unique<juce::FileChooser> ("Export MIDI...",
+                                                          defaultExportFile(),
+                                                          "*.mid");
+
+    const int chooserFlags = juce::FileBrowserComponent::saveMode
+                            | juce::FileBrowserComponent::canSelectFiles
+                            | juce::FileBrowserComponent::warnAboutOverwriting;
+
+    exportChooser->launchAsync (chooserFlags, [this] (const juce::FileChooser& chooser)
+    {
+        const juce::File destination = chooser.getResult();
+
+        if (destination != juce::File())   // cancelled: silent no-op, NOT a failure
+            exportSequenceTo (destination);
+
+        exportButton.setEnabled (true);
+    });
+}
+
+void MainComponent::exportSequenceTo (const juce::File& destination)
+{
+    berlin::MidiExportTimeline exportTimeline;
+    const auto exportStatus = berlin::buildMidiExportTimeline (sequence, kStepsPerBeat, kExportRepeats, exportTimeline);
+
+    if (exportStatus != berlin::MidiExportStatus::ok)
+    {
+        const juce::String message = "Export failed: could not build timeline.";
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+        statusLabel.setText (message, juce::dontSendNotification);
+        juce::Logger::writeToLog ("Berlin: MIDI export timeline build failed, status = "
+                                  + juce::String ((int) exportStatus));
+        juce::NativeMessageBox::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon,
+                                                     "MIDI Export Failed", message, this);
+        return;
+    }
+
+    const berlin::MidiFileWriter exportWriter (kMidiChannel, berlin::MidiEventTranslator::kNoteVelocity);
+    const auto writeResult = exportWriter.writeToFile (exportTimeline, kBpm, destination);
+
+    if (writeResult != berlin::MidiFileWriteResult::ok)
+    {
+        const juce::String message = describeWriteFailure (writeResult);
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+        statusLabel.setText (message, juce::dontSendNotification);
+        juce::Logger::writeToLog ("Berlin: MIDI export write failed, result = " + juce::String ((int) writeResult));
+        juce::NativeMessageBox::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon,
+                                                     "MIDI Export Failed", message, this);
+        return;
+    }
+
+    statusLabel.removeColour (juce::Label::textColourId);
+    statusLabel.setText ("Exported to " + destination.getFileName(), juce::dontSendNotification);
 }

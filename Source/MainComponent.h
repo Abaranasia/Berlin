@@ -33,7 +33,10 @@ private:
     //==============================================================================
     // Your private member variables go here...
     static berlin::Sequence buildSeededSequence();
-    static juce::File       resolveExportFile();     // TEMPORARY hook - deleted in Phase 7
+    static juce::File       defaultExportFile();     // default destination seeded into the save dialog
+
+    void launchExportChooser();
+    void exportSequenceTo (const juce::File& destination);
 
     const berlin::Sequence      sequence;            // MUST precede `player` (Decision 2)
     berlin::SequencePlayer      player;
@@ -41,6 +44,10 @@ private:
     berlin::MidiEventTranslator midiTranslator;
     berlin::MidiOutputSink      midiSink;
     juce::MidiBuffer            midiBlock;
+
+    juce::TextButton exportButton { "Export MIDI..." };
+    juce::Label      statusLabel;
+    std::unique_ptr<juce::FileChooser> exportChooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
