@@ -61,3 +61,5 @@ Single-PR holds: confirmed. Diff is confined to `Source/MainComponent.h` (+3 mem
 - [x] 6.3 Diff `Source/export/*` and `Tests/BerlinTests.jucer` against `main`; confirm byte-for-byte unchanged.
 - [x] 6.4 Code review against Decisions 1/2/4/6: `exportChooser` member ownership and reset, no audio-thread interaction, failure-only `NativeMessageBox`, `Source/export/` untouched.
 - [x] 6.5 Manual DAW-import gate: launch app (no file written) → click "Export MIDI..." (dialog seeded at `Documents/Berlin/berlin-export.mid`) → cancel (silent no-op) → export to a real path and open it in a DAW (120 BPM, 4/4, notes, 4 bars) → export to a read-only folder (dialog shown, no crash) → export during playback (no audible glitch). Confirmed by user 2026-09-05: export to DAW correct, cancel worked, playback uninterrupted during export, read-only folder handled without crash.
+
+Apply Status: 20/20 tasks complete. See `sdd/midi-export-ui/apply-progress` for full evidence.

@@ -82,15 +82,15 @@ Exploration approach 1 (`sdd/midi-export-ui/explore`): async `FileChooser` + `Te
 
 ## Success Criteria
 
-- [ ] Launching the app performs **no** export and writes **no** file; `Documents/Berlin/berlin-export.mid` is not created or overwritten on startup.
-- [ ] An "Export MIDI..." button is visible, correctly positioned after resize, and opens a save dialog.
-- [ ] Choosing a destination writes a valid `.mid` at exactly that path; re-opening it in a DAW shows the same BPM, 4/4, notes and bar count Phase 6's manual gate established.
-- [ ] Cancelling the dialog writes nothing and reports no error.
-- [ ] A failing write (read-only destination) produces user-visible feedback, not a log-only silence, and does not crash.
-- [ ] Exporting while playback is running does not glitch, drop or alter audio output.
-- [ ] `Source/export/*` and `Tests/BerlinTests.jucer` are byte-for-byte unchanged in the final diff.
-- [ ] `BerlinTests.exe --category=Berlin` still exits 0.
-- [ ] No `TEMPORARY`/`Phase 7` hook comment remains in `Source/MainComponent.*`.
+- [x] Launching the app performs **no** export and writes **no** file; `Documents/Berlin/berlin-export.mid` is not created or overwritten on startup.
+- [x] An "Export MIDI..." button is visible, correctly positioned after resize, and opens a save dialog.
+- [x] Choosing a destination writes a valid `.mid` at exactly that path; re-opening it in a DAW shows the same BPM, 4/4, notes and bar count Phase 6's manual gate established.
+- [x] Cancelling the dialog writes nothing and reports no error.
+- [x] A failing write (read-only destination) produces user-visible feedback, not a log-only silence, and does not crash.
+- [x] Exporting while playback is running does not glitch, drop or alter audio output.
+- [x] `Source/export/*` and `Tests/BerlinTests.jucer` are byte-for-byte unchanged in the final diff.
+- [x] `BerlinTests.exe --category=Berlin` still exits 0.
+- [x] No `TEMPORARY`/`Phase 7` hook comment remains in `Source/MainComponent.*`.
 
 ## Proposal Question Round
 
