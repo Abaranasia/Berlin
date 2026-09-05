@@ -30,8 +30,8 @@ struct SynthPatch
 {
     Waveform waveform = Waveform::saw;
 
-    float cutoffHz   = 1200.0f;
-    float resonance  = 9.0f;         // high resonance - audible peak/emphasis near cutoff
+    float cutoffHz   = 4000.0f;
+    float resonance  = 0.7071068f;   // 1 / sqrt(2) - no resonance peaking (Butterworth)
     float pulseWidth = 0.5f;         // only meaningful for Waveform::pulse; also an LFO destination target
 
     float attack  = 0.01f;
@@ -40,8 +40,8 @@ struct SynthPatch
     float release = 0.2f;
 
     float lfoRateHz               = 4.0f;
-    float lfoDepth                = 0.0f;   // 0 = off; per-destination scaling applied where wired (Phase 4)
-    LfoDestination lfoDestination = LfoDestination::pitch;
+    float lfoDepth                = 1.0f;   // 0 = off; per-destination scaling applied where wired (Phase 4)
+    LfoDestination lfoDestination = LfoDestination::cutoff;
 
     float delayTimeSeconds = 0.3f;
     float delayFeedback    = 0.3f;
