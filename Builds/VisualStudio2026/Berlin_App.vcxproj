@@ -158,6 +158,10 @@
     <ClCompile Include="..\..\Source\midi\MidiOutputSink.cpp"/>
     <ClCompile Include="..\..\Source\export\MidiExportTimeline.cpp"/>
     <ClCompile Include="..\..\Source\export\MidiFileWriter.cpp"/>
+    <ClCompile Include="..\..\Source\synth\SynthVoice.cpp"/>
+    <ClCompile Include="..\..\Source\synth\SynthEngine.cpp"/>
+    <ClCompile Include="..\..\Source\synth\Lfo.cpp"/>
+    <ClCompile Include="..\..\Source\synth\SynthEffects.cpp"/>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3222,6 +3226,11 @@
     <ClInclude Include="..\..\Source\midi\MidiOutputSink.h"/>
     <ClInclude Include="..\..\Source\export\MidiExportTimeline.h"/>
     <ClInclude Include="..\..\Source\export\MidiFileWriter.h"/>
+    <ClInclude Include="..\..\Source\synth\SynthPatch.h"/>
+    <ClInclude Include="..\..\Source\synth\SynthVoice.h"/>
+    <ClInclude Include="..\..\Source\synth\SynthEngine.h"/>
+    <ClInclude Include="..\..\Source\synth\Lfo.h"/>
+    <ClInclude Include="..\..\Source\synth\SynthEffects.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

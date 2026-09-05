@@ -67,6 +67,10 @@ MainComponent::MainComponent()
     addAndMakeVisible (statusLabel);
     exportButton.onClick = [this] { launchExportChooser(); };
 
+    addAndMakeVisible (synthToggle);
+    synthToggle.setToggleState (true, juce::dontSendNotification);   // matches the atomic's default (Requirement: default enabled)
+    synthToggle.onClick = [this] { synth.setEnabled (synthToggle.getToggleState()); };
+
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
@@ -100,18 +104,28 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
-    juce::ignoreUnused (samplesPerBlockExpected);
     player.prepare (sampleRate);
     midiSink.prepare (sampleRate);
     midiBlock.ensureSize (kMidiBufferBytes);
+
+    // setAudioChannels() always requests 2 output channels (see the ctor) -
+    // AudioAppComponent exposes no getTotalNumOutputChannels() query, and the
+    // synth's scratch buffer is stereo regardless (design.md Decision 4).
+    const juce::dsp::ProcessSpec spec { sampleRate,
+                                        static_cast<juce::uint32> (samplesPerBlockExpected),
+                                        static_cast<juce::uint32> (2) };
+    synth.prepare (spec);
 }
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
 {
+    const juce::ScopedNoDenormals noDenormals;   // synth.render() below does real float DSP (first Phase 8 slice to do so)
+
     bufferToFill.clearActiveBufferRegion();
     player.process (bufferToFill.numSamples, blockEvents);
     midiTranslator.translate (blockEvents, midiBlock);
     midiSink.dispatch (midiBlock, bufferToFill.numSamples);
+    synth.render (blockEvents, *bufferToFill.buffer, bufferToFill.startSample, bufferToFill.numSamples);
 }
 
 void MainComponent::releaseResources()
@@ -127,6 +141,8 @@ void MainComponent::releaseResources()
         midiTranslator.translate (blockEvents, midiBlock);
         midiSink.sendImmediately (midiBlock);
     }
+
+    synth.reset();
 }
 
 //==============================================================================
@@ -147,6 +163,8 @@ void MainComponent::resized()
     exportButton.setBounds (area.removeFromTop (kControlHeight).removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
     statusLabel .setBounds (area.removeFromTop (kControlHeight));
+    area.removeFromTop (kMargin / 2);
+    synthToggle .setBounds (area.removeFromTop (kControlHeight).removeFromLeft (kButtonWidth));
 }
 
 //==============================================================================

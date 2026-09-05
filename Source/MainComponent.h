@@ -7,6 +7,7 @@
 #include "midi/MidiOutputSink.h"
 #include "export/MidiExportTimeline.h"
 #include "export/MidiFileWriter.h"
+#include "synth/SynthEngine.h"
 
 //==============================================================================
 /*
@@ -44,9 +45,11 @@ private:
     berlin::MidiEventTranslator midiTranslator;
     berlin::MidiOutputSink      midiSink;
     juce::MidiBuffer            midiBlock;
+    berlin::SynthEngine         synth;
 
-    juce::TextButton exportButton { "Export MIDI..." };
-    juce::Label      statusLabel;
+    juce::TextButton   exportButton { "Export MIDI..." };
+    juce::Label        statusLabel;
+    juce::ToggleButton synthToggle { "Synth" };
     std::unique_ptr<juce::FileChooser> exportChooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

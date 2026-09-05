@@ -164,6 +164,9 @@
     <ClCompile Include="..\..\Source\MidiMessageBytesTests.cpp"/>
     <ClCompile Include="..\..\Source\MidiExportTimelineTests.cpp"/>
     <ClCompile Include="..\..\Source\DspLinkSmokeTests.cpp"/>
+    <ClCompile Include="..\..\Source\SynthVoiceTests.cpp"/>
+    <ClCompile Include="..\..\Source\SynthEngineTests.cpp"/>
+    <ClCompile Include="..\..\Source\LfoTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
@@ -171,6 +174,10 @@
     <ClCompile Include="..\..\..\Source\playback\Transport.cpp"/>
     <ClCompile Include="..\..\..\Source\playback\SequencePlayer.cpp"/>
     <ClCompile Include="..\..\..\Source\export\MidiExportTimeline.cpp"/>
+    <ClCompile Include="..\..\..\Source\synth\SynthVoice.cpp"/>
+    <ClCompile Include="..\..\..\Source\synth\SynthEngine.cpp"/>
+    <ClCompile Include="..\..\..\Source\synth\Lfo.cpp"/>
+    <ClCompile Include="..\..\..\Source\synth\SynthEffects.cpp"/>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1047,6 +1054,11 @@
     <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h"/>
     <ClInclude Include="..\..\..\Source\midi\MidiMessageBytes.h"/>
     <ClInclude Include="..\..\..\Source\export\MidiExportTimeline.h"/>
+    <ClInclude Include="..\..\..\Source\synth\SynthPatch.h"/>
+    <ClInclude Include="..\..\..\Source\synth\SynthVoice.h"/>
+    <ClInclude Include="..\..\..\Source\synth\SynthEngine.h"/>
+    <ClInclude Include="..\..\..\Source\synth\Lfo.h"/>
+    <ClInclude Include="..\..\..\Source\synth\SynthEffects.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

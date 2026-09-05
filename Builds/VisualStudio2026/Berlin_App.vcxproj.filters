@@ -20,6 +20,9 @@
     <Filter Include="Berlin\export">
       <UniqueIdentifier>{7A2302F1-B57C-61AF-E3BD-B0C4CC55B7E8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\synth">
+      <UniqueIdentifier>{FD6FD4CC-A375-BA1E-6D8E-26B4CA7E0859}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -894,6 +897,18 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\export\MidiFileWriter.cpp">
       <Filter>Berlin\export</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\synth\SynthVoice.cpp">
+      <Filter>Berlin\synth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\synth\SynthEngine.cpp">
+      <Filter>Berlin\synth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\synth\Lfo.cpp">
+      <Filter>Berlin\synth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\synth\SynthEffects.cpp">
+      <Filter>Berlin\synth</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -4193,6 +4208,21 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\export\MidiFileWriter.h">
       <Filter>Berlin\export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\synth\SynthPatch.h">
+      <Filter>Berlin\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\synth\SynthVoice.h">
+      <Filter>Berlin\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\synth\SynthEngine.h">
+      <Filter>Berlin\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\synth\Lfo.h">
+      <Filter>Berlin\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\synth\SynthEffects.h">
+      <Filter>Berlin\synth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>

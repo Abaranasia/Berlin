@@ -20,6 +20,9 @@
     <Filter Include="BerlinTests\export">
       <UniqueIdentifier>{CB98372F-76A9-85EC-A4FB-E713757BA4BF}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BerlinTests\synth">
+      <UniqueIdentifier>{C46B0695-7219-549C-0E1F-AB958A56F2A9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BerlinTests">
       <UniqueIdentifier>{99B26223-EE90-F7C5-C12F-435CBF576C49}</UniqueIdentifier>
     </Filter>
@@ -262,6 +265,15 @@
     <ClCompile Include="..\..\Source\DspLinkSmokeTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\SynthVoiceTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\SynthEngineTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\LfoTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
@@ -282,6 +294,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\export\MidiExportTimeline.cpp">
       <Filter>BerlinTests\export</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\synth\SynthVoice.cpp">
+      <Filter>BerlinTests\synth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\synth\SynthEngine.cpp">
+      <Filter>BerlinTests\synth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\synth\Lfo.cpp">
+      <Filter>BerlinTests\synth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\synth\SynthEffects.cpp">
+      <Filter>BerlinTests\synth</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -1229,6 +1253,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\export\MidiExportTimeline.h">
       <Filter>BerlinTests\export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\synth\SynthPatch.h">
+      <Filter>BerlinTests\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\synth\SynthVoice.h">
+      <Filter>BerlinTests\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\synth\SynthEngine.h">
+      <Filter>BerlinTests\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\synth\Lfo.h">
+      <Filter>BerlinTests\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\synth\SynthEffects.h">
+      <Filter>BerlinTests\synth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
