@@ -30,7 +30,7 @@ struct SynthPatch
 {
     Waveform waveform = Waveform::saw;
 
-    float cutoffHz   = 4000.0f;
+    float cutoffHz   = 300.0f;
     float resonance  = 0.7071068f;   // 1 / sqrt(2) - no resonance peaking (Butterworth)
     float pulseWidth = 0.5f;         // only meaningful for Waveform::pulse; also an LFO destination target
 
