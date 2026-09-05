@@ -22,6 +22,10 @@
       <FILE id="btSpsC" name="SequencePlayerStopTests.cpp" compile="1" resource="0" file="Source/SequencePlayerStopTests.cpp"/>
       <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0" file="Source/MidiMessageBytesTests.cpp"/>
       <FILE id="btMxtC" name="MidiExportTimelineTests.cpp" compile="1" resource="0" file="Source/MidiExportTimelineTests.cpp"/>
+      <FILE id="btDspC" name="DspLinkSmokeTests.cpp" compile="1" resource="0" file="Source/DspLinkSmokeTests.cpp"/>
+      <FILE id="btSvcC" name="SynthVoiceTests.cpp" compile="1" resource="0" file="Source/SynthVoiceTests.cpp"/>
+      <FILE id="btSngC" name="SynthEngineTests.cpp" compile="1" resource="0" file="Source/SynthEngineTests.cpp"/>
+      <FILE id="btLfoC" name="LfoTests.cpp" compile="1" resource="0" file="Source/LfoTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -52,9 +56,23 @@
       <FILE id="teTmlH" name="MidiExportTimeline.h" compile="0" resource="0" file="../Source/export/MidiExportTimeline.h"/>
       <FILE id="teTmlC" name="MidiExportTimeline.cpp" compile="1" resource="0" file="../Source/export/MidiExportTimeline.cpp"/>
     </GROUP>
+    <GROUP id="{8D3A5F7C-1B4E-4A6D-9C2F-5E7A9B1D3F5A}" name="synth">
+      <FILE id="tsPtcH" name="SynthPatch.h" compile="0" resource="0" file="../Source/synth/SynthPatch.h"/>
+      <FILE id="tsVceH" name="SynthVoice.h" compile="0" resource="0" file="../Source/synth/SynthVoice.h"/>
+      <FILE id="tsVceC" name="SynthVoice.cpp" compile="1" resource="0" file="../Source/synth/SynthVoice.cpp"/>
+      <FILE id="tsEngH" name="SynthEngine.h" compile="0" resource="0" file="../Source/synth/SynthEngine.h"/>
+      <FILE id="tsEngC" name="SynthEngine.cpp" compile="1" resource="0" file="../Source/synth/SynthEngine.cpp"/>
+      <FILE id="tsLfoH" name="Lfo.h" compile="0" resource="0" file="../Source/synth/Lfo.h"/>
+      <FILE id="tsLfoC" name="Lfo.cpp" compile="1" resource="0" file="../Source/synth/Lfo.cpp"/>
+      <FILE id="tsFxH" name="SynthEffects.h" compile="0" resource="0" file="../Source/synth/SynthEffects.h"/>
+      <FILE id="tsFxC" name="SynthEffects.cpp" compile="1" resource="0" file="../Source/synth/SynthEffects.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
   <EXPORTFORMATS>
@@ -64,7 +82,10 @@
         <CONFIGURATION isDebug="0" name="Release" targetName="BerlinTests" headerPath="../../../Source"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../../../Projucer/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../../Projucer/modules"/>
         <MODULEPATH id="juce_core" path="../../../Projucer/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../../Projucer/modules"/>
       </MODULEPATHS>
     </VS2026>
   </EXPORTFORMATS>
