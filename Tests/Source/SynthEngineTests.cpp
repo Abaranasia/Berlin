@@ -218,8 +218,13 @@ public:
 
         beginTest ("disabling effects at the true->false edge hard-clears the tail with no residual bleed");
         {
+            // Prepared block size must cover the largest single render() call below
+            // (the full release block) - render() clamps numSamples to the prepared
+            // scratch capacity rather than resizing (Decision 4).
+            constexpr int preparedBlockSize = 16384;
+
             berlin::SynthEngine engine;
-            engine.prepare (makeSpec (sampleRate, 512));
+            engine.prepare (makeSpec (sampleRate, preparedBlockSize));
             engine.setEffectsEnabled (true);
 
             berlin::StepEventBuffer noteOnEvents;
@@ -231,19 +236,31 @@ public:
 
             berlin::StepEventBuffer noteOffEvents;
             noteOffEvents.push ({ 0, 0, 60, false });
-            juce::AudioBuffer<float> releaseBlock (2, 8192);
+            // Margin beyond kDefaultPatch's own release time so the VOICE's envelope
+            // (not just any FX tail) has fully reached silence by the end of this
+            // block - otherwise a still-sounding voice would be mistaken for FX tail.
+            const int releaseSamples = (int) (berlin::kDefaultPatch.release * sampleRate) + 2000;
+            juce::AudioBuffer<float> releaseBlock (2, releaseSamples);
             releaseBlock.clear();
-            engine.render (noteOffEvents, releaseBlock, 0, 8192);   // let the voice's ADSR fully release
+            engine.render (noteOffEvents, releaseBlock, 0, releaseSamples);   // voice reaches silence by the end
+
+            berlin::StepEventBuffer noEvents;
+
+            // The VOICE is now silent (release completed above); any energy seen
+            // from here on can only be an FX (delay/reverb) tail from the earlier
+            // input, not the dry voice.
+            juce::AudioBuffer<float> tailCheck (2, 512);
+            tailCheck.clear();
+            engine.render (noEvents, tailCheck, 0, 512);
 
             bool tailAudibleBeforeDisable = false;
-            for (int i = 0; i < 8192; ++i)
-                if (std::abs (releaseBlock.getSample (0, i)) > 1.0e-5f)
+            for (int i = 0; i < 512; ++i)
+                if (std::abs (tailCheck.getSample (0, i)) > 1.0e-6f)
                     tailAudibleBeforeDisable = true;
             expect (tailAudibleBeforeDisable);   // confirm there WAS an audible delay/reverb tail while enabled
 
             engine.setEffectsEnabled (false);   // true->false edge: hard-clear the tail exactly once
 
-            berlin::StepEventBuffer noEvents;
             juce::AudioBuffer<float> afterDisable (2, 512);
             afterDisable.clear();
             engine.render (noEvents, afterDisable, 0, 512);
@@ -256,7 +273,7 @@ public:
         beginTest ("reset() clears an active effect tail");
         {
             berlin::SynthEngine engine;
-            engine.prepare (makeSpec (sampleRate, 512));
+            engine.prepare (makeSpec (sampleRate, 2048));   // must cover the warm-up render below (Decision 4 clamp)
             engine.setEffectsEnabled (true);
 
             berlin::StepEventBuffer noteOnEvents;

@@ -71,6 +71,12 @@ MainComponent::MainComponent()
     synthToggle.setToggleState (true, juce::dontSendNotification);   // matches the atomic's default (Requirement: default enabled)
     synthToggle.onClick = [this] { synth.setEnabled (synthToggle.getToggleState()); };
 
+    addAndMakeVisible (fxToggle);
+    // Default off, consistent with SynthEngine::effectsEnabled's atomic default -
+    // deliberately no setToggleState(true, ...) here (internal-synth-output:
+    // Terminal Delay And Reverb, Bypassed By Default).
+    fxToggle.onClick = [this] { synth.setEffectsEnabled (fxToggle.getToggleState()); };
+
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
@@ -165,6 +171,8 @@ void MainComponent::resized()
     statusLabel .setBounds (area.removeFromTop (kControlHeight));
     area.removeFromTop (kMargin / 2);
     synthToggle .setBounds (area.removeFromTop (kControlHeight).removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+    fxToggle    .setBounds (area.removeFromTop (kControlHeight).removeFromLeft (kButtonWidth));
 }
 
 //==============================================================================

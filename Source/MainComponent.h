@@ -50,6 +50,7 @@ private:
     juce::TextButton   exportButton { "Export MIDI..." };
     juce::Label        statusLabel;
     juce::ToggleButton synthToggle { "Synth" };
+    juce::ToggleButton fxToggle { "FX" };
     std::unique_ptr<juce::FileChooser> exportChooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
