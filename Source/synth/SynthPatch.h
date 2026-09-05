@@ -40,8 +40,8 @@ struct SynthPatch
     float release = 0.2f;
 
     float lfoRateHz               = 4.0f;
-    float lfoDepth                = 1.0f;   // 0 = off; per-destination scaling applied where wired (Phase 4)
-    LfoDestination lfoDestination = LfoDestination::cutoff;
+    float lfoDepth                = 0.0f;   // 0 = off; per-destination scaling applied where wired (Phase 4)
+    LfoDestination lfoDestination = LfoDestination::pitch;
 
     float delayTimeSeconds = 0.3f;
     float delayFeedback    = 0.3f;
