@@ -28,19 +28,19 @@ Confirm at implementation start: synth test suites register under the `Berlin` c
 
 ## Phase 1: Module/Build Plumbing + Link Smoke Test (PR #1 — hard blocker for everything else)
 
-- [ ] 1.1 In `Berlin.jucer`, add `<MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>` to `<MODULES>`, landing alphabetically between `juce_data_structures` and `juce_events` (line ~57-58 today).
-- [ ] 1.2 In `Berlin.jucer`, add the sibling `<MODULEPATH id="juce_dsp" path="../../Projucer/modules"/>` to `<MODULEPATHS>` in the same alphabetical position as its `<MODULE>` row.
-- [ ] 1.3 In `Tests/BerlinTests.jucer`, add three `<MODULE>` rows — `juce_audio_basics`, `juce_audio_formats`, `juce_dsp` — each `showAllCode="1" useLocalCopy="0" useGlobalPath="1"`, landing alphabetically around the existing `juce_core` row (final order: `juce_audio_basics`, `juce_audio_formats`, `juce_core`, `juce_dsp`). `juce_audio_formats` is non-optional — `juce_dsp` declares it as a dependency (design's verified-corrections table).
-- [ ] 1.4 In `Tests/BerlinTests.jucer`, add the three matching `<MODULEPATH id="..." path="../../../Projucer/modules"/>` rows to `<MODULEPATHS>`, same alphabetical order as 1.3.
-- [ ] 1.5 Run `Projucer.exe --resave` on `Berlin.jucer`; confirm it emits `JuceLibraryCode/include_juce_dsp.cpp`/`.mm`, rewrites `JuceLibraryCode/JuceHeader.h`, and rewrites `Builds/VisualStudio2026/Berlin.vcxproj` + `.vcxproj.filters`. Exit 0.
-- [ ] 1.6 Run `Projucer.exe --resave` on `Tests/BerlinTests.jucer`; confirm `Tests/JuceLibraryCode/` grows from 6 files to roughly a dozen (including `include_juce_audio_formats_flac_1.c`/`_flac_2.c`, per design's module-mechanics note). Exit 0.
-- [ ] 1.7 Diff both `.jucer` files' `<MODULES>`/`<MODULEPATHS>` sections; confirm `useGlobalPath="1"` and (for the test project) `useAppConfig="0"` are preserved on every new row, matching the existing `juce_core` row's shape.
-- [ ] 1.8 Create `Tests/Source/DspLinkSmokeTests.cpp`: construct + `prepare` a `juce::dsp::Oscillator<float>`, assert `processSample(0.0f)` returns a finite value. This is the only file that may depend on the new modules in this slice (per Testing Strategy's Build row).
-- [ ] 1.9 Register `DspLinkSmokeTests.cpp` as a `<FILE>` in `Tests/BerlinTests.jucer`'s `Source` group; re-resave; confirm no other `<MODULES>`/`<MODULEPATH>` diff beyond 1.3/1.4.
-- [ ] 1.10 Build `Berlin.sln` (GUI app target): confirm clean compile with the new `juce_dsp` module present but unreferenced by any app source file yet.
-- [ ] 1.11 Build `Tests/BerlinTests.sln`: confirm clean compile and link with the three new modules.
-- [ ] 1.12 Run `BerlinTests.exe --category=Berlin`; confirm exit 0, all 17 pre-existing suites still green (regression), plus the new `DspLinkSmokeTests` suite passing.
-- [ ] 1.13 Confirm no `Source/synth/` files exist yet and `Source/MainComponent.h/.cpp` are byte-for-byte unchanged — PR #1 is generated churn plus one smoke test only, reviewable without any DSP reasoning (per design's isolation rationale).
+- [x] 1.1 In `Berlin.jucer`, add `<MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>` to `<MODULES>`, landing alphabetically between `juce_data_structures` and `juce_events` (line ~57-58 today).
+- [x] 1.2 In `Berlin.jucer`, add the sibling `<MODULEPATH id="juce_dsp" path="../../Projucer/modules"/>` to `<MODULEPATHS>` in the same alphabetical position as its `<MODULE>` row.
+- [x] 1.3 In `Tests/BerlinTests.jucer`, add three `<MODULE>` rows — `juce_audio_basics`, `juce_audio_formats`, `juce_dsp` — each `showAllCode="1" useLocalCopy="0" useGlobalPath="1"`, landing alphabetically around the existing `juce_core` row (final order: `juce_audio_basics`, `juce_audio_formats`, `juce_core`, `juce_dsp`). `juce_audio_formats` is non-optional — `juce_dsp` declares it as a dependency (design's verified-corrections table).
+- [x] 1.4 In `Tests/BerlinTests.jucer`, add the three matching `<MODULEPATH id="..." path="../../../Projucer/modules"/>` rows to `<MODULEPATHS>`, same alphabetical order as 1.3.
+- [x] 1.5 Run `Projucer.exe --resave` on `Berlin.jucer`; confirm it emits `JuceLibraryCode/include_juce_dsp.cpp`/`.mm`, rewrites `JuceLibraryCode/JuceHeader.h`, and rewrites `Builds/VisualStudio2026/Berlin.vcxproj` + `.vcxproj.filters`. Exit 0.
+- [x] 1.6 Run `Projucer.exe --resave` on `Tests/BerlinTests.jucer`; confirm `Tests/JuceLibraryCode/` grows from 6 files to roughly a dozen (including `include_juce_audio_formats_flac_1.c`/`_flac_2.c`, per design's module-mechanics note). Exit 0.
+- [x] 1.7 Diff both `.jucer` files' `<MODULES>`/`<MODULEPATHS>` sections; confirm `useGlobalPath="1"` and (for the test project) `useAppConfig="0"` are preserved on every new row, matching the existing `juce_core` row's shape.
+- [x] 1.8 Create `Tests/Source/DspLinkSmokeTests.cpp`: construct + `prepare` a `juce::dsp::Oscillator<float>`, assert `processSample(0.0f)` returns a finite value. This is the only file that may depend on the new modules in this slice (per Testing Strategy's Build row).
+- [x] 1.9 Register `DspLinkSmokeTests.cpp` as a `<FILE>` in `Tests/BerlinTests.jucer`'s `Source` group; re-resave; confirm no other `<MODULES>`/`<MODULEPATH>` diff beyond 1.3/1.4.
+- [x] 1.10 Build `Berlin.sln` (GUI app target): confirm clean compile with the new `juce_dsp` module present but unreferenced by any app source file yet.
+- [x] 1.11 Build `Tests/BerlinTests.sln`: confirm clean compile and link with the three new modules.
+- [x] 1.12 Run `BerlinTests.exe --category=Berlin`; confirm exit 0, all 17 pre-existing suites still green (regression), plus the new `DspLinkSmokeTests` suite passing.
+- [x] 1.13 Confirm no `Source/synth/` files exist yet and `Source/MainComponent.h/.cpp` are byte-for-byte unchanged — PR #1 is generated churn plus one smoke test only, reviewable without any DSP reasoning (per design's isolation rationale).
 
 ## Phase 2: Oscillator + ADSR + Filter DSP (PR #2 — unwired, unit-tested)
 

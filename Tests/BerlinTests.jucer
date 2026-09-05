@@ -22,6 +22,7 @@
       <FILE id="btSpsC" name="SequencePlayerStopTests.cpp" compile="1" resource="0" file="Source/SequencePlayerStopTests.cpp"/>
       <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0" file="Source/MidiMessageBytesTests.cpp"/>
       <FILE id="btMxtC" name="MidiExportTimelineTests.cpp" compile="1" resource="0" file="Source/MidiExportTimelineTests.cpp"/>
+      <FILE id="btDspC" name="DspLinkSmokeTests.cpp" compile="1" resource="0" file="Source/DspLinkSmokeTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -54,7 +55,10 @@
     </GROUP>
   </MAINGROUP>
   <MODULES>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
   <EXPORTFORMATS>
@@ -64,7 +68,10 @@
         <CONFIGURATION isDebug="0" name="Release" targetName="BerlinTests" headerPath="../../../Source"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../../../Projucer/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../../Projucer/modules"/>
         <MODULEPATH id="juce_core" path="../../../Projucer/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../../Projucer/modules"/>
       </MODULEPATHS>
     </VS2026>
   </EXPORTFORMATS>
