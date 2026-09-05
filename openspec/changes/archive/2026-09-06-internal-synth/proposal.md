@@ -98,14 +98,14 @@ Investigated. No velocity source exists anywhere: `Step` has no velocity field, 
 
 ## Success Criteria
 
-- [ ] Launching the standalone app produces audible sound from the seeded sequence with no MIDI device connected.
-- [ ] Notes start and stop on the correct steps; no stuck/hanging notes across loop wraps, or after stop and device restart.
-- [ ] All four waveforms, the LP filter + resonance sweep, ADSR stages, and each of the four LFO destinations are audibly demonstrable from the fixed patch.
-- [ ] Delay and reverb are audible and can be bypassed to silence-tails without artefacts.
-- [ ] No dropouts, XRuns, or asserts over a sustained run of the monophonic voice.
-- [ ] External MIDI output and MIDI export behave exactly as in Phase 7 — `Source/midi/*` and `Source/export/*` are byte-for-byte unchanged in the final diff.
-- [ ] `BerlinTests.exe --category=Berlin` exits 0, including new synth suites, with the expanded module list.
-- [ ] Code review confirms no allocation, lock, or logging call on the synth render path.
+- [x] Launching the standalone app produces audible sound from the seeded sequence with no MIDI device connected.
+- [x] Notes start and stop on the correct steps; no stuck/hanging notes across loop wraps, or after stop and device restart.
+- [x] All four waveforms, the LP filter + resonance sweep, ADSR stages, and each of the four LFO destinations are audibly demonstrable from the fixed patch.
+- [x] Delay and reverb are audible and can be bypassed to silence-tails without artefacts.
+- [x] No dropouts, XRuns, or asserts over a sustained run of the monophonic voice.
+- [x] External MIDI output and MIDI export behave exactly as in Phase 7 — `Source/midi/*` and `Source/export/*` are byte-for-byte unchanged in the final diff.
+- [x] `BerlinTests.exe --category=Berlin` exits 0, including new synth suites, with the expanded module list.
+- [x] Code review confirms no allocation, lock, or logging call on the synth render path.
 
 ## Proposal question round — resolved 2026-09-05
 
