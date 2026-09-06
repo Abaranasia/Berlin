@@ -1,14 +1,16 @@
-# Internal Synth Voice Specification
+# Delta for internal-synth-voice
 
-## Purpose
+## MODIFIED Purpose
 
 A single monophonic voice — oscillator, low-pass filter with resonance, ADSR envelope, and one LFO — rendering one note at a time, with every parameter (waveform, pulse width, filter cutoff/resonance, ADSR, LFO destination/rate/depth) live user-adjustable while a note sounds. Built on JUCE's built-in DSP/audio primitives (`juce::dsp` and `juce_audio_basics` per what each stage needs — see `design.md`), confined to `Source/synth/`, as a documented, scoped exception to this project's JUCE-free-core convention. Parameter changes apply at the existing control-rate cadence via message-thread setters and lock-free atomics; no preset save/load yet.
+(Previously: "the patch is fixed for this phase. No parameter UI or patch system.")
 
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Four Selectable Oscillator Waveforms
 
-The system MUST render the voice's oscillator as one of four periodic waveforms — sawtooth, square, pulse, or triangle — selectable live by the user, including while a note is sounding. Waveform generation MUST be table-free (no lookup-table allocation) so live switching allocates nothing. Naive generation is accepted; aliasing is not a defect. Table-free rendering MAY differ slightly in audible character from a lookup-table rendering of the same waveform, provided it remains audibly equivalent. The pulse waveform's duty cycle (pulse width) MUST be exposed as its own live user-adjustable control, clamped to `[0.05, 0.95]` — without it, pulse at its default 50% duty is indistinguishable from square, making it a redundant menu entry.
+The system MUST render the voice's oscillator as one of four periodic waveforms — sawtooth, square, pulse, or triangle — selectable live by the user, including while a note is sounding. Waveform generation MUST be table-free (no lookup-table allocation) so live switching allocates nothing. Naive generation is accepted; aliasing is not a defect. Table-free rendering MAY differ slightly in audible character from a lookup-table rendering of the same waveform, provided it remains audibly equivalent. The pulse waveform's duty cycle (pulse width) MUST be exposed as its own live user-adjustable control, clamped to a documented range [range pinned by design] — without it, pulse at its default 50% duty is indistinguishable from square, making it a redundant menu entry.
+(Previously: waveform was fixed by the patch, using allocating lookup tables for saw/square/triangle; pulse width had no direct UI exposure.)
 
 #### Scenario: Each waveform produces its characteristic periodic shape
 - GIVEN the patch selects one of the four waveforms
@@ -37,7 +39,8 @@ The system MUST render the voice's oscillator as one of four periodic waveforms 
 
 ### Requirement: Low-Pass Filter With Resonance
 
-The system MUST apply a low-pass filter with configurable cutoff and resonance. Both MUST be live user-adjustable at any time, including mid-note, applied at the existing control-rate cadence, clamped to a documented range (`cutoffHz` in `[20, 20000]` Hz; `resonance` in `[0.7071068, 8.0]`). Cutoff's range excludes silence (too low) and invalid/Nyquist-adjacent values (too high). Resonance's range bounds peak gain to a finite, non-clipping-guaranteed-safe ceiling; the filter itself is unconditionally stable and cannot diverge or self-oscillate at any resonance value, so the cap is a loudness/clipping choice, not a stability requirement.
+The system MUST apply a low-pass filter with configurable cutoff and resonance. Both MUST be live user-adjustable at any time, including mid-note, applied at the existing control-rate cadence, clamped to a documented range [range pinned by design]. Cutoff's range excludes silence (too low) and invalid/Nyquist-adjacent values (too high). Resonance's range bounds peak gain to a finite, non-clipping-guaranteed-safe ceiling; the filter itself is unconditionally stable and cannot diverge or self-oscillate at any resonance value, so the cap is a loudness/clipping choice, not a stability requirement.
+(Previously: cutoff/resonance were fixed by the patch for the whole note.)
 
 #### Scenario: Cutoff sweep changes brightness
 - GIVEN a sounding note
@@ -56,7 +59,8 @@ The system MUST apply a low-pass filter with configurable cutoff and resonance. 
 
 ### Requirement: ADSR-Gated Amplitude
 
-The system MUST shape output amplitude through attack, decay, sustain, and release, gated by note-on/off. Note-on MUST (re)trigger attack; note-off MUST trigger release; once release completes with no subsequent note-on, the voice MUST be silent. A/D/S/R MUST be live user-adjustable at any time, including mid-note, applied at the existing control-rate cadence, with attack/decay/release each clamped to a documented range (`attack`/`decay` in `[0.001, 4.0]` s, `release` in `[0.005, 8.0]` s; `sustain` in `[0.0, 1.0]`) whose lower floor is strictly greater than zero — a zero-length stage is a well-defined, deliberately reachable instant transition (see scenario below), not an unclamped edge case. Changing a value while a stage is in progress MUST immediately retarget that stage to the new value(s) — an audible jump is expected, not a defect.
+The system MUST shape output amplitude through attack, decay, sustain, and release, gated by note-on/off. Note-on MUST (re)trigger attack; note-off MUST trigger release; once release completes with no subsequent note-on, the voice MUST be silent. A/D/S/R MUST be live user-adjustable at any time, including mid-note, applied at the existing control-rate cadence, with attack/decay/release each clamped to a documented range [range pinned by design] whose lower floor is strictly greater than zero — a zero-length stage is a well-defined, deliberately reachable instant transition (see scenario below), not an unclamped edge case. Changing a value while a stage is in progress MUST immediately retarget that stage to the new value(s) — an audible jump is expected, not a defect.
+(Previously: A/D/S/R were fixed by the patch for the whole note.)
 
 #### Scenario: Note-on triggers attack through sustain
 - GIVEN the voice is idle
@@ -80,7 +84,8 @@ The system MUST shape output amplitude through attack, decay, sustain, and relea
 
 ### Requirement: Single LFO With Selectable Destination
 
-The system MUST provide one LFO modulating exactly one destination at a time — pitch, filter cutoff, amplitude, or pulse width — continuously while a note sounds. Destination, rate, and depth MUST be live user-adjustable at any time, including mid-note, applied at the existing control-rate cadence. Rate MUST be clamped to `[0.05, 20.0]` Hz, excluding negative/reversed-phase behavior.
+The system MUST provide one LFO modulating exactly one destination at a time — pitch, filter cutoff, amplitude, or pulse width — continuously while a note sounds. Destination, rate, and depth MUST be live user-adjustable at any time, including mid-note, applied at the existing control-rate cadence. Rate MUST be clamped to a documented range [range pinned by design] excluding negative/reversed-phase behavior.
+(Previously: destination, rate, and depth were fixed by the patch; no mid-note switching existed.)
 
 #### Scenario: LFO modulates the configured destination
 - GIVEN the patch routes the LFO to one of the four destinations
@@ -97,23 +102,10 @@ The system MUST provide one LFO modulating exactly one destination at a time —
 - WHEN the user switches the LFO destination to B while the note continues
 - THEN destination A is re-applied to its base value on the next control block, and only B receives the LFO's delta thereafter — A MUST NOT remain parked at its last modulated value
 
-### Requirement: Strictly Monophonic, No Voice Pool Or Stealing
-
-The system MUST sound at most one note at a time. The system MUST NOT implement a voice pool or a voice-stealing policy. A note-on received while another note is already sounding MUST immediately replace the currently sounding note; the previous note MUST NOT continue to sound alongside the new one.
-
-#### Scenario: Overlapping note-on replaces the sounding note
-- GIVEN a note is currently sounding
-- WHEN a new note-on is received before that note's note-off
-- THEN the previously sounding note stops and only the new note sounds
-
-#### Scenario: No second voice is ever created
-- GIVEN any sequence of overlapping note-on/note-off events
-- WHEN the events are processed
-- THEN at most one note is ever audible at once, with no independent second voice
-
 ### Requirement: Allocation-Free Voice Rendering
 
 The system MUST NOT allocate heap memory when rendering a block; all fixed-size preparation MUST occur off the audio thread before rendering. Applying any live parameter change (waveform, cutoff, resonance, ADSR, LFO destination/rate/depth) at control rate MUST also allocate no heap memory, acquire no lock, and call no logging/formatting function; values MUST cross message-thread-to-audio-thread only via lock-free atomics.
+(Previously: only initial preparation and steady-state rendering were constrained; no live parameter-application path existed.)
 
 #### Scenario: Rendering a block performs no allocation
 - GIVEN the voice has been prepared for a given sample rate and block size
@@ -124,12 +116,3 @@ The system MUST NOT allocate heap memory when rendering a block; all fixed-size 
 - GIVEN the voice is rendering a sounding note
 - WHEN any live parameter is changed via its message-thread setter and applied at the next control block
 - THEN no heap allocation, lock acquisition, or logging/formatting call occurs anywhere in the application path
-
-### Requirement: Silence When Idle
-
-The system MUST produce silence (zero-valued samples) when no note has sounded since the last full envelope release.
-
-#### Scenario: Freshly prepared voice is silent
-- GIVEN the voice has just been prepared and no note-on has yet occurred
-- WHEN a block is rendered
-- THEN every rendered sample is silence

@@ -39,6 +39,13 @@ private:
     void launchExportChooser();
     void exportSequenceTo (const juce::File& destination);
 
+    // Re-pushes every control's current value to `synth` (design.md Decision 6).
+    // Called once from prepareToPlay, immediately after synth.prepare(spec) -
+    // SynthEngine::prepare seeds the voice from kDefaultPatch, so without this a
+    // device/sample-rate change would silently snap parameters back to default
+    // while the sliders still showed the user's values.
+    void pushAllParametersToSynth();
+
     const berlin::Sequence      sequence;            // MUST precede `player` (Decision 2)
     berlin::SequencePlayer      player;
     berlin::StepEventBuffer     blockEvents;
@@ -52,6 +59,22 @@ private:
     juce::ToggleButton synthToggle { "Synth" };
     juce::ToggleButton fxToggle { "FX" };
     std::unique_ptr<juce::FileChooser> exportChooser;
+
+    // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
+    // Left column: OSCILLATOR (waveform, pulse width), FILTER (cutoff, resonance).
+    // Right column: ENVELOPE (attack, decay, sustain, release), LFO (destination, rate, depth).
+    juce::Label oscillatorSectionLabel, filterSectionLabel, envelopeSectionLabel, lfoSectionLabel;
+
+    juce::ComboBox waveformBox, lfoDestinationBox;
+    juce::Label    waveformLabel, lfoDestinationLabel;
+
+    juce::Slider cutoffSlider, resonanceSlider, pulseWidthSlider;
+    juce::Slider attackSlider, decaySlider, sustainSlider, releaseSlider;
+    juce::Slider lfoRateSlider, lfoDepthSlider;
+
+    juce::Label cutoffLabel, resonanceLabel, pulseWidthLabel;
+    juce::Label attackLabel, decayLabel, sustainLabel, releaseLabel;
+    juce::Label lfoRateLabel, lfoDepthLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
