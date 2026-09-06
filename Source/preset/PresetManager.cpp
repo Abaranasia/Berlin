@@ -172,28 +172,79 @@ PresetResult PresetManager::fromValueTree (const juce::ValueTree& tree, Preset& 
 }
 
 // ---- File I/O (Phase 2 / preset-persistence Decision 2) -------------------
-// Stubs for now - Phase 2's RED test (PresetManagerFileTests.cpp) must fail
-// against these before Phase 2's GREEN task replaces them with the real
-// implementation.
 
-juce::File PresetManager::fileForName (const juce::String&) const
+juce::File PresetManager::fileForName (const juce::String& name) const
 {
-    return {};
+    const juce::String sanitized = juce::File::createLegalFileName (name.trim());
+
+    if (sanitized.isEmpty())
+        return {};
+
+    const juce::File candidate = presetDirectory.getChildFile (sanitized + ".xml");
+
+    // Threat Matrix's path-construction row: createLegalFileName already
+    // strips path separators, but this is the defense-in-depth assertion -
+    // never trust sanitization alone to guarantee containment.
+    if (candidate.getParentDirectory() != presetDirectory)
+        return {};
+
+    return candidate;
 }
 
 juce::StringArray PresetManager::listPresetNames() const
 {
-    return {};
+    juce::StringArray names;
+
+    for (const auto& file : presetDirectory.findChildFiles (juce::File::findFiles, false, "*.xml"))
+    {
+        Preset preset;
+        if (load (file.getFileNameWithoutExtension(), preset) == PresetResult::ok)
+            names.add (preset.name);
+    }
+
+    names.sort (true);
+    return names;
 }
 
-PresetResult PresetManager::save (const Preset&) const
+PresetResult PresetManager::save (const Preset& preset) const
 {
-    return PresetResult::directoryUnavailable;
+    if (! presetDirectory.exists() && presetDirectory.createDirectory().failed())
+        return PresetResult::directoryUnavailable;
+
+    const juce::File destination = fileForName (preset.name);
+    if (destination == juce::File())
+        return PresetResult::nameInvalid;
+
+    const juce::String xmlText = toValueTree (preset).toXmlString();
+
+    juce::TemporaryFile temp (destination);
+    bool writeOk = false;
+
+    {
+        juce::FileOutputStream stream (temp.getFile());
+
+        if (stream.openedOk())
+        {
+            writeOk = stream.writeText (xmlText, false, false, nullptr);
+            stream.flush();
+            writeOk = writeOk && ! stream.getStatus().failed();
+        }
+    }   // stream closed here - required before overwriteTargetFileWithTemporary()
+
+    if (! writeOk)
+        return PresetResult::writeFailed;
+
+    return temp.overwriteTargetFileWithTemporary() ? PresetResult::ok : PresetResult::writeFailed;
 }
 
-PresetResult PresetManager::load (const juce::String&, Preset&) const
+PresetResult PresetManager::load (const juce::String& name, Preset& out) const
 {
-    return PresetResult::fileNotFound;
+    const juce::File source = fileForName (name);
+    if (source == juce::File() || ! source.existsAsFile())
+        return PresetResult::fileNotFound;
+
+    const juce::ValueTree tree = juce::ValueTree::fromXml (source.loadFileAsString());
+    return fromValueTree (tree, out);
 }
 
 } // namespace berlin
