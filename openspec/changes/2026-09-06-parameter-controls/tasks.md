@@ -39,12 +39,12 @@ Chain strategy: pending
 
 ## Phase 3: SynthVoice Atomics + applyParameters() + LFO Re-Park
 
-- [ ] 3.1 RED: add live cutoff/resonance-mid-note, live-ADSR-mid-note, LFO-destination-re-park, and clamp/assert-freedom tests to `SynthVoiceTests.cpp` (fail against current `SynthVoice.h`).
-- [ ] 3.2 GREEN: add nested `Parameters` struct of atomics + `static_assert`s, ten setters, `applyParameters()`, `lastAppliedCutoffHz`, cached `ADSR::Parameters`, live `waveform` member to `SynthVoice.h`. *(internal-synth-voice: all 4 modified requirements)*
-- [ ] 3.3 GREEN: implement `applyParameters()` (relaxed loads, once per control block) in `SynthVoice.cpp`.
-- [ ] 3.4 GREEN: gate `adsr.setParameters()` on an actual change (Decision 4).
-- [ ] 3.5 GREEN: rewrite `updateLfoModulation()` base-then-delta — always re-apply all 4 base values, add delta to the active destination only (Decision 3). *(closes Phase 8 bug)*
-- [ ] 3.6 Confirm all Phase 3 tests green; no allocation/lock/log in `applyParameters()`/`updateLfoModulation()`.
+- [x] 3.1 RED: add live cutoff/resonance-mid-note, live-ADSR-mid-note, LFO-destination-re-park, and clamp/assert-freedom tests to `SynthVoiceTests.cpp` (failed to compile against pre-3.2 `SynthVoice.h`, confirmed).
+- [x] 3.2 GREEN: add nested `Parameters` struct of atomics + `static_assert`s, ten setters, `applyParameters()`, `lastAppliedCutoffHz`, cached `ADSR::Parameters`, live `waveform` member to `SynthVoice.h`. *(internal-synth-voice: all 4 modified requirements)*
+- [x] 3.3 GREEN: implement `applyParameters()` (relaxed loads, once per control block) in `SynthVoice.cpp`.
+- [x] 3.4 GREEN: gate `adsr.setParameters()` on an actual change (Decision 4).
+- [x] 3.5 GREEN: rewrite `updateLfoModulation()` base-then-delta — always re-apply all 4 base values, add delta to the active destination only (Decision 3). *(closes Phase 8 bug)*
+- [x] 3.6 Confirm all Phase 3 tests green (125/125 scenarios, exit 0); no allocation/lock/log in `applyParameters()`/`updateLfoModulation()` (code-reviewed: atomic loads/stores, `filter.setResonance`/`setCutoffFrequency`/`adsr.setParameters`/`lfo.setRate` are all pre-allocated scalar-coefficient updates, no heap/lock/log).
 
 ## Phase 4: SynthEngine Forwarders
 
