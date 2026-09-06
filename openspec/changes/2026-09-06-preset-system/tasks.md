@@ -56,6 +56,8 @@ Chain strategy: size-exception
 
 ## Phase 4: Manual audibility/correctness gate (human-only, not automatable)
 
+BLOCKED on a human tester with an audio device - out of scope for this sdd-apply run per its explicit instructions. All of Phase 1-3 and Phase 5's non-gated checks are complete; 4.1-4.5 below remain open.
+
 - [ ] 4.1 Set the 11 widgets and a specific seed, save under a new name, quit the app, relaunch, load that preset — confirm all 11 widgets AND the seed are restored, and the audio matches what was set before quitting.
 - [ ] 4.2 While audio is playing partway through the sequence, load a different preset — confirm playback restarts from step 1 with no hung note, dropout, assert, or crash.
 - [ ] 4.3 Save under an existing name, get the overwrite prompt, click Cancel — confirm the existing file on disk is byte-identical to before (no partial write).
@@ -64,11 +66,11 @@ Chain strategy: size-exception
 
 ## Phase 5: Final cleanup & verification
 
-- [ ] 5.1 Run the full suite: `BerlinTests.exe --category=Berlin` exits 0, including the new `PresetSerializationTests`/`PresetManagerFileTests` scenarios.
-- [ ] 5.2 RT-safety review (juce-app-dev): confirm ZERO changes to `Source/synth/SynthEngine.*`, `SynthVoice.*`, `SynthEffects.*`, `Source/playback/SequencePlayer.*`, `Source/playback/Transport.*` — this is the first 100%-message-thread phase in this project's history (design's own claim); verify via `git diff --stat` against the pre-change base commit that all listed paths show zero diff. Confirm no allocation/lock/log was added to any audio-thread path (none should exist — this phase touches only `Source/preset/*` and `Source/MainComponent.*`, both message-thread-only).
-- [ ] 5.3 Confirm byte-for-byte no diff on all other out-of-scope tiers: `Source/core/*`, `Source/generation/*`, `Source/midi/*`, `Source/export/*`, `Source/synth/SynthPatch.h` (reused unmodified per Decision 5).
-- [ ] 5.4 Spec merge: apply the three spec deltas into their base specs per `openspec-convention.md` — new `preset-persistence` spec created at `openspec/specs/preset-persistence/spec.md`; `internal-synth-voice`'s Purpose text corrected (no Requirement changes); `generation-live-control`'s "Lock Seed Suppresses Reseeding" requirement modified in place plus its new "Loading A Preset Applies Its Saved Seed, Then Generates" requirement added.
-- [ ] 5.5 Confirm the reconciled spec-delta content noted by the orchestrator (ValueTree+XML+explicit-String format, split reject/clamp policy, schema-versioning clause) matches what actually shipped in Phase 1-2's implementation — no drift between spec and code.
+- [x] 5.1 Run the full suite: `BerlinTests.exe --category=Berlin` exits 0, including the new `PresetSerializationTests`/`PresetManagerFileTests` scenarios. (163/163 scenarios green, exit 0.)
+- [x] 5.2 RT-safety review (juce-app-dev): confirm ZERO changes to `Source/synth/SynthEngine.*`, `SynthVoice.*`, `SynthEffects.*`, `Source/playback/SequencePlayer.*`, `Source/playback/Transport.*` — this is the first 100%-message-thread phase in this project's history (design's own claim); verify via `git diff --stat` against the pre-change base commit that all listed paths show zero diff. Confirm no allocation/lock/log was added to any audio-thread path (none should exist — this phase touches only `Source/preset/*` and `Source/MainComponent.*`, both message-thread-only). (Confirmed: `git diff --stat ef9c130 -- <listed paths>` is empty.)
+- [x] 5.3 Confirm byte-for-byte no diff on all other out-of-scope tiers: `Source/core/*`, `Source/generation/*`, `Source/midi/*`, `Source/export/*`, `Source/synth/SynthPatch.h` (reused unmodified per Decision 5). (Confirmed: `git diff --stat ef9c130 -- <listed paths>` is empty.)
+- [x] 5.4 Spec merge: apply the three spec deltas into their base specs per `openspec-convention.md` — new `preset-persistence` spec created at `openspec/specs/preset-persistence/spec.md`; `internal-synth-voice`'s Purpose text corrected (no Requirement changes); `generation-live-control`'s "Lock Seed Suppresses Reseeding" requirement modified in place plus its new "Loading A Preset Applies Its Saved Seed, Then Generates" requirement added.
+- [x] 5.5 Confirm the reconciled spec-delta content noted by the orchestrator (ValueTree+XML+explicit-String format, split reject/clamp policy, schema-versioning clause) matches what actually shipped in Phase 1-2's implementation — no drift between spec and code. (Confirmed: PresetManager.cpp uses juce::String(v,9)/String(int64) exclusively, fromValueTree rejects structural defects and clamps continuous out-of-range values, kSchemaVersion/unsupportedVersion/parseFailed gate matches Decision 3 exactly.)
 
 ## Rules Applied
 
