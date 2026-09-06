@@ -71,6 +71,37 @@ public:
             expect (seq[2] == berlin::Step { 60, true });
             expect (seq[3] == berlin::Step {});
         }
+
+        beginTest ("swap() exchanges contents and sizes between two distinct Sequences");
+        {
+            berlin::Sequence a (2);
+            a[0] = berlin::Step { 60, true };
+            a[1] = berlin::Step { 62, true };
+
+            berlin::Sequence b (3);
+            b[0] = berlin::Step { 40, false };
+            b[1] = berlin::Step { 41, true };
+            b[2] = berlin::Step { 42, false };
+
+            a.swap (b);
+
+            expectEquals (a.size(), 3);
+            expect (a[0] == berlin::Step { 40, false });
+            expect (a[1] == berlin::Step { 41, true });
+            expect (a[2] == berlin::Step { 42, false });
+
+            expectEquals (b.size(), 2);
+            expect (b[0] == berlin::Step { 60, true });
+            expect (b[1] == berlin::Step { 62, true });
+        }
+
+        beginTest ("swap() is noexcept (compile-time RT-safety contract)");
+        {
+            berlin::Sequence a (1);
+            berlin::Sequence b (1);
+
+            static_assert (noexcept (a.swap (b)));
+        }
     }
 };
 

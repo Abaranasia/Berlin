@@ -40,9 +40,32 @@ void SequencePlayer::reset() noexcept
     playhead.store (0, std::memory_order_relaxed);
 }
 
+bool SequencePlayer::publishSequence (Sequence& incoming) noexcept
+{
+    if (sequencePending.load (std::memory_order_acquire))
+        return false;   // previous publish still unadopted: nothing published, incoming unmodified
+
+    pendingSequence.swap (incoming);   // O(1): no alloc, no free, no lock
+    sequencePending.store (true, std::memory_order_release);
+    return true;
+}
+
 void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
 {
     out.clear();
+
+    if (sequencePending.load (std::memory_order_acquire))
+    {
+        if (pendingNote >= 0)
+            out.push ({ 0, pendingStep, pendingNote, false });   // swap-edge note-off, offset 0, FIRST
+
+        sequence.swap (pendingSequence);   // O(1) pointer swap: no alloc, no free, no lock
+        pendingNote = -1;
+        pendingStep = 0;
+        transport.reset();                 // restart from step 0 (preserves running state)
+        playhead.store (0, std::memory_order_relaxed);
+        sequencePending.store (false, std::memory_order_release);
+    }
 
     if (sequence.size() > 0)
     {

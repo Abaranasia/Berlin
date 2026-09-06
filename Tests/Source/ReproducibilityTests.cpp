@@ -1,10 +1,17 @@
 /*
   ==============================================================================
 
-   Reproducibility tests (deterministic-generation spec). End-to-end: no new
-   production code is expected here - design.md states "no production class
-   composes [RhythmGenerator and PitchGenerator] - the 16-step demo is a plain
-   loop inside a juce::UnitTest", so the composition below is test-local only.
+   Reproducibility tests (deterministic-generation spec). End-to-end.
+
+   The RhythmGenerator + PitchGenerator composition below was test-local only
+   at the time this suite was first written (RhythmGenerator had no
+   production call site). That is no longer true project-wide: since
+   roadmap Phase 10 (generation-randomize), MainComponent::buildSeededSequence
+   composes SkipMaskGenerator + PitchGenerator in production, driven by the
+   Generate/Randomize UI (generation-live-control spec, design.md Decision
+   1/2). RhythmGenerator itself, however, still has no production call site -
+   see the separate SkipMaskGenerator + PitchGenerator golden further below,
+   which exercises the actual production composition.
 
    Builds a 16-step Sequence from a root note and Scale::minor(root), seed
    12345: RhythmGenerator.generate() first decides which steps are active
@@ -31,6 +38,7 @@
 #include "generation/DeterministicRandom.h"
 #include "generation/PitchGenerator.h"
 #include "generation/RhythmGenerator.h"
+#include "generation/SkipMaskGenerator.h"
 
 namespace
 {
@@ -47,6 +55,26 @@ berlin::Sequence generateFullSequence (int numSteps, int rootNote, berlin::Deter
     // order) - this fixed composition order IS the reproducibility contract
     // exercised by this test.
     berlin::Sequence sequence = rhythmGenerator.generate (random);
+
+    for (int i = 0; i < sequence.size(); ++i)
+        if (sequence[i].active)
+            sequence[i].note = pitchGenerator.generateNextNote (random);
+
+    return sequence;
+}
+
+// Same composition order as generateFullSequence above, but with
+// SkipMaskGenerator (the live app's Generate/Randomize rhythm source,
+// generation-live-control) in place of RhythmGenerator - the
+// RhythmGenerator golden above is untouched by this addition.
+berlin::Sequence generateFullSkipMaskSequence (int numSteps, int activeSteps, int rootNote, berlin::DeterministicRandom& random)
+{
+    const berlin::Scale scale = berlin::Scale::minor (rootNote);
+
+    const berlin::SkipMaskGenerator maskGenerator (numSteps, activeSteps);
+    const berlin::PitchGenerator pitchGenerator (scale, rootNote, rootNote + 24);
+
+    berlin::Sequence sequence = maskGenerator.generate (random);
 
     for (int i = 0; i < sequence.size(); ++i)
         if (sequence[i].active)
@@ -96,6 +124,22 @@ public:
             // seed's Sequence is internally consistent (size matches).
             expectEquals (sequenceA.size(), numSteps);
             expectEquals (sequenceB.size(), numSteps);
+        }
+
+        beginTest ("SkipMaskGenerator + PitchGenerator: same seed produces an identical 16-step Sequence end-to-end");
+        {
+            constexpr int numSteps = 16;
+            constexpr int activeSteps = 11;
+            constexpr int rootNote = 60;
+            constexpr juce::int64 seed = 12345;
+
+            berlin::DeterministicRandom randomA (seed);
+            berlin::DeterministicRandom randomB (seed);
+
+            const berlin::Sequence sequenceA = generateFullSkipMaskSequence (numSteps, activeSteps, rootNote, randomA);
+            const berlin::Sequence sequenceB = generateFullSkipMaskSequence (numSteps, activeSteps, rootNote, randomB);
+
+            expect (sequenceA == sequenceB);
         }
     }
 };

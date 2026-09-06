@@ -33,7 +33,7 @@ public:
 private:
     //==============================================================================
     // Your private member variables go here...
-    static berlin::Sequence buildSeededSequence();
+    static berlin::Sequence buildSeededSequence (juce::int64 seed);
     static juce::File       defaultExportFile();     // default destination seeded into the save dialog
 
     void launchExportChooser();
@@ -46,7 +46,15 @@ private:
     // while the sliders still showed the user's values.
     void pushAllParametersToSynth();
 
-    const berlin::Sequence      sequence;            // MUST precede `player` (Decision 2)
+    // Rebuilds a Sequence from the current (or freshly drawn) seed and
+    // publishes it to `player` via the audio-thread-safe handoff
+    // (generation-live-control spec, design.md Decision 1). On success,
+    // `currentSequence` is updated too so Export always reflects the CURRENT
+    // pattern, never a stale one.
+    void regenerate (bool drawNewSeed);
+
+    juce::int64                 currentSeed;
+    berlin::Sequence            currentSequence;      // MUST precede `player` (Decision 2); audio-thread-exclusive once published
     berlin::SequencePlayer      player;
     berlin::StepEventBuffer     blockEvents;
     berlin::MidiEventTranslator midiTranslator;
@@ -75,6 +83,14 @@ private:
     juce::Label cutoffLabel, resonanceLabel, pulseWidthLabel;
     juce::Label attackLabel, decayLabel, sustainLabel, releaseLabel;
     juce::Label lfoRateLabel, lfoDepthLabel;
+
+    // ---- Generation controls (roadmap Phase 10 / generation-randomize) ----
+    juce::Label        generationSectionLabel;
+    juce::Label        seedLabel;
+    juce::TextEditor   seedEditor;
+    juce::TextButton   generateButton { "Generate" };
+    juce::TextButton   randomizeButton { "Randomize" };
+    juce::ToggleButton lockSeedToggle { "Lock Seed" };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
