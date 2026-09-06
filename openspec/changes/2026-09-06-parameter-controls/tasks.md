@@ -65,7 +65,7 @@ Chain strategy: pending
 
 ## Phase 7: Final Cleanup & Verification
 
-- [ ] 7.1 Run `BerlinTests.exe --category=Berlin`; confirm exit 0, no regression.
-- [ ] 7.2 RT-safety review: confirm no allocation/lock/log in `applyParameters`, `updateLfoModulation`, the generator; `initialise` called exactly once (in `prepare`).
-- [ ] 7.3 Diff `Source/core/`, `generation/`, `playback/`, `midi/`, `export/`, `Lfo.*`, `SynthEffects.*` against `main`; confirm byte-for-byte unchanged.
-- [ ] 7.4 Merge the spec delta into `openspec/specs/internal-synth-voice/spec.md`.
+- [x] 7.1 Run `BerlinTests.exe --category=Berlin`; confirm exit 0, no regression. Confirmed: exit 0, 126/126 scenarios (up from the 116/116 baseline), zero failures.
+- [x] 7.2 RT-safety review: confirm no allocation/lock/log in `applyParameters`, `updateLfoModulation`, the generator; `initialise` called exactly once (in `prepare`). Confirmed by line-by-line read of the final `SynthVoice.cpp`: `applyParameters()` is relaxed atomic loads + `filter.setResonance`/change-gated `adsr.setParameters`/`lfo.setRate` (all pre-allocated scalar-coefficient updates, no heap/lock/log); `updateLfoModulation()` is pure arithmetic + `oscillator.setFrequency`/change-guarded `filter.setCutoffFrequency`; `oscillator.initialise(...)` appears exactly once, in `prepare()`.
+- [x] 7.3 Diff `Source/core/`, `generation/`, `playback/`, `midi/`, `export/`, `Lfo.*`, `SynthEffects.*` against `main`; confirm byte-for-byte unchanged. **Clarification**: diffed against `1b7e8d2` (the commit this branch was cut from — literal `main` predates all of roadmap Phase 8 and would show unrelated history, not this change's untouched tier). `git diff --stat 1b7e8d2 HEAD -- <those paths>` produced zero output — confirmed byte-for-byte unchanged.
+- [x] 7.4 Merge the spec delta into `openspec/specs/internal-synth-voice/spec.md`. Done: Purpose and the 5 modified requirements (waveforms, filter, ADSR, LFO, allocation-free rendering) replaced with the delta's versions (numeric ranges spelled out inline instead of the delta's `[range pinned by design]` placeholders); the 2 unmodified requirements (monophonic, silence-when-idle) carried over verbatim.
