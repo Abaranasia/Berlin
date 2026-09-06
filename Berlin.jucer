@@ -57,6 +57,11 @@
       <FILE id="snFxH" name="SynthEffects.h" compile="0" resource="0" file="Source/synth/SynthEffects.h"/>
       <FILE id="snFxC" name="SynthEffects.cpp" compile="1" resource="0" file="Source/synth/SynthEffects.cpp"/>
     </GROUP>
+    <GROUP id="{7C9E1A3D-5F2B-4D6A-8B0C-1E3F5A7C9D1B}" name="preset">
+      <FILE id="prPstH" name="Preset.h" compile="0" resource="0" file="Source/preset/Preset.h"/>
+      <FILE id="prPmgH" name="PresetManager.h" compile="0" resource="0" file="Source/preset/PresetManager.h"/>
+      <FILE id="prPmgC" name="PresetManager.cpp" compile="1" resource="0" file="Source/preset/PresetManager.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

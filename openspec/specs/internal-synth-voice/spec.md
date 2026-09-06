@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A single monophonic voice — oscillator, low-pass filter with resonance, ADSR envelope, and one LFO — rendering one note at a time, with every parameter (waveform, pulse width, filter cutoff/resonance, ADSR, LFO destination/rate/depth) live user-adjustable while a note sounds. Built on JUCE's built-in DSP/audio primitives (`juce::dsp` and `juce_audio_basics` per what each stage needs — see `design.md`), confined to `Source/synth/`, as a documented, scoped exception to this project's JUCE-free-core convention. Parameter changes apply at the existing control-rate cadence via message-thread setters and lock-free atomics; no preset save/load yet.
+A single monophonic voice — oscillator, low-pass filter with resonance, ADSR envelope, and one LFO — rendering one note at a time, with every parameter (waveform, pulse width, filter cutoff/resonance, ADSR, LFO destination/rate/depth) live user-adjustable while a note sounds. Built on JUCE's built-in DSP/audio primitives (`juce::dsp` and `juce_audio_basics` per what each stage needs — see `design.md`), confined to `Source/synth/`, as a documented, scoped exception to this project's JUCE-free-core convention. Parameter changes apply at the existing control-rate cadence via message-thread setters and lock-free atomics. A preset system now exists (see `preset-persistence`), scoped to exactly these 11 live parameters plus the generation seed; the 8 non-live `SynthPatch` effects fields (delay/reverb/outputLevel) are not part of any preset and stay pinned to `kDefaultPatch`.
 
 ## Requirements
 

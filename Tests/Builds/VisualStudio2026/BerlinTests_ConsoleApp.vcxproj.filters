@@ -23,6 +23,9 @@
     <Filter Include="BerlinTests\synth">
       <UniqueIdentifier>{C46B0695-7219-549C-0E1F-AB958A56F2A9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BerlinTests\preset">
+      <UniqueIdentifier>{A2121B2F-284A-D821-5E55-49B19455C990}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BerlinTests">
       <UniqueIdentifier>{99B26223-EE90-F7C5-C12F-435CBF576C49}</UniqueIdentifier>
     </Filter>
@@ -179,6 +182,18 @@
     <Filter Include="JUCE Modules\juce_core">
       <UniqueIdentifier>{BAA582FA-40B7-320E-EE7A-4C3892C7BE72}</UniqueIdentifier>
     </Filter>
+    <Filter Include="JUCE Modules\juce_data_structures\app_properties">
+      <UniqueIdentifier>{632B4C79-AF7D-BFB5-D006-5AE67F607130}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_data_structures\undomanager">
+      <UniqueIdentifier>{B10E20C2-4583-2B79-60B7-FE4D4B044313}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_data_structures\values">
+      <UniqueIdentifier>{CFB54F15-8A8A-0505-9B7F-ECA41CEE38E8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_data_structures">
+      <UniqueIdentifier>{911F0159-A7A8-4A43-3FD4-154F62F4A44B}</UniqueIdentifier>
+    </Filter>
     <Filter Include="JUCE Modules\juce_dsp\containers">
       <UniqueIdentifier>{53CF03D3-988B-CD28-9130-CE08FDCEF7E9}</UniqueIdentifier>
     </Filter>
@@ -202,6 +217,24 @@
     </Filter>
     <Filter Include="JUCE Modules\juce_dsp">
       <UniqueIdentifier>{5DD60D0E-B16A-0BED-EDC4-C56E6960CA9E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_events\broadcasters">
+      <UniqueIdentifier>{9D5816C2-E2B2-2E3F-B095-AC8BD1100D29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_events\interprocess">
+      <UniqueIdentifier>{3FDCD000-763F-8477-9AF8-70ABA2E91E5E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_events\messages">
+      <UniqueIdentifier>{0947506F-66FA-EF8D-8A4E-4D48BCDBB226}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_events\native">
+      <UniqueIdentifier>{E4B6AED3-F54C-3FF2-069F-640BACAE0E08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_events\timers">
+      <UniqueIdentifier>{D5EADBCC-6A1C-C940-0206-26E49110AF08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_events">
+      <UniqueIdentifier>{D27DC92D-5BEB-9294-DCD1-81D54E245AD5}</UniqueIdentifier>
     </Filter>
     <Filter Include="JUCE Modules">
       <UniqueIdentifier>{FE955B6B-68AC-AA07-70D8-2413F6DB65C8}</UniqueIdentifier>
@@ -235,10 +268,10 @@
     <ClCompile Include="..\..\Source\RhythmGeneratorTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\SkipMaskGeneratorTests.cpp">
+    <ClCompile Include="..\..\Source\ReproducibilityTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\ReproducibilityTests.cpp">
+    <ClCompile Include="..\..\Source\SkipMaskGeneratorTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\StepEventTests.cpp">
@@ -280,6 +313,12 @@
     <ClCompile Include="..\..\Source\LfoTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\PresetSerializationTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\PresetManagerFileTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
@@ -290,6 +329,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\generation\RhythmGenerator.cpp">
+      <Filter>BerlinTests\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\generation\SkipMaskGenerator.cpp">
       <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\playback\Transport.cpp">
@@ -312,6 +354,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\synth\SynthEffects.cpp">
       <Filter>BerlinTests\synth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\preset\PresetManager.cpp">
+      <Filter>BerlinTests\preset</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -1087,6 +1132,39 @@
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\juce_core_zlib.c">
       <Filter>JUCE Modules\juce_core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_ApplicationProperties.cpp">
+      <Filter>JUCE Modules\juce_data_structures\app_properties</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_PropertiesFile.cpp">
+      <Filter>JUCE Modules\juce_data_structures\app_properties</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoableAction.cpp">
+      <Filter>JUCE Modules\juce_data_structures\undomanager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoManager.cpp">
+      <Filter>JUCE Modules\juce_data_structures\undomanager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_CachedValue.cpp">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_Value.cpp">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTree.cpp">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreePropertyWithDefault_test.cpp">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreeSynchroniser.cpp">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\juce_data_structures.cpp">
+      <Filter>JUCE Modules\juce_data_structures</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\juce_data_structures.mm">
+      <Filter>JUCE Modules\juce_data_structures</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_dsp\containers\juce_AudioBlock_test.cpp">
       <Filter>JUCE Modules\juce_dsp\containers</Filter>
     </ClCompile>
@@ -1198,6 +1276,81 @@
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_dsp\juce_dsp.mm">
       <Filter>JUCE Modules\juce_dsp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ActionBroadcaster.cpp">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_AsyncUpdater.cpp">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ChangeBroadcaster.cpp">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_LockingAsyncUpdater.cpp">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ChildProcessManager.cpp">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ConnectedChildProcess.cpp">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnection.cpp">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnectionServer.cpp">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_NetworkServiceDiscovery.cpp">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_ApplicationBase.cpp">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_DeletedAtShutdown.cpp">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageListener.cpp">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageManager.cpp">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_HiddenMessageWindow_windows.cpp">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_MessageManager_ios.mm">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_MessageManager_mac.mm">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_Messaging_android.cpp">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_Messaging_linux.cpp">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_Messaging_windows.cpp">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_ScopedLowPowerModeDisabler.cpp">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_WinRTWrapper_windows.cpp">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_MultiTimer.cpp">
+      <Filter>JUCE Modules\juce_events\timers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_Timer.cpp">
+      <Filter>JUCE Modules\juce_events\timers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\juce_events.cpp">
+      <Filter>JUCE Modules\juce_events</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\juce_events.mm">
+      <Filter>JUCE Modules\juce_events</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_basics.cpp">
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
@@ -1219,7 +1372,13 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_core_zlib.c">
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\JuceLibraryCode\include_juce_data_structures.cpp">
+      <Filter>JUCE Library Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_dsp.cpp">
+      <Filter>JUCE Library Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\JuceLibraryCode\include_juce_events.cpp">
       <Filter>JUCE Library Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1240,6 +1399,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\generation\RhythmGenerator.h">
+      <Filter>BerlinTests\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\generation\SkipMaskGenerator.h">
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\playback\StepEvent.h">
@@ -1274,6 +1436,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\synth\SynthEffects.h">
       <Filter>BerlinTests\synth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\preset\Preset.h">
+      <Filter>BerlinTests\preset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\preset\PresetManager.h">
+      <Filter>BerlinTests\preset</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -2262,6 +2430,36 @@
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\juce_core.h">
       <Filter>JUCE Modules\juce_core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_ApplicationProperties.h">
+      <Filter>JUCE Modules\juce_data_structures\app_properties</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_PropertiesFile.h">
+      <Filter>JUCE Modules\juce_data_structures\app_properties</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoableAction.h">
+      <Filter>JUCE Modules\juce_data_structures\undomanager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoManager.h">
+      <Filter>JUCE Modules\juce_data_structures\undomanager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_CachedValue.h">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_Value.h">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTree.h">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreePropertyWithDefault.h">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreeSynchroniser.h">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\juce_data_structures.h">
+      <Filter>JUCE Modules\juce_data_structures</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\containers\juce_AudioBlock.h">
       <Filter>JUCE Modules\juce_dsp\containers</Filter>
     </ClInclude>
@@ -2402,6 +2600,99 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\juce_dsp.h">
       <Filter>JUCE Modules\juce_dsp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ActionBroadcaster.h">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ActionListener.h">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_AsyncUpdater.h">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ChangeBroadcaster.h">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ChangeListener.h">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_LockingAsyncUpdater.h">
+      <Filter>JUCE Modules\juce_events\broadcasters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ChildProcessManager.h">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ConnectedChildProcess.h">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnection.h">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnectionServer.h">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_NetworkServiceDiscovery.h">
+      <Filter>JUCE Modules\juce_events\interprocess</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_ApplicationBase.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_CallbackMessage.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_DeletedAtShutdown.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_Initialisation.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_Message.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageListener.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageManager.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MountedVolumeListChangeDetector.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_NotificationType.h">
+      <Filter>JUCE Modules\juce_events\messages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_EventLoop_linux.h">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_EventLoopInternal_linux.h">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_HiddenMessageWindow_windows.h">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_MessageQueue_mac.h">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_RunningInUnity.h">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_ScopedLowPowerModeDisabler.h">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_WinRTWrapper_windows.h">
+      <Filter>JUCE Modules\juce_events\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_MultiTimer.h">
+      <Filter>JUCE Modules\juce_events\timers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_TimedCallback.h">
+      <Filter>JUCE Modules\juce_events\timers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_Timer.h">
+      <Filter>JUCE Modules\juce_events\timers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\juce_events.h">
+      <Filter>JUCE Modules\juce_events</Filter>
     </ClInclude>
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h">
       <Filter>JUCE Library Code</Filter>

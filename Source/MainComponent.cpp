@@ -133,6 +133,34 @@ MainComponent::MainComponent()
     lockSeedToggle.setToggleState (false, juce::dontSendNotification);   // default off
     lockSeedToggle.onClick = [this] { randomizeButton.setEnabled (! lockSeedToggle.getToggleState()); };
 
+    // ---- Preset controls (roadmap Phase 11 / preset-system) ----
+    addAndMakeVisible (presetSectionLabel);
+    presetSectionLabel.setText ("PRESETS", juce::dontSendNotification);
+
+    addAndMakeVisible (presetNameEditor);
+    presetNameEditor.onTextChange = [this]
+    {
+        // Decision 6: Save disabled while the name sanitizes to empty.
+        savePresetButton.setEnabled (! presetNameEditor.getText().trim().isEmpty());
+    };
+
+    addAndMakeVisible (savePresetButton);
+    savePresetButton.setEnabled (false);   // starts empty
+    savePresetButton.onClick = [this] { savePreset(); };
+
+    addAndMakeVisible (presetBox);
+    presetBox.onChange = [this]
+    {
+        // Decision 6: browsing is non-destructive - selecting never auto-loads.
+        loadPresetButton.setEnabled (presetBox.getSelectedId() != 0);
+    };
+
+    addAndMakeVisible (loadPresetButton);
+    loadPresetButton.setEnabled (false);   // Decision 6: disabled while nothing is selected
+    loadPresetButton.onClick = [this] { loadSelectedPreset(); };
+
+    refreshPresetList();
+
     // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
     // Every control must be constructed and valued here, BEFORE setAudioChannels()
     // below - it can invoke prepareToPlay synchronously (design.md Decision 6's
@@ -343,6 +371,22 @@ void MainComponent::resized()
     lockSeedToggle  .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
+    // PRESETS: one full-width row, deliberately compressing the section-label
+    // + control-row house pattern (design.md Decision 6) - placed after
+    // generationButtonRow, before the two-column split, same slot as
+    // GENERATION. presetLabel 96 | presetNameEditor 180 | 6 | Save 140 | 6 |
+    // presetBox 180 | 6 | Load 140 = 754 <= 776.
+    auto presetRow = area.removeFromTop (kControlHeight);
+    presetSectionLabel.setBounds (presetRow.removeFromLeft (kLabelWidth));
+    presetNameEditor  .setBounds (presetRow.removeFromLeft (180));
+    presetRow.removeFromLeft (6);
+    savePresetButton  .setBounds (presetRow.removeFromLeft (kButtonWidth));
+    presetRow.removeFromLeft (6);
+    presetBox         .setBounds (presetRow.removeFromLeft (180));
+    presetRow.removeFromLeft (6);
+    loadPresetButton  .setBounds (presetRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
     auto placeLabelled = [] (juce::Rectangle<int>& column, juce::Component& label, juce::Component& control)
     {
         auto row = column.removeFromTop (kControlHeight);
@@ -416,6 +460,167 @@ void MainComponent::pushAllParametersToSynth()
     synth.setLfoRateHz      ((float) lfoRateSlider.getValue());
     synth.setLfoDepth       ((float) lfoDepthSlider.getValue());
     synth.setLfoDestination (static_cast<berlin::LfoDestination> (lfoDestinationBox.getSelectedId() - 1));
+}
+
+//==============================================================================
+// ---- Preset controls (roadmap Phase 11 / preset-system, design.md Decision 5)
+berlin::SynthPatch MainComponent::currentPatchFromWidgets() const
+{
+    berlin::SynthPatch patch;   // 8 effects fields stay kDefaultPatch - never touched here
+
+    patch.waveform       = static_cast<berlin::Waveform> (waveformBox.getSelectedId() - 1);
+    patch.cutoffHz       = (float) cutoffSlider.getValue();
+    patch.resonance      = (float) resonanceSlider.getValue();
+    patch.pulseWidth     = (float) pulseWidthSlider.getValue();
+    patch.attack         = (float) attackSlider.getValue();
+    patch.decay          = (float) decaySlider.getValue();
+    patch.sustain        = (float) sustainSlider.getValue();
+    patch.release        = (float) releaseSlider.getValue();
+    patch.lfoRateHz      = (float) lfoRateSlider.getValue();
+    patch.lfoDepth       = (float) lfoDepthSlider.getValue();
+    patch.lfoDestination = static_cast<berlin::LfoDestination> (lfoDestinationBox.getSelectedId() - 1);
+
+    return patch;
+}
+
+void MainComponent::applyPatchToWidgets (const berlin::SynthPatch& patch)
+{
+    waveformBox.setSelectedId (static_cast<int> (patch.waveform) + 1, juce::dontSendNotification);
+    cutoffSlider.setValue (patch.cutoffHz, juce::dontSendNotification);
+    resonanceSlider.setValue (patch.resonance, juce::dontSendNotification);
+    pulseWidthSlider.setValue (patch.pulseWidth, juce::dontSendNotification);
+    attackSlider.setValue (patch.attack, juce::dontSendNotification);
+    decaySlider.setValue (patch.decay, juce::dontSendNotification);
+    sustainSlider.setValue (patch.sustain, juce::dontSendNotification);
+    releaseSlider.setValue (patch.release, juce::dontSendNotification);
+    lfoRateSlider.setValue (patch.lfoRateHz, juce::dontSendNotification);
+    lfoDepthSlider.setValue (patch.lfoDepth, juce::dontSendNotification);
+    lfoDestinationBox.setSelectedId (static_cast<int> (patch.lfoDestination) + 1, juce::dontSendNotification);
+}
+
+void MainComponent::savePreset()
+{
+    const juce::String name = presetNameEditor.getText().trim();
+
+    if (name.isEmpty())
+    {
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+        statusLabel.setText ("Enter a preset name first.", juce::dontSendNotification);
+        return;
+    }
+
+    berlin::Preset preset;
+    preset.name  = name;
+    preset.patch = currentPatchFromWidgets();
+    preset.seed  = currentSeed;
+
+    const juce::File existing = presetManager.fileForName (name);
+
+    if (existing != juce::File() && existing.existsAsFile())
+    {
+        savePresetButton.setEnabled (false);   // guard against re-entrant clicks while the dialog is open
+
+        juce::Component::SafePointer<MainComponent> safeThis (this);
+
+        juce::NativeMessageBox::showOkCancelBox (juce::MessageBoxIconType::QuestionIcon,
+                                                 "Overwrite Preset?",
+                                                 "A preset named \"" + preset.name + "\" already exists. Overwrite it?",
+                                                 this,
+                                                 juce::ModalCallbackFunction::create ([safeThis, preset] (int result)
+        {
+            if (safeThis == nullptr)
+                return;   // MainComponent destroyed while the dialog was open
+
+            if (result != 0)   // AlertWindow-style mapping: OK == 1, Cancel == 0
+                safeThis->writePresetFile (preset);
+            else
+                safeThis->savePresetButton.setEnabled (! safeThis->presetNameEditor.getText().trim().isEmpty());
+        }));
+
+        return;
+    }
+
+    writePresetFile (preset);
+}
+
+void MainComponent::writePresetFile (const berlin::Preset& preset)
+{
+    const auto result = presetManager.save (preset);
+    savePresetButton.setEnabled (! presetNameEditor.getText().trim().isEmpty());
+
+    if (result != berlin::PresetResult::ok)
+    {
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+        statusLabel.setText (describePresetFailure (result), juce::dontSendNotification);
+        return;
+    }
+
+    statusLabel.removeColour (juce::Label::textColourId);
+    statusLabel.setText ("Saved \"" + preset.name + "\".", juce::dontSendNotification);
+    refreshPresetList (preset.name);
+}
+
+void MainComponent::loadSelectedPreset()
+{
+    berlin::Preset preset;
+    const auto result = presetManager.load (presetBox.getText(), preset);
+
+    if (result != berlin::PresetResult::ok)
+    {
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+        statusLabel.setText (describePresetFailure (result), juce::dontSendNotification);
+        return;   // synth and sequence left untouched
+    }
+
+    applyPatchToWidgets (preset.patch);
+    pushAllParametersToSynth();   // EXISTING, unchanged (design.md Decision 5)
+
+    currentSeed = preset.seed;
+    seedEditor.setText (juce::String (currentSeed), juce::dontSendNotification);
+    presetNameEditor.setText (preset.name, juce::dontSendNotification);   // re-saving targets the same preset
+
+    // EXISTING, unchanged - drawNewSeed=false means regenerate()'s Lock-Seed
+    // branch (guarded by drawNewSeed) is never evaluated, so the preset's
+    // saved seed applies even if Lock Seed is on (generation-live-control).
+    regenerate (false);
+
+    statusLabel.removeColour (juce::Label::textColourId);
+    statusLabel.setText ("Loaded \"" + preset.name + "\".", juce::dontSendNotification);
+}
+
+void MainComponent::refreshPresetList (const juce::String& nameToSelect)
+{
+    const auto names = presetManager.listPresetNames();
+
+    presetBox.clear (juce::dontSendNotification);
+    for (int i = 0; i < names.size(); ++i)
+        presetBox.addItem (names[i], i + 1);
+
+    const int idToSelect = nameToSelect.isNotEmpty() ? names.indexOf (nameToSelect) + 1 : 0;
+    presetBox.setSelectedId (idToSelect, juce::dontSendNotification);
+    loadPresetButton.setEnabled (presetBox.getSelectedId() != 0);
+}
+
+juce::String MainComponent::describePresetFailure (berlin::PresetResult result) const
+{
+    switch (result)
+    {
+        case berlin::PresetResult::nameInvalid:
+            return "Preset name is invalid.";
+        case berlin::PresetResult::directoryUnavailable:
+            return "Preset folder unavailable.";
+        case berlin::PresetResult::writeFailed:
+            return "Could not write the preset file.";
+        case berlin::PresetResult::fileNotFound:
+            return "Preset not found.";
+        case berlin::PresetResult::parseFailed:
+            return "Preset file is invalid or corrupted.";
+        case berlin::PresetResult::unsupportedVersion:
+            return "Preset was saved by a newer version of Berlin.";
+        case berlin::PresetResult::ok:
+        default:
+            return {};
+    }
 }
 
 //==============================================================================

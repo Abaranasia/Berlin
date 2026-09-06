@@ -8,6 +8,8 @@
 #include "export/MidiExportTimeline.h"
 #include "export/MidiFileWriter.h"
 #include "synth/SynthEngine.h"
+#include "preset/Preset.h"
+#include "preset/PresetManager.h"
 
 //==============================================================================
 /*
@@ -53,6 +55,17 @@ private:
     // pattern, never a stale one.
     void regenerate (bool drawNewSeed);
 
+    // ---- Preset controls (roadmap Phase 11 / preset-system, design.md
+    // Decision 5) - `regenerate()` and `pushAllParametersToSynth()` above are
+    // reused VERBATIM by the load path; neither is modified for presets.
+    berlin::SynthPatch currentPatchFromWidgets() const;
+    void                applyPatchToWidgets (const berlin::SynthPatch& patch);
+    void                savePreset();
+    void                writePresetFile (const berlin::Preset& preset);
+    void                loadSelectedPreset();
+    void                refreshPresetList (const juce::String& nameToSelect = {});
+    juce::String        describePresetFailure (berlin::PresetResult result) const;
+
     juce::int64                 currentSeed;
     berlin::Sequence            currentSequence;      // MUST precede `player` (Decision 2); audio-thread-exclusive once published
     berlin::SequencePlayer      player;
@@ -61,6 +74,7 @@ private:
     berlin::MidiOutputSink      midiSink;
     juce::MidiBuffer            midiBlock;
     berlin::SynthEngine         synth;
+    berlin::PresetManager       presetManager;
 
     juce::TextButton   exportButton { "Export MIDI..." };
     juce::Label        statusLabel;
@@ -91,6 +105,15 @@ private:
     juce::TextButton   generateButton { "Generate" };
     juce::TextButton   randomizeButton { "Randomize" };
     juce::ToggleButton lockSeedToggle { "Lock Seed" };
+
+    // ---- Preset controls (roadmap Phase 11 / preset-system) ----
+    // One full-width row (design.md Decision 6): PRESETS label | name editor |
+    // Save | preset selector | Load.
+    juce::Label      presetSectionLabel;
+    juce::TextEditor presetNameEditor;
+    juce::TextButton savePresetButton { "Save" };
+    juce::ComboBox   presetBox;
+    juce::TextButton loadPresetButton { "Load" };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

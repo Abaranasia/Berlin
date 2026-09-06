@@ -68,7 +68,7 @@
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;H:\Proyectos\Juce\Projucer\modules;../../../Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -82,7 +82,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;H:\Proyectos\Juce\Projucer\modules;../../../Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;DEBUG;_DEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\BerlinTests.exe</OutputFile>
@@ -111,7 +111,7 @@
       <Optimization>Full</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;H:\Proyectos\Juce\Projucer\modules;../../../Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;NDEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;NDEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -125,7 +125,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>..\..\JuceLibraryCode;H:\Proyectos\Juce\Projucer\modules;../../../Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;NDEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_CONSOLE;WIN32;_WINDOWS;NDEBUG;JUCE_PROJUCER_VERSION=0x90000;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;JUCE_STRICT_REFCOUNTEDPOINTER=1;JUCE_STANDALONE_APPLICATION=1;JUCE_UNIT_TESTS=1;JUCER_VS2026_78A5042=1;JUCE_APP_VERSION=1.0.0;JUCE_APP_VERSION_HEX=0x10000;JucePlugin_Build_VST=0;JucePlugin_Build_VST3=0;JucePlugin_Build_AU=0;JucePlugin_Build_AUv3=0;JucePlugin_Build_AAX=0;JucePlugin_Build_Standalone=0;JucePlugin_Build_Unity=0;JucePlugin_Build_LV2=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <OutputFile>$(OutDir)\BerlinTests.exe</OutputFile>
@@ -154,8 +154,8 @@
     <ClCompile Include="..\..\Source\DeterministicRandomTests.cpp"/>
     <ClCompile Include="..\..\Source\PitchGeneratorTests.cpp"/>
     <ClCompile Include="..\..\Source\RhythmGeneratorTests.cpp"/>
-    <ClCompile Include="..\..\Source\SkipMaskGeneratorTests.cpp"/>
     <ClCompile Include="..\..\Source\ReproducibilityTests.cpp"/>
+    <ClCompile Include="..\..\Source\SkipMaskGeneratorTests.cpp"/>
     <ClCompile Include="..\..\Source\StepEventTests.cpp"/>
     <ClCompile Include="..\..\Source\StepEventBufferTests.cpp"/>
     <ClCompile Include="..\..\Source\TransportTests.cpp"/>
@@ -169,6 +169,8 @@
     <ClCompile Include="..\..\Source\SynthVoiceTests.cpp"/>
     <ClCompile Include="..\..\Source\SynthEngineTests.cpp"/>
     <ClCompile Include="..\..\Source\LfoTests.cpp"/>
+    <ClCompile Include="..\..\Source\PresetSerializationTests.cpp"/>
+    <ClCompile Include="..\..\Source\PresetManagerFileTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
@@ -181,6 +183,7 @@
     <ClCompile Include="..\..\..\Source\synth\SynthEngine.cpp"/>
     <ClCompile Include="..\..\..\Source\synth\Lfo.cpp"/>
     <ClCompile Include="..\..\..\Source\synth\SynthEffects.cpp"/>
+    <ClCompile Include="..\..\..\Source\preset\PresetManager.cpp"/>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -925,6 +928,36 @@
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_core\juce_core_zlib.c">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_ApplicationProperties.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_PropertiesFile.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoableAction.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoManager.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_CachedValue.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_Value.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTree.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreePropertyWithDefault_test.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreeSynchroniser.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_data_structures\juce_data_structures.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_dsp\containers\juce_AudioBlock_test.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1033,6 +1066,72 @@
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_dsp\juce_dsp.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ActionBroadcaster.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_AsyncUpdater.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ChangeBroadcaster.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_LockingAsyncUpdater.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ChildProcessManager.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ConnectedChildProcess.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnection.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnectionServer.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_NetworkServiceDiscovery.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_ApplicationBase.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_DeletedAtShutdown.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageListener.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageManager.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_HiddenMessageWindow_windows.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_Messaging_android.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_Messaging_linux.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_Messaging_windows.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_ScopedLowPowerModeDisabler.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_WinRTWrapper_windows.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_MultiTimer.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_Timer.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_events\juce_events.cpp">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_basics.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_formats.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_formats_flac_1.c"/>
@@ -1042,7 +1141,9 @@
     </ClCompile>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_core_CompilationTime.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_core_zlib.c"/>
+    <ClCompile Include="..\..\JuceLibraryCode\include_juce_data_structures.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_dsp.cpp"/>
+    <ClCompile Include="..\..\JuceLibraryCode\include_juce_events.cpp"/>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\core\Step.h"/>
@@ -1063,6 +1164,8 @@
     <ClInclude Include="..\..\..\Source\synth\SynthEngine.h"/>
     <ClInclude Include="..\..\..\Source\synth\Lfo.h"/>
     <ClInclude Include="..\..\..\Source\synth\SynthEffects.h"/>
+    <ClInclude Include="..\..\..\Source\preset\Preset.h"/>
+    <ClInclude Include="..\..\..\Source\preset\PresetManager.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>
@@ -1392,6 +1495,16 @@
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\zip\juce_ZipFile.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\zip\juce_zlib.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_core\juce_core.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_ApplicationProperties.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\app_properties\juce_PropertiesFile.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoableAction.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\undomanager\juce_UndoManager.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_CachedValue.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_Value.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTree.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreePropertyWithDefault.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\values\juce_ValueTreeSynchroniser.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_data_structures\juce_data_structures.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\containers\juce_AudioBlock.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\containers\juce_SIMDInterleavingHelpers.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\containers\juce_SIMDRegister.h"/>
@@ -1439,6 +1552,37 @@
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\widgets\juce_Reverb.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\widgets\juce_WaveShaper.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_dsp\juce_dsp.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ActionBroadcaster.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ActionListener.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_AsyncUpdater.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ChangeBroadcaster.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_ChangeListener.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\broadcasters\juce_LockingAsyncUpdater.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ChildProcessManager.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_ConnectedChildProcess.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnection.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_InterprocessConnectionServer.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\interprocess\juce_NetworkServiceDiscovery.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_ApplicationBase.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_CallbackMessage.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_DeletedAtShutdown.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_Initialisation.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_Message.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageListener.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MessageManager.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_MountedVolumeListChangeDetector.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\messages\juce_NotificationType.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_EventLoop_linux.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_EventLoopInternal_linux.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_HiddenMessageWindow_windows.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_MessageQueue_mac.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_RunningInUnity.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_ScopedLowPowerModeDisabler.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\native\juce_WinRTWrapper_windows.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_MultiTimer.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_TimedCallback.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\timers\juce_Timer.h"/>
+    <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_events\juce_events.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h"/>
   </ItemGroup>
   <ItemGroup>
