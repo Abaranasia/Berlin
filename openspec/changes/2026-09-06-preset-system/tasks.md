@@ -56,13 +56,13 @@ Chain strategy: size-exception
 
 ## Phase 4: Manual audibility/correctness gate (human-only, not automatable)
 
-BLOCKED on a human tester with an audio device - out of scope for this sdd-apply run per its explicit instructions. All of Phase 1-3 and Phase 5's non-gated checks are complete; 4.1-4.5 below remain open.
+All of Phase 1-3 and Phase 5's non-gated checks are complete; 4.1-4.5 confirmed by user 2026-09-06: "everything works right."
 
-- [ ] 4.1 Set the 11 widgets and a specific seed, save under a new name, quit the app, relaunch, load that preset — confirm all 11 widgets AND the seed are restored, and the audio matches what was set before quitting.
-- [ ] 4.2 While audio is playing partway through the sequence, load a different preset — confirm playback restarts from step 1 with no hung note, dropout, assert, or crash.
-- [ ] 4.3 Save under an existing name, get the overwrite prompt, click Cancel — confirm the existing file on disk is byte-identical to before (no partial write).
-- [ ] 4.4 Enable Lock Seed, then Load a preset with a different saved seed — confirm the seed field and audio change to the preset's saved seed anyway (Lock Seed does not suppress explicit load).
-- [ ] 4.5 Open a saved `*.xml` preset file in a text editor — confirm its structure and values are human-readable (Decision 1's human-readability goal).
+- [x] 4.1 Set the 11 widgets and a specific seed, save under a new name, quit the app, relaunch, load that preset — confirm all 11 widgets AND the seed are restored, and the audio matches what was set before quitting.
+- [x] 4.2 While audio is playing partway through the sequence, load a different preset — confirm playback restarts from step 1 with no hung note, dropout, assert, or crash.
+- [x] 4.3 Save under an existing name, get the overwrite prompt, click Cancel — confirm the existing file on disk is byte-identical to before (no partial write).
+- [x] 4.4 Enable Lock Seed, then Load a preset with a different saved seed — confirm the seed field and audio change to the preset's saved seed anyway (Lock Seed does not suppress explicit load).
+- [x] 4.5 Open a saved `*.xml` preset file in a text editor — confirm its structure and values are human-readable (Decision 1's human-readability goal).
 
 ## Phase 5: Final cleanup & verification
 
