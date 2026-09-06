@@ -26,9 +26,9 @@ Chain strategy: pending
 
 ## Phase 1: Ranges + Clamp Helper (`SynthPatch.h`)
 
-- [ ] 1.1 Add 9 `inline constexpr` min/max pairs + `constexpr clampParameter(float,float,float)` (`<algorithm>`, JUCE-free) to `Source/synth/SynthPatch.h`, per design's Interfaces block.
-- [ ] 1.2 Update the file's header comment: drop "fixed / no parameter UI" wording.
-- [ ] 1.3 RED then GREEN: add a `clampParameter` unit test (extremes, NaN-adjacent) to `Tests/Source/SynthVoiceTests.cpp` before/alongside the constants exist.
+- [x] 1.1 Add 9 `inline constexpr` min/max pairs + `constexpr clampParameter(float,float,float)` (`<algorithm>`, JUCE-free) to `Source/synth/SynthPatch.h`, per design's Interfaces block.
+- [x] 1.2 Update the file's header comment: drop "fixed / no parameter UI" wording.
+- [x] 1.3 RED then GREEN: add a `clampParameter` unit test (extremes, NaN-adjacent) to `Tests/Source/SynthVoiceTests.cpp` before/alongside the constants exist.
 
 ## Phase 2: Table-Free Generator + Equivalence Test (gates everything after it)
 

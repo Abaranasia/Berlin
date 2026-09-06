@@ -23,9 +23,7 @@ namespace
     constexpr float kCutoffModOctaveRange   = 2.0f;    // full depth = +/-2 octaves around baseCutoffHz
     constexpr float kAmplitudeModDepthScale = 0.5f;    // full depth = tremolo down to (1 - depth) at trough
     constexpr float kPulseWidthModRange     = 0.45f;   // full depth = +/-0.45 around basePulseWidth
-    constexpr float kMinCutoffHz            = 20.0f;
-    constexpr float kMinPulseWidth          = 0.05f;
-    constexpr float kMaxPulseWidth          = 0.95f;
+    // kMinCutoffHz/kMinPulseWidth/kMaxPulseWidth now live in SynthPatch.h (Phase 9 parameter-controls).
 }
 
 void SynthVoice::applyWaveform (Waveform waveform)

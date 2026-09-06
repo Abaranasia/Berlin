@@ -17,6 +17,7 @@
 
 #include <array>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include <juce_core/juce_core.h>
@@ -41,6 +42,27 @@ public:
     void runTest() override
     {
         constexpr double sampleRate = 44100.0;
+
+        beginTest ("clampParameter clamps extremes and passes through in-range values");
+        {
+            // In-range value passes through unchanged.
+            expectEquals (berlin::clampParameter (1000.0f, berlin::kMinCutoffHz, berlin::kMaxCutoffHz), 1000.0f);
+
+            // Extremes clamp to the documented bounds.
+            expectEquals (berlin::clampParameter (1.0e9f, berlin::kMinCutoffHz, berlin::kMaxCutoffHz), berlin::kMaxCutoffHz);
+            expectEquals (berlin::clampParameter (-100.0f, berlin::kMinCutoffHz, berlin::kMaxCutoffHz), berlin::kMinCutoffHz);
+
+            // NaN-adjacent: +/-infinity, a value one float ULP inside the bound, and exactly-at-bound.
+            expectEquals (berlin::clampParameter (std::numeric_limits<float>::infinity(), berlin::kMinResonance, berlin::kMaxResonance), berlin::kMaxResonance);
+            expectEquals (berlin::clampParameter (-std::numeric_limits<float>::infinity(), berlin::kMinResonance, berlin::kMaxResonance), berlin::kMinResonance);
+            expectEquals (berlin::clampParameter (berlin::kMinResonance, berlin::kMinResonance, berlin::kMaxResonance), berlin::kMinResonance);
+            expectEquals (berlin::clampParameter (berlin::kMaxResonance, berlin::kMinResonance, berlin::kMaxResonance), berlin::kMaxResonance);
+
+            // A second parameter's bounds, to triangulate against a different range.
+            expectEquals (berlin::clampParameter (0.5f, berlin::kMinLfoDepth, berlin::kMaxLfoDepth), 0.5f);
+            expectEquals (berlin::clampParameter (-5.0f, berlin::kMinLfoDepth, berlin::kMaxLfoDepth), berlin::kMinLfoDepth);
+            expectEquals (berlin::clampParameter (5.0f, berlin::kMinLfoDepth, berlin::kMaxLfoDepth), berlin::kMaxLfoDepth);
+        }
 
         beginTest ("freshly prepared, never-triggered voice renders exact silence");
         {
