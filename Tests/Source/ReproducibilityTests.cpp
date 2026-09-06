@@ -1,10 +1,17 @@
 /*
   ==============================================================================
 
-   Reproducibility tests (deterministic-generation spec). End-to-end: no new
-   production code is expected here - design.md states "no production class
-   composes [RhythmGenerator and PitchGenerator] - the 16-step demo is a plain
-   loop inside a juce::UnitTest", so the composition below is test-local only.
+   Reproducibility tests (deterministic-generation spec). End-to-end.
+
+   The RhythmGenerator + PitchGenerator composition below was test-local only
+   at the time this suite was first written (RhythmGenerator had no
+   production call site). That is no longer true project-wide: since
+   roadmap Phase 10 (generation-randomize), MainComponent::buildSeededSequence
+   composes SkipMaskGenerator + PitchGenerator in production, driven by the
+   Generate/Randomize UI (generation-live-control spec, design.md Decision
+   1/2). RhythmGenerator itself, however, still has no production call site -
+   see the separate SkipMaskGenerator + PitchGenerator golden further below,
+   which exercises the actual production composition.
 
    Builds a 16-step Sequence from a root note and Scale::minor(root), seed
    12345: RhythmGenerator.generate() first decides which steps are active

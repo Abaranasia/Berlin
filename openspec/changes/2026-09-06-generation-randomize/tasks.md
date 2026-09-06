@@ -68,11 +68,11 @@ Chain strategy: size-exception
 
 ## Phase 6: Final cleanup & verification
 
-- [ ] 6.1 Run the full suite: `BerlinTests.exe --category=Berlin` exits 0.
-- [ ] 6.2 Confirm byte-for-byte no diff on out-of-scope tiers: `Source/synth/*` (except any required call-site update already covered above), `Source/midi/*`, `Source/export/*`, `Source/generation/RhythmGenerator.*`, `PitchGenerator.*`, `DeterministicRandom.h`, `Source/playback/Transport.h/.cpp` (design explicitly requires zero changes — do not "fix" `Transport::running`'s plain-`bool` typing).
-- [ ] 6.3 Confirm `RhythmGenerator` retains zero production call sites but its own tests (`RhythmGeneratorTests.cpp`) and golden in `ReproducibilityTests.cpp` remain green and untouched.
-- [ ] 6.4 Update the `deterministic-generation` design note that previously claimed no production class composes the generators (per design's Verified Findings table) — reconcile spec/comment wording during apply if any stale in-code comment still says otherwise.
-- [ ] 6.5 Spec merge: apply the four spec deltas (`realtime-audio-wiring`, `deterministic-generation`, `sequencing-core`, `generation-live-control`) into their base specs per `openspec-convention.md`.
+- [x] 6.1 Run the full suite: `BerlinTests.exe --category=Berlin` exits 0. (143/143 scenarios green.)
+- [x] 6.2 Confirm byte-for-byte no diff on out-of-scope tiers: `Source/synth/*` (except any required call-site update already covered above), `Source/midi/*`, `Source/export/*`, `Source/generation/RhythmGenerator.*`, `PitchGenerator.*`, `DeterministicRandom.h`, `Source/playback/Transport.h/.cpp` (design explicitly requires zero changes — do not "fix" `Transport::running`'s plain-`bool` typing). Verified via `git diff --stat` against the pre-change base commit: zero diff on all listed paths.
+- [x] 6.3 Confirm `RhythmGenerator` retains zero production call sites but its own tests (`RhythmGeneratorTests.cpp`) and golden in `ReproducibilityTests.cpp` remain green and untouched. Verified: `RhythmGeneratorTests.cpp` untouched since its original commit; grep confirms zero production call sites outside its own file (only doc-comment mentions in `DeterministicRandom.h`/`SkipMaskGenerator.h`); its 7 tests + its `ReproducibilityTests.cpp` golden still pass.
+- [x] 6.4 Update the `deterministic-generation` design note that previously claimed no production class composes the generators (per design's Verified Findings table) — reconcile spec/comment wording during apply if any stale in-code comment still says otherwise. Updated `Tests/Source/ReproducibilityTests.cpp`'s header comment, which was the one stale in-code claim ("no production class composes... test-local only").
+- [x] 6.5 Spec merge: apply the four spec deltas (`realtime-audio-wiring`, `deterministic-generation`, `sequencing-core`, `generation-live-control`) into their base specs per `openspec-convention.md`. `sequencing-core`/`deterministic-generation`: ADDED requirements appended. `realtime-audio-wiring`: MODIFIED requirement replaced in place (including rename), `[mechanism pinned by design]` placeholders filled in with the actual implemented mechanism. `generation-live-control`: new spec file created at `openspec/specs/generation-live-control/spec.md` (did not exist before this change).
 
 ## Rules Applied
 
