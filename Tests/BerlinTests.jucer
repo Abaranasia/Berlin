@@ -21,6 +21,7 @@
       <FILE id="btSplC" name="SequencePlayerTests.cpp" compile="1" resource="0" file="Source/SequencePlayerTests.cpp"/>
       <FILE id="btPtmC" name="PlaybackTimingTests.cpp" compile="1" resource="0" file="Source/PlaybackTimingTests.cpp"/>
       <FILE id="btSpsC" name="SequencePlayerStopTests.cpp" compile="1" resource="0" file="Source/SequencePlayerStopTests.cpp"/>
+      <FILE id="btSphC" name="SequencePlayerHandoffTests.cpp" compile="1" resource="0" file="Source/SequencePlayerHandoffTests.cpp"/>
       <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0" file="Source/MidiMessageBytesTests.cpp"/>
       <FILE id="btMxtC" name="MidiExportTimelineTests.cpp" compile="1" resource="0" file="Source/MidiExportTimelineTests.cpp"/>
       <FILE id="btDspC" name="DspLinkSmokeTests.cpp" compile="1" resource="0" file="Source/DspLinkSmokeTests.cpp"/>

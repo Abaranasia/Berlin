@@ -162,6 +162,7 @@
     <ClCompile Include="..\..\Source\SequencePlayerTests.cpp"/>
     <ClCompile Include="..\..\Source\PlaybackTimingTests.cpp"/>
     <ClCompile Include="..\..\Source\SequencePlayerStopTests.cpp"/>
+    <ClCompile Include="..\..\Source\SequencePlayerHandoffTests.cpp"/>
     <ClCompile Include="..\..\Source\MidiMessageBytesTests.cpp"/>
     <ClCompile Include="..\..\Source\MidiExportTimelineTests.cpp"/>
     <ClCompile Include="..\..\Source\DspLinkSmokeTests.cpp"/>

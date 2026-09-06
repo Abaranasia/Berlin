@@ -259,6 +259,9 @@
     <ClCompile Include="..\..\Source\SequencePlayerStopTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\SequencePlayerHandoffTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\MidiMessageBytesTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
