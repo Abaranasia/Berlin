@@ -60,11 +60,11 @@ Chain strategy: size-exception
 
 ## Phase 5: Manual audibility/correctness gate (human-only, not automatable)
 
-- [ ] 5.1 Launch the Standalone build; click Generate/Randomize/Lock Seed repeatedly while audio is running — confirm no hung note, dropout, assert, or crash on the internal synth.
-- [ ] 5.2 Repeat 5.1 routed to an external MIDI device — confirm the same, and confirm the swap-edge note-off reaches the external device.
-- [ ] 5.3 Type a specific seed into the seed field, press Generate, note the pattern; type it again, press Generate again — confirm byte-identical pattern (round-trip).
-- [ ] 5.4 With Lock Seed on, click Randomize — confirm the seed field does not change and no new pattern is generated.
-- [ ] 5.5 After a regeneration, use Export — confirm the exported MIDI file reflects the CURRENT (post-regeneration) pattern, not the pattern from app startup.
+- [x] 5.1 Launch the Standalone build; click Generate/Randomize/Lock Seed repeatedly while audio is running — confirm no hung note, dropout, assert, or crash on the internal synth. Confirmed by user 2026-09-06: "Everything seems to work right."
+- [x] 5.2 Repeat 5.1 routed to an external MIDI device — confirm the same, and confirm the swap-edge note-off reaches the external device. Confirmed by user 2026-09-06 using external MIDI hardware (Focusrite Scarlett MIDI-out to a hardware synth) via loopMIDI: "midi controllers, including loopmidi, are working as expected." **Known gap noted, not fixed this phase**: `MidiOutputSink::openFirstAvailableDevice()` (`Source/midi/MidiOutputSink.cpp:27`) always opens whichever device `juce::MidiOutput::getAvailableDevices()` enumerates first — there is still no UI to explicitly select a MIDI-out device (this was already a known backlog item from Phase 5/8, e.g. Windows' "Microsoft GS Wavetable Synth" can silently substitute for real hardware). Out of scope for this phase since `Source/midi/*` is untouched by generation-randomize; logged again here for whichever future phase adds device selection.
+- [x] 5.3 Type a specific seed into the seed field, press Generate, note the pattern; type it again, press Generate again — confirm byte-identical pattern (round-trip). Confirmed by user 2026-09-06.
+- [x] 5.4 With Lock Seed on, click Randomize — confirm the seed field does not change and no new pattern is generated. Confirmed by user 2026-09-06.
+- [x] 5.5 After a regeneration, use Export — confirm the exported MIDI file reflects the CURRENT (post-regeneration) pattern, not the pattern from app startup. Confirmed by user 2026-09-06.
 
 ## Phase 6: Final cleanup & verification
 
