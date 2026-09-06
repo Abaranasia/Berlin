@@ -1,33 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="Bt1Test" name="BerlinTests" projectType="consoleapp"
-              defines="JUCE_UNIT_TESTS=1" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
+<JUCERPROJECT id="Bt1Test" name="BerlinTests" projectType="consoleapp" defines="JUCE_UNIT_TESTS=1"
+              useAppConfig="0" addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="Bt2Main" name="BerlinTests">
     <GROUP id="{7F2A1C3D-9B4E-4A11-8C2F-3D5E6A7B8C9D}" name="Source">
       <FILE id="btMainC" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="btSmkeC" name="SmokeTests.cpp" compile="1" resource="0" file="Source/SmokeTests.cpp"/>
       <FILE id="btStepC" name="StepTests.cpp" compile="1" resource="0" file="Source/StepTests.cpp"/>
-      <FILE id="btSeqC" name="SequenceTests.cpp" compile="1" resource="0" file="Source/SequenceTests.cpp"/>
+      <FILE id="btSeqC" name="SequenceTests.cpp" compile="1" resource="0"
+            file="Source/SequenceTests.cpp"/>
       <FILE id="btSclC" name="ScaleTests.cpp" compile="1" resource="0" file="Source/ScaleTests.cpp"/>
-      <FILE id="btDrnC" name="DeterministicRandomTests.cpp" compile="1" resource="0" file="Source/DeterministicRandomTests.cpp"/>
-      <FILE id="btPgnC" name="PitchGeneratorTests.cpp" compile="1" resource="0" file="Source/PitchGeneratorTests.cpp"/>
-      <FILE id="btRgnC" name="RhythmGeneratorTests.cpp" compile="1" resource="0" file="Source/RhythmGeneratorTests.cpp"/>
-      <FILE id="btRprC" name="ReproducibilityTests.cpp" compile="1" resource="0" file="Source/ReproducibilityTests.cpp"/>
-      <FILE id="btSmkC" name="SkipMaskGeneratorTests.cpp" compile="1" resource="0" file="Source/SkipMaskGeneratorTests.cpp"/>
-      <FILE id="btSevC" name="StepEventTests.cpp" compile="1" resource="0" file="Source/StepEventTests.cpp"/>
-      <FILE id="btSebC" name="StepEventBufferTests.cpp" compile="1" resource="0" file="Source/StepEventBufferTests.cpp"/>
-      <FILE id="btTrnC" name="TransportTests.cpp" compile="1" resource="0" file="Source/TransportTests.cpp"/>
-      <FILE id="btSplC" name="SequencePlayerTests.cpp" compile="1" resource="0" file="Source/SequencePlayerTests.cpp"/>
-      <FILE id="btPtmC" name="PlaybackTimingTests.cpp" compile="1" resource="0" file="Source/PlaybackTimingTests.cpp"/>
-      <FILE id="btSpsC" name="SequencePlayerStopTests.cpp" compile="1" resource="0" file="Source/SequencePlayerStopTests.cpp"/>
-      <FILE id="btSphC" name="SequencePlayerHandoffTests.cpp" compile="1" resource="0" file="Source/SequencePlayerHandoffTests.cpp"/>
-      <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0" file="Source/MidiMessageBytesTests.cpp"/>
-      <FILE id="btMxtC" name="MidiExportTimelineTests.cpp" compile="1" resource="0" file="Source/MidiExportTimelineTests.cpp"/>
-      <FILE id="btDspC" name="DspLinkSmokeTests.cpp" compile="1" resource="0" file="Source/DspLinkSmokeTests.cpp"/>
-      <FILE id="btSvcC" name="SynthVoiceTests.cpp" compile="1" resource="0" file="Source/SynthVoiceTests.cpp"/>
-      <FILE id="btSngC" name="SynthEngineTests.cpp" compile="1" resource="0" file="Source/SynthEngineTests.cpp"/>
+      <FILE id="btDrnC" name="DeterministicRandomTests.cpp" compile="1" resource="0"
+            file="Source/DeterministicRandomTests.cpp"/>
+      <FILE id="btPgnC" name="PitchGeneratorTests.cpp" compile="1" resource="0"
+            file="Source/PitchGeneratorTests.cpp"/>
+      <FILE id="btRgnC" name="RhythmGeneratorTests.cpp" compile="1" resource="0"
+            file="Source/RhythmGeneratorTests.cpp"/>
+      <FILE id="btRprC" name="ReproducibilityTests.cpp" compile="1" resource="0"
+            file="Source/ReproducibilityTests.cpp"/>
+      <FILE id="btSmkC" name="SkipMaskGeneratorTests.cpp" compile="1" resource="0"
+            file="Source/SkipMaskGeneratorTests.cpp"/>
+      <FILE id="btSevC" name="StepEventTests.cpp" compile="1" resource="0"
+            file="Source/StepEventTests.cpp"/>
+      <FILE id="btSebC" name="StepEventBufferTests.cpp" compile="1" resource="0"
+            file="Source/StepEventBufferTests.cpp"/>
+      <FILE id="btTrnC" name="TransportTests.cpp" compile="1" resource="0"
+            file="Source/TransportTests.cpp"/>
+      <FILE id="btSplC" name="SequencePlayerTests.cpp" compile="1" resource="0"
+            file="Source/SequencePlayerTests.cpp"/>
+      <FILE id="btPtmC" name="PlaybackTimingTests.cpp" compile="1" resource="0"
+            file="Source/PlaybackTimingTests.cpp"/>
+      <FILE id="btSpsC" name="SequencePlayerStopTests.cpp" compile="1" resource="0"
+            file="Source/SequencePlayerStopTests.cpp"/>
+      <FILE id="btSphC" name="SequencePlayerHandoffTests.cpp" compile="1"
+            resource="0" file="Source/SequencePlayerHandoffTests.cpp"/>
+      <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0"
+            file="Source/MidiMessageBytesTests.cpp"/>
+      <FILE id="btMxtC" name="MidiExportTimelineTests.cpp" compile="1" resource="0"
+            file="Source/MidiExportTimelineTests.cpp"/>
+      <FILE id="btDspC" name="DspLinkSmokeTests.cpp" compile="1" resource="0"
+            file="Source/DspLinkSmokeTests.cpp"/>
+      <FILE id="btSvcC" name="SynthVoiceTests.cpp" compile="1" resource="0"
+            file="Source/SynthVoiceTests.cpp"/>
+      <FILE id="btSngC" name="SynthEngineTests.cpp" compile="1" resource="0"
+            file="Source/SynthEngineTests.cpp"/>
       <FILE id="btLfoC" name="LfoTests.cpp" compile="1" resource="0" file="Source/LfoTests.cpp"/>
+      <FILE id="btPsrC" name="PresetSerializationTests.cpp" compile="1" resource="0"
+            file="Source/PresetSerializationTests.cpp"/>
+      <FILE id="btPmfC" name="PresetManagerFileTests.cpp" compile="1" resource="0"
+            file="Source/PresetManagerFileTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -37,28 +58,41 @@
       <FILE id="tcSclC" name="Scale.cpp" compile="1" resource="0" file="../Source/core/Scale.cpp"/>
     </GROUP>
     <GROUP id="{1B3D5F7A-4C6E-4A9B-8D1F-3E5A7C9B1D3F}" name="generation">
-      <FILE id="tgDrnH" name="DeterministicRandom.h" compile="0" resource="0" file="../Source/generation/DeterministicRandom.h"/>
-      <FILE id="tgPgnH" name="PitchGenerator.h" compile="0" resource="0" file="../Source/generation/PitchGenerator.h"/>
-      <FILE id="tgPgnC" name="PitchGenerator.cpp" compile="1" resource="0" file="../Source/generation/PitchGenerator.cpp"/>
-      <FILE id="tgRgnH" name="RhythmGenerator.h" compile="0" resource="0" file="../Source/generation/RhythmGenerator.h"/>
-      <FILE id="tgRgnC" name="RhythmGenerator.cpp" compile="1" resource="0" file="../Source/generation/RhythmGenerator.cpp"/>
-      <FILE id="tgSmkH" name="SkipMaskGenerator.h" compile="0" resource="0" file="../Source/generation/SkipMaskGenerator.h"/>
-      <FILE id="tgSmkC" name="SkipMaskGenerator.cpp" compile="1" resource="0" file="../Source/generation/SkipMaskGenerator.cpp"/>
+      <FILE id="tgDrnH" name="DeterministicRandom.h" compile="0" resource="0"
+            file="../Source/generation/DeterministicRandom.h"/>
+      <FILE id="tgPgnH" name="PitchGenerator.h" compile="0" resource="0"
+            file="../Source/generation/PitchGenerator.h"/>
+      <FILE id="tgPgnC" name="PitchGenerator.cpp" compile="1" resource="0"
+            file="../Source/generation/PitchGenerator.cpp"/>
+      <FILE id="tgRgnH" name="RhythmGenerator.h" compile="0" resource="0"
+            file="../Source/generation/RhythmGenerator.h"/>
+      <FILE id="tgRgnC" name="RhythmGenerator.cpp" compile="1" resource="0"
+            file="../Source/generation/RhythmGenerator.cpp"/>
+      <FILE id="tgSmkH" name="SkipMaskGenerator.h" compile="0" resource="0"
+            file="../Source/generation/SkipMaskGenerator.h"/>
+      <FILE id="tgSmkC" name="SkipMaskGenerator.cpp" compile="1" resource="0"
+            file="../Source/generation/SkipMaskGenerator.cpp"/>
     </GROUP>
     <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
       <FILE id="tpEvtH" name="StepEvent.h" compile="0" resource="0" file="../Source/playback/StepEvent.h"/>
-      <FILE id="tpBufH" name="StepEventBuffer.h" compile="0" resource="0" file="../Source/playback/StepEventBuffer.h"/>
+      <FILE id="tpBufH" name="StepEventBuffer.h" compile="0" resource="0"
+            file="../Source/playback/StepEventBuffer.h"/>
       <FILE id="tpTrnH" name="Transport.h" compile="0" resource="0" file="../Source/playback/Transport.h"/>
       <FILE id="tpTrnC" name="Transport.cpp" compile="1" resource="0" file="../Source/playback/Transport.cpp"/>
-      <FILE id="tpSplH" name="SequencePlayer.h" compile="0" resource="0" file="../Source/playback/SequencePlayer.h"/>
-      <FILE id="tpSplC" name="SequencePlayer.cpp" compile="1" resource="0" file="../Source/playback/SequencePlayer.cpp"/>
+      <FILE id="tpSplH" name="SequencePlayer.h" compile="0" resource="0"
+            file="../Source/playback/SequencePlayer.h"/>
+      <FILE id="tpSplC" name="SequencePlayer.cpp" compile="1" resource="0"
+            file="../Source/playback/SequencePlayer.cpp"/>
     </GROUP>
     <GROUP id="{3F7A9C2D-6E4B-481A-B5C3-7D9E1F0A4B26}" name="midi">
-      <FILE id="tmMsgH" name="MidiMessageBytes.h" compile="0" resource="0" file="../Source/midi/MidiMessageBytes.h"/>
+      <FILE id="tmMsgH" name="MidiMessageBytes.h" compile="0" resource="0"
+            file="../Source/midi/MidiMessageBytes.h"/>
     </GROUP>
     <GROUP id="{6B2D4F8A-1C3E-49D5-8A7B-0F2C4E6A8D10}" name="export">
-      <FILE id="teTmlH" name="MidiExportTimeline.h" compile="0" resource="0" file="../Source/export/MidiExportTimeline.h"/>
-      <FILE id="teTmlC" name="MidiExportTimeline.cpp" compile="1" resource="0" file="../Source/export/MidiExportTimeline.cpp"/>
+      <FILE id="teTmlH" name="MidiExportTimeline.h" compile="0" resource="0"
+            file="../Source/export/MidiExportTimeline.h"/>
+      <FILE id="teTmlC" name="MidiExportTimeline.cpp" compile="1" resource="0"
+            file="../Source/export/MidiExportTimeline.cpp"/>
     </GROUP>
     <GROUP id="{8D3A5F7C-1B4E-4A6D-9C2F-5E7A9B1D3F5A}" name="synth">
       <FILE id="tsPtcH" name="SynthPatch.h" compile="0" resource="0" file="../Source/synth/SynthPatch.h"/>
@@ -71,12 +105,20 @@
       <FILE id="tsFxH" name="SynthEffects.h" compile="0" resource="0" file="../Source/synth/SynthEffects.h"/>
       <FILE id="tsFxC" name="SynthEffects.cpp" compile="1" resource="0" file="../Source/synth/SynthEffects.cpp"/>
     </GROUP>
+    <GROUP id="{7C9E1A3D-5F2B-4D6A-8B0C-1E3F5A7C9D1B}" name="preset">
+      <FILE id="tpPstH" name="Preset.h" compile="0" resource="0" file="../Source/preset/Preset.h"/>
+      <FILE id="tpPmgH" name="PresetManager.h" compile="0" resource="0" file="../Source/preset/PresetManager.h"/>
+      <FILE id="tpPmgC" name="PresetManager.cpp" compile="1" resource="0"
+            file="../Source/preset/PresetManager.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
   <EXPORTFORMATS>
@@ -89,7 +131,9 @@
         <MODULEPATH id="juce_audio_basics" path="../../../Projucer/modules"/>
         <MODULEPATH id="juce_audio_formats" path="../../../Projucer/modules"/>
         <MODULEPATH id="juce_core" path="../../../Projucer/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../Projucer/modules"/>
         <MODULEPATH id="juce_dsp" path="../../../Projucer/modules"/>
+        <MODULEPATH id="juce_events" path="../../../Projucer/modules"/>
       </MODULEPATHS>
     </VS2026>
   </EXPORTFORMATS>

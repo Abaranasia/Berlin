@@ -163,6 +163,7 @@
     <ClCompile Include="..\..\Source\synth\SynthEngine.cpp"/>
     <ClCompile Include="..\..\Source\synth\Lfo.cpp"/>
     <ClCompile Include="..\..\Source\synth\SynthEffects.cpp"/>
+    <ClCompile Include="..\..\Source\preset\PresetManager.cpp"/>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3233,6 +3234,8 @@
     <ClInclude Include="..\..\Source\synth\SynthEngine.h"/>
     <ClInclude Include="..\..\Source\synth\Lfo.h"/>
     <ClInclude Include="..\..\Source\synth\SynthEffects.h"/>
+    <ClInclude Include="..\..\Source\preset\Preset.h"/>
+    <ClInclude Include="..\..\Source\preset\PresetManager.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>
