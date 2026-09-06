@@ -152,6 +152,7 @@
     <ClCompile Include="..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\Source\generation\PitchGenerator.cpp"/>
     <ClCompile Include="..\..\Source\generation\RhythmGenerator.cpp"/>
+    <ClCompile Include="..\..\Source\generation\SkipMaskGenerator.cpp"/>
     <ClCompile Include="..\..\Source\playback\Transport.cpp"/>
     <ClCompile Include="..\..\Source\playback\SequencePlayer.cpp"/>
     <ClCompile Include="..\..\Source\midi\MidiEventTranslator.cpp"/>
@@ -3217,6 +3218,7 @@
     <ClInclude Include="..\..\Source\generation\DeterministicRandom.h"/>
     <ClInclude Include="..\..\Source\generation\PitchGenerator.h"/>
     <ClInclude Include="..\..\Source\generation\RhythmGenerator.h"/>
+    <ClInclude Include="..\..\Source\generation\SkipMaskGenerator.h"/>
     <ClInclude Include="..\..\Source\playback\StepEvent.h"/>
     <ClInclude Include="..\..\Source\playback\StepEventBuffer.h"/>
     <ClInclude Include="..\..\Source\playback\Transport.h"/>

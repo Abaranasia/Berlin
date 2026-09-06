@@ -14,6 +14,7 @@
       <FILE id="btPgnC" name="PitchGeneratorTests.cpp" compile="1" resource="0" file="Source/PitchGeneratorTests.cpp"/>
       <FILE id="btRgnC" name="RhythmGeneratorTests.cpp" compile="1" resource="0" file="Source/RhythmGeneratorTests.cpp"/>
       <FILE id="btRprC" name="ReproducibilityTests.cpp" compile="1" resource="0" file="Source/ReproducibilityTests.cpp"/>
+      <FILE id="btSmkC" name="SkipMaskGeneratorTests.cpp" compile="1" resource="0" file="Source/SkipMaskGeneratorTests.cpp"/>
       <FILE id="btSevC" name="StepEventTests.cpp" compile="1" resource="0" file="Source/StepEventTests.cpp"/>
       <FILE id="btSebC" name="StepEventBufferTests.cpp" compile="1" resource="0" file="Source/StepEventBufferTests.cpp"/>
       <FILE id="btTrnC" name="TransportTests.cpp" compile="1" resource="0" file="Source/TransportTests.cpp"/>
@@ -40,6 +41,8 @@
       <FILE id="tgPgnC" name="PitchGenerator.cpp" compile="1" resource="0" file="../Source/generation/PitchGenerator.cpp"/>
       <FILE id="tgRgnH" name="RhythmGenerator.h" compile="0" resource="0" file="../Source/generation/RhythmGenerator.h"/>
       <FILE id="tgRgnC" name="RhythmGenerator.cpp" compile="1" resource="0" file="../Source/generation/RhythmGenerator.cpp"/>
+      <FILE id="tgSmkH" name="SkipMaskGenerator.h" compile="0" resource="0" file="../Source/generation/SkipMaskGenerator.h"/>
+      <FILE id="tgSmkC" name="SkipMaskGenerator.cpp" compile="1" resource="0" file="../Source/generation/SkipMaskGenerator.cpp"/>
     </GROUP>
     <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
       <FILE id="tpEvtH" name="StepEvent.h" compile="0" resource="0" file="../Source/playback/StepEvent.h"/>

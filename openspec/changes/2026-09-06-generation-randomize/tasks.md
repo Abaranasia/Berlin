@@ -32,12 +32,12 @@ Chain strategy: size-exception
 
 ## Phase 2: `SkipMaskGenerator` (deterministic-generation delta)
 
-- [ ] 2.1 RED: create `Tests/Source/SkipMaskGeneratorTests.cpp` covering: exact `activeSteps` count; size `== numSteps`; step 0 never skipped; `note` field untouched (stays default); `activeSteps` clamped at both ends (`0 → 1`, `> numSteps → numSteps`); same-seed → identical mask; different seeds → differing masks; exactly `numSkips` RNG draws consumed. Spec: `deterministic-generation` "SkipMaskGenerator Produces a Deterministic Displacement Pattern".
-- [ ] 2.2 Register the new test file's `<FILE>` entry in `Tests/BerlinTests.jucer` (build fails to compile it otherwise).
-- [ ] 2.3 GREEN: create `Source/generation/SkipMaskGenerator.h` (`SkipMaskGenerator(int numSteps, int activeSteps)`, `Sequence generate(DeterministicRandom&) const`) and `SkipMaskGenerator.cpp` implementing Decision 3's algorithm — full pulse train, step-0-anchored scratch array, partial Fisher-Yates over `numSkips = numSteps - activeSteps` draws.
-- [ ] 2.4 Register `SkipMaskGenerator.h`/`.cpp` `<FILE>` entries in `Berlin.jucer` (matches existing `RhythmGenerator.h/.cpp` entry pattern at `Berlin.jucer:23-24`).
-- [ ] 2.5 GREEN: add a `SkipMaskGenerator` end-to-end golden to `Tests/Source/ReproducibilityTests.cpp` (mask + `PitchGenerator` composed against one seed) — do NOT touch the existing `RhythmGenerator` golden.
-- [ ] 2.6 Verify: `BerlinTests.exe --category=Berlin --filter="*SkipMask*,*Reproducibility*"` green. Confirm `RhythmGenerator.*` files are untouched (no diff).
+- [x] 2.1 RED: create `Tests/Source/SkipMaskGeneratorTests.cpp` covering: exact `activeSteps` count; size `== numSteps`; step 0 never skipped; `note` field untouched (stays default); `activeSteps` clamped at both ends (`0 → 1`, `> numSteps → numSteps`); same-seed → identical mask; different seeds → differing masks; exactly `numSkips` RNG draws consumed. Spec: `deterministic-generation` "SkipMaskGenerator Produces a Deterministic Displacement Pattern".
+- [x] 2.2 Register the new test file's `<FILE>` entry in `Tests/BerlinTests.jucer` (build fails to compile it otherwise).
+- [x] 2.3 GREEN: create `Source/generation/SkipMaskGenerator.h` (`SkipMaskGenerator(int numSteps, int activeSteps)`, `Sequence generate(DeterministicRandom&) const`) and `SkipMaskGenerator.cpp` implementing Decision 3's algorithm — full pulse train, step-0-anchored scratch array, partial Fisher-Yates over `numSkips = numSteps - activeSteps` draws.
+- [x] 2.4 Register `SkipMaskGenerator.h`/`.cpp` `<FILE>` entries in `Berlin.jucer` (matches existing `RhythmGenerator.h/.cpp` entry pattern at `Berlin.jucer:23-24`).
+- [x] 2.5 GREEN: add a `SkipMaskGenerator` end-to-end golden to `Tests/Source/ReproducibilityTests.cpp` (mask + `PitchGenerator` composed against one seed) — do NOT touch the existing `RhythmGenerator` golden.
+- [x] 2.6 Verify: `BerlinTests.exe --category=Berlin --filter="*SkipMask*,*Reproducibility*"` green. Confirm `RhythmGenerator.*` files are untouched (no diff).
 
 ## Phase 3: `SequencePlayer` handoff (realtime-audio-wiring delta) — highest-risk phase
 
