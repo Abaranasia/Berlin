@@ -126,4 +126,16 @@ void SynthEngine::setEffectsEnabled (bool shouldBeEnabled) noexcept
     effectsEnabled.store (shouldBeEnabled, std::memory_order_relaxed);
 }
 
+void SynthEngine::setWaveform (Waveform newWaveform) noexcept              { voice.setWaveform (newWaveform); }
+void SynthEngine::setCutoffHz (float newCutoffHz) noexcept                 { voice.setCutoffHz (newCutoffHz); }
+void SynthEngine::setResonance (float newResonance) noexcept               { voice.setResonance (newResonance); }
+void SynthEngine::setPulseWidth (float newPulseWidth) noexcept             { voice.setPulseWidth (newPulseWidth); }
+void SynthEngine::setAttackSeconds (float newAttackSeconds) noexcept       { voice.setAttackSeconds (newAttackSeconds); }
+void SynthEngine::setDecaySeconds (float newDecaySeconds) noexcept         { voice.setDecaySeconds (newDecaySeconds); }
+void SynthEngine::setSustain (float newSustain) noexcept                   { voice.setSustain (newSustain); }
+void SynthEngine::setReleaseSeconds (float newReleaseSeconds) noexcept     { voice.setReleaseSeconds (newReleaseSeconds); }
+void SynthEngine::setLfoRateHz (float newLfoRateHz) noexcept               { voice.setLfoRateHz (newLfoRateHz); }
+void SynthEngine::setLfoDepth (float newLfoDepth) noexcept                 { voice.setLfoDepth (newLfoDepth); }
+void SynthEngine::setLfoDestination (LfoDestination newLfoDestination) noexcept { voice.setLfoDestination (newLfoDestination); }
+
 } // namespace berlin

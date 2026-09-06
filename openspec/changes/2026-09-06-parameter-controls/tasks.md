@@ -48,8 +48,8 @@ Chain strategy: pending
 
 ## Phase 4: SynthEngine Forwarders
 
-- [ ] 4.1 Add ten one-line `voice.setX(v)` forwarders to `SynthEngine.h/.cpp`, mirroring `SynthVoice`'s setter signatures.
-- [ ] 4.2 Extend `SynthEngineTests.cpp`: each forwarder produces the same rendered output as calling the voice setter directly.
+- [x] 4.1 Add ten one-line `voice.setX(v)` forwarders to `SynthEngine.h/.cpp`, mirroring `SynthVoice`'s setter signatures. (Implemented **eleven** — design.md's Interfaces section explicitly says "mirrors all eleven setter signatures verbatim"; `setWaveform` was the 11th, already introduced in Phase 2. Noted as a task-count/design wording discrepancy, resolved in design's favor.)
+- [x] 4.2 Extend `SynthEngineTests.cpp`: each forwarder produces the same rendered output as calling the voice setter directly.
 
 ## Phase 5: MainComponent UI Wiring
 

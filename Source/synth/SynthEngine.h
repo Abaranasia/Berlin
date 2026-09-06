@@ -77,6 +77,21 @@ public:
     void setEnabled (bool shouldBeEnabled) noexcept;
     void setEffectsEnabled (bool shouldBeEnabled) noexcept;
 
+    // Message thread -> voice's atomic Parameters (parameter-controls Phase 9).
+    // Thin one-line forwarders mirroring SynthVoice's setter signatures verbatim,
+    // so MainComponent talks only to `synth`, never directly to the voice it owns.
+    void setWaveform       (Waveform newWaveform) noexcept;
+    void setCutoffHz       (float newCutoffHz) noexcept;
+    void setResonance      (float newResonance) noexcept;
+    void setPulseWidth     (float newPulseWidth) noexcept;
+    void setAttackSeconds  (float newAttackSeconds) noexcept;
+    void setDecaySeconds   (float newDecaySeconds) noexcept;
+    void setSustain        (float newSustain) noexcept;
+    void setReleaseSeconds (float newReleaseSeconds) noexcept;
+    void setLfoRateHz      (float newLfoRateHz) noexcept;
+    void setLfoDepth       (float newLfoDepth) noexcept;
+    void setLfoDestination (LfoDestination newLfoDestination) noexcept;
+
 private:
     SynthVoice voice;
     SynthEffects effects;

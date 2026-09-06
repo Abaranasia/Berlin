@@ -22,6 +22,7 @@
 */
 
 #include <cmath>
+#include <functional>
 #include <vector>
 
 #include <juce_core/juce_core.h>
@@ -310,6 +311,83 @@ public:
             for (int ch = 0; ch < 2; ++ch)
                 for (int i = 0; i < 2048; ++i)
                     expect (std::abs (destination.getSample (ch, i)) <= 1.5f);
+        }
+
+        beginTest ("each SynthEngine setter forwarder produces identical rendered output to calling the voice setter directly");
+        {
+            auto compareForwarder = [&] (const char* label,
+                                          std::function<void (berlin::SynthEngine&)> applyToEngine,
+                                          std::function<void (berlin::SynthVoice&)> applyToVoice)
+            {
+                berlin::SynthEngine engine;
+                engine.prepare (makeSpec (sampleRate, 512));
+                applyToEngine (engine);
+
+                berlin::SynthVoice voice;
+                voice.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+                applyToVoice (voice);
+
+                berlin::StepEventBuffer events;
+                events.push ({ 0, 0, 60, true });
+
+                juce::AudioBuffer<float> engineOut (2, 512);
+                engineOut.clear();
+                engine.render (events, engineOut, 0, 512);
+
+                std::vector<float> left (512, 0.0f), right (512, 0.0f);
+                voice.noteOn (static_cast<float> (juce::MidiMessage::getMidiNoteInHertz (60)));
+                voice.render (left.data(), right.data(), 512);
+
+                for (int i = 0; i < 512; ++i)
+                {
+                    expectEquals (engineOut.getSample (0, i), left[(size_t) i], juce::String (label));
+                    expectEquals (engineOut.getSample (1, i), right[(size_t) i], juce::String (label));
+                }
+            };
+
+            compareForwarder ("setWaveform",
+                [] (berlin::SynthEngine& e) { e.setWaveform (berlin::Waveform::square); },
+                [] (berlin::SynthVoice& v)  { v.setWaveform (berlin::Waveform::square); });
+
+            compareForwarder ("setCutoffHz",
+                [] (berlin::SynthEngine& e) { e.setCutoffHz (2000.0f); },
+                [] (berlin::SynthVoice& v)  { v.setCutoffHz (2000.0f); });
+
+            compareForwarder ("setResonance",
+                [] (berlin::SynthEngine& e) { e.setResonance (3.0f); },
+                [] (berlin::SynthVoice& v)  { v.setResonance (3.0f); });
+
+            compareForwarder ("setPulseWidth",
+                [] (berlin::SynthEngine& e) { e.setWaveform (berlin::Waveform::pulse); e.setPulseWidth (0.25f); },
+                [] (berlin::SynthVoice& v)  { v.setWaveform (berlin::Waveform::pulse); v.setPulseWidth (0.25f); });
+
+            compareForwarder ("setAttackSeconds",
+                [] (berlin::SynthEngine& e) { e.setAttackSeconds (0.5f); },
+                [] (berlin::SynthVoice& v)  { v.setAttackSeconds (0.5f); });
+
+            compareForwarder ("setDecaySeconds",
+                [] (berlin::SynthEngine& e) { e.setDecaySeconds (0.5f); },
+                [] (berlin::SynthVoice& v)  { v.setDecaySeconds (0.5f); });
+
+            compareForwarder ("setSustain",
+                [] (berlin::SynthEngine& e) { e.setSustain (0.3f); },
+                [] (berlin::SynthVoice& v)  { v.setSustain (0.3f); });
+
+            compareForwarder ("setReleaseSeconds",
+                [] (berlin::SynthEngine& e) { e.setReleaseSeconds (1.0f); },
+                [] (berlin::SynthVoice& v)  { v.setReleaseSeconds (1.0f); });
+
+            compareForwarder ("setLfoRateHz",
+                [] (berlin::SynthEngine& e) { e.setLfoRateHz (2.0f); },
+                [] (berlin::SynthVoice& v)  { v.setLfoRateHz (2.0f); });
+
+            compareForwarder ("setLfoDepth",
+                [] (berlin::SynthEngine& e) { e.setLfoDepth (0.5f); },
+                [] (berlin::SynthVoice& v)  { v.setLfoDepth (0.5f); });
+
+            compareForwarder ("setLfoDestination",
+                [] (berlin::SynthEngine& e) { e.setLfoDestination (berlin::LfoDestination::cutoff); },
+                [] (berlin::SynthVoice& v)  { v.setLfoDestination (berlin::LfoDestination::cutoff); });
         }
     }
 };
