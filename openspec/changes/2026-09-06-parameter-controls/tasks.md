@@ -32,10 +32,10 @@ Chain strategy: pending
 
 ## Phase 2: Table-Free Generator + Equivalence Test (gates everything after it)
 
-- [ ] 2.1 RED: add the DFT-harmonics equivalence test to `SynthVoiceTests.cpp` — reference 128-point table oscillator vs. `SynthVoice`, saw/square/triangle, harmonics 1-8 within 3%, RMS within 3% (fails to compile/pass until 2.2-2.3 land).
-- [ ] 2.2 GREEN: delete `applyWaveform()`; `prepare()` installs the single 4-way `[this]` generator lambda (`lookupTableNumPoints = 0`), Decision 1, in `SynthVoice.cpp`.
-- [ ] 2.3 GREEN: add waveform-switch-mid-note test (no dropout, all-finite) and confirm equivalence test passes. *(internal-synth-voice: Four Selectable Oscillator Waveforms)*
-- [ ] 2.4 Confirm no allocation on waveform switch (RT-safety spot check per `juce-app-dev`).
+- [x] 2.1 RED: add the DFT-harmonics equivalence test to `SynthVoiceTests.cpp` — reference 128-point table oscillator vs. `SynthVoice`, saw/square/triangle, harmonics 1-8 within 3%, RMS within 3% (approval test: passed as a baseline against the still-table-based pre-2.2 `SynthVoice`; the mid-note-switch test in 2.3 is what genuinely fails to compile pre-`setWaveform`).
+- [x] 2.2 GREEN: delete `applyWaveform()`; `prepare()` installs the single 4-way `[this]` generator lambda (`lookupTableNumPoints = 0`), Decision 1, in `SynthVoice.cpp`. Added a minimal `setWaveform()` (plain member write) so mid-note switching is testable now; Phase 3 upgrades it to atomic-backed without changing its public signature.
+- [x] 2.3 GREEN: add waveform-switch-mid-note test (no dropout, all-finite) and confirm equivalence test passes. *(internal-synth-voice: Four Selectable Oscillator Waveforms)*
+- [x] 2.4 Confirm no allocation on waveform switch (RT-safety spot check per `juce-app-dev`): `setWaveform()` is a single non-atomic member assignment, no heap/lock/log.
 
 ## Phase 3: SynthVoice Atomics + applyParameters() + LFO Re-Park
 

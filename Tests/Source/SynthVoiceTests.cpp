@@ -262,6 +262,182 @@ public:
             checkDistinct ("triangle vs pulse",   triangle, pulse);
         }
 
+        beginTest ("table-free generator stays audibly equivalent to the prior table-based rendering "
+                   "(approval test: harmonics 1-8 and RMS within 3% of a fixed 128-point-table reference)");
+        {
+            constexpr float pitchHz   = 100.0f;   // 44100 / 100 = 441 samples/period exactly
+            constexpr int   periodLen = 441;
+            constexpr int   settleLen = periodLen;   // discard one period of ADSR/filter transient
+
+            // Fixed baseline, independent of SynthVoice: the exact Phase 8 128-point-table
+            // lambdas, so this stays a stable reference regardless of how SynthVoice's own
+            // generator evolves.
+            auto referenceSamples = [&] (berlin::Waveform waveform) -> std::vector<float>
+            {
+                juce::dsp::Oscillator<float> reference;
+
+                switch (waveform)
+                {
+                    case berlin::Waveform::saw:
+                        reference.initialise ([] (float x) { return x / juce::MathConstants<float>::pi; }, 128);
+                        break;
+                    case berlin::Waveform::square:
+                        reference.initialise ([] (float x) { return x < 0.0f ? -1.0f : 1.0f; }, 128);
+                        break;
+                    case berlin::Waveform::triangle:
+                        reference.initialise ([] (float x)
+                        {
+                            const float absX = x < 0.0f ? -x : x;
+                            return (2.0f / juce::MathConstants<float>::pi) * absX - 1.0f;
+                        }, 128);
+                        break;
+                    default:
+                        break;
+                }
+
+                reference.prepare (makeSpec (sampleRate, periodLen * 3, 1));
+                reference.setFrequency (pitchHz, true);
+
+                for (int i = 0; i < settleLen; ++i)
+                    reference.processSample (0.0f);
+
+                std::vector<float> steady (static_cast<size_t> (periodLen), 0.0f);
+                for (int i = 0; i < periodLen; ++i)
+                    steady[(size_t) i] = reference.processSample (0.0f);
+                return steady;
+            };
+
+            // Under test: SynthVoice's own rendering path (filter maxed toward transparent,
+            // ADSR neutralised to sustain=1) so only the oscillator shapes the comparison.
+            auto voiceSamples = [&] (berlin::Waveform waveform) -> std::vector<float>
+            {
+                berlin::SynthPatch patch = berlin::kDefaultPatch;
+                patch.waveform  = waveform;
+                patch.cutoffHz  = berlin::kMaxCutoffHz;
+                patch.resonance = berlin::kMinResonance;
+                patch.attack    = berlin::kMinAttackSeconds;
+                patch.decay     = berlin::kMinDecaySeconds;
+                patch.sustain   = 1.0f;
+
+                berlin::SynthVoice voice;
+                voice.prepare (makeSpec (sampleRate, periodLen * 3), patch);
+                voice.noteOn (pitchHz);
+
+                std::vector<float> discard (settleLen, 0.0f), discardR (settleLen, 0.0f);
+                voice.render (discard.data(), discardR.data(), settleLen);
+
+                std::vector<float> steady (static_cast<size_t> (periodLen), 0.0f), right (static_cast<size_t> (periodLen), 0.0f);
+                voice.render (steady.data(), right.data(), periodLen);
+                return steady;
+            };
+
+            auto harmonicMagnitude = [] (const std::vector<float>& samples, int harmonic) -> float
+            {
+                double real = 0.0, imag = 0.0;
+                const int n = static_cast<int> (samples.size());
+
+                for (int i = 0; i < n; ++i)
+                {
+                    const double angle = 2.0 * juce::MathConstants<double>::pi * harmonic * i / (double) n;
+                    real += (double) samples[(size_t) i] * std::cos (angle);
+                    imag += (double) samples[(size_t) i] * std::sin (angle);
+                }
+
+                return (float) (2.0 * std::sqrt (real * real + imag * imag) / (double) n);
+            };
+
+            auto rms = [] (const std::vector<float>& samples) -> float
+            {
+                double sumSquares = 0.0;
+                for (float s : samples)
+                    sumSquares += (double) s * (double) s;
+                return (float) std::sqrt (sumSquares / (double) samples.size());
+            };
+
+            constexpr berlin::Waveform waveformsUnderTest[] = { berlin::Waveform::saw, berlin::Waveform::square, berlin::Waveform::triangle };
+
+            for (auto waveform : waveformsUnderTest)
+            {
+                const std::vector<float> reference = referenceSamples (waveform);
+                const std::vector<float> underTest  = voiceSamples (waveform);
+
+                const float refRms  = rms (reference);
+                const float testRms = rms (underTest);
+                expect (std::abs (testRms - refRms) <= 0.03f * refRms,
+                        "RMS mismatch for waveform " + juce::String ((int) waveform)
+                            + ": ref=" + juce::String (refRms) + " test=" + juce::String (testRms));
+
+                for (int harmonic = 1; harmonic <= 8; ++harmonic)
+                {
+                    const float refMag  = harmonicMagnitude (reference, harmonic);
+                    const float testMag = harmonicMagnitude (underTest, harmonic);
+
+                    // Harmonics with negligible reference energy (e.g. even harmonics of a
+                    // triangle/square wave) are skipped - a 3% relative tolerance against a
+                    // near-zero reference is meaningless noise, not a real equivalence check.
+                    if (refMag < 1.0e-3f)
+                        continue;
+
+                    expect (std::abs (testMag - refMag) <= 0.03f * refMag,
+                            "Harmonic " + juce::String (harmonic) + " mismatch for waveform "
+                                + juce::String ((int) waveform) + ": ref=" + juce::String (refMag)
+                                + " test=" + juce::String (testMag));
+                }
+            }
+        }
+
+        beginTest ("waveform switch mid-note allocates nothing structurally (plain member write) "
+                   "and produces no dropout, all-finite output");
+        {
+            berlin::SynthPatch patch = berlin::kDefaultPatch;
+            patch.waveform = berlin::Waveform::saw;
+            patch.attack  = 0.0f;
+            patch.decay   = 0.0f;
+            patch.sustain = 1.0f;
+
+            berlin::SynthVoice voice;
+            voice.prepare (makeSpec (sampleRate, 1024), patch);
+            voice.noteOn (220.0f);
+
+            std::vector<float> before (256, 0.0f), beforeR (256, 0.0f);
+            voice.render (before.data(), beforeR.data(), 256);
+
+            bool anyNonZeroBefore = false;
+            for (float s : before)
+                if (s != 0.0f)
+                    anyNonZeroBefore = true;
+            expect (anyNonZeroBefore);
+
+            voice.setWaveform (berlin::Waveform::square);   // switch mid-note
+
+            std::vector<float> after (256, 0.0f), afterR (256, 0.0f);
+            voice.render (after.data(), afterR.data(), 256);
+
+            bool anyNonZeroAfter = false;
+            for (float s : after)
+            {
+                expect (std::isfinite (s));
+                if (s != 0.0f)
+                    anyNonZeroAfter = true;
+            }
+            expect (anyNonZeroAfter);   // no dropout
+
+            // Triangulate: a second switch, to a third waveform, must also work.
+            voice.setWaveform (berlin::Waveform::triangle);
+
+            std::vector<float> after2 (256, 0.0f), after2R (256, 0.0f);
+            voice.render (after2.data(), after2R.data(), 256);
+
+            bool anyNonZeroAfter2 = false;
+            for (float s : after2)
+            {
+                expect (std::isfinite (s));
+                if (s != 0.0f)
+                    anyNonZeroAfter2 = true;
+            }
+            expect (anyNonZeroAfter2);
+        }
+
         beginTest ("filter cutoff sweep: higher cutoff yields more high-frequency content (brighter)");
         {
             auto brightnessProxy = [&] (float cutoffHz) -> float

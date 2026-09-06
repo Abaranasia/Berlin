@@ -54,6 +54,10 @@ public:
     // StateVariableTPTFilter::prepare, ADSR::setSampleRate/setParameters).
     void prepare (const juce::dsp::ProcessSpec& spec, const SynthPatch& patch);
 
+    // Message thread -> plain member (parameter-controls Phase 2 slice; becomes
+    // atomic-backed via the Parameters struct in Phase 3, same public signature).
+    void setWaveform (Waveform newWaveform) noexcept;
+
     // ---- AUDIO THREAD; allocation-, lock- and log-free ----
     void noteOn (float frequencyHz) noexcept;
     void noteOff() noexcept;
@@ -61,13 +65,17 @@ public:
     void reset() noexcept;
 
 private:
-    void applyWaveform (Waveform waveform);
     void updateLfoModulation() noexcept;   // recomputed once per control block (Decision 2)
 
     juce::dsp::Oscillator<float> oscillator;
     juce::dsp::StateVariableTPTFilter<float> filter;
     juce::ADSR adsr;
     Lfo lfo;
+
+    // Live-read by the generator lambda every sample (design.md Decision 1) -
+    // table-free (lookupTableNumPoints = 0), so switching waveform is a plain
+    // member assignment: no re-initialise, no allocation, structurally.
+    Waveform waveform = Waveform::saw;
 
     float pulseWidth     = 0.5f;   // live-read by the pulse generator lambda (Decision 3)
     float basePulseWidth = 0.5f;   // unmodulated patch value; pulseWidth = base + LFO offset

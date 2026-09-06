@@ -16,7 +16,6 @@ namespace berlin
 
 namespace
 {
-    constexpr size_t kLookupTableSize = 128;   // saw/square/triangle only - pulse forces n = 0 (Decision 3)
     constexpr int    kControlBlockSize = 32;   // Decision 2: LFO/cutoff modulation recomputed at this rate, never per-sample
 
     constexpr float kPitchModSemitoneRange  = 12.0f;   // full depth = +/-1 octave around baseFrequencyHz
@@ -26,44 +25,9 @@ namespace
     // kMinCutoffHz/kMinPulseWidth/kMaxPulseWidth now live in SynthPatch.h (Phase 9 parameter-controls).
 }
 
-void SynthVoice::applyWaveform (Waveform waveform)
+void SynthVoice::setWaveform (Waveform newWaveform) noexcept
 {
-    switch (waveform)
-    {
-        case Waveform::saw:
-            oscillator.initialise ([] (float x)
-            {
-                return x / juce::MathConstants<float>::pi;
-            }, kLookupTableSize);
-            break;
-
-        case Waveform::square:
-            oscillator.initialise ([] (float x)
-            {
-                return x < 0.0f ? -1.0f : 1.0f;
-            }, kLookupTableSize);
-            break;
-
-        case Waveform::triangle:
-            oscillator.initialise ([] (float x)
-            {
-                const float absX = x < 0.0f ? -x : x;
-                return (2.0f / juce::MathConstants<float>::pi) * absX - 1.0f;
-            }, kLookupTableSize);
-            break;
-
-        case Waveform::pulse:
-            // Decision 3: lookupTableNumPoints = 0 - a lookup table (n != 0)
-            // bakes the function in once at initialise time, which would
-            // freeze PWM. This lambda must be re-evaluated every sample so it
-            // can read the LIVE `pulseWidth` member.
-            oscillator.initialise ([this] (float x)
-            {
-                const float edge = juce::MathConstants<float>::pi * (2.0f * pulseWidth - 1.0f);
-                return x < edge ? -1.0f : 1.0f;
-            }, 0);
-            break;
-    }
+    waveform = newWaveform;
 }
 
 void SynthVoice::prepare (const juce::dsp::ProcessSpec& spec, const SynthPatch& patch)
@@ -72,7 +36,38 @@ void SynthVoice::prepare (const juce::dsp::ProcessSpec& spec, const SynthPatch& 
 
     pulseWidth     = patch.pulseWidth;
     basePulseWidth = patch.pulseWidth;
-    applyWaveform (patch.waveform);
+    waveform       = patch.waveform;
+
+    // Decision 1: a single 4-way generator lambda for every waveform, with
+    // lookupTableNumPoints = 0 - table-free. Switching `waveform` mid-note is
+    // therefore a plain member assignment (setWaveform() above); no
+    // re-initialise, so live switching allocates nothing structurally. Called
+    // exactly once, here in prepare().
+    oscillator.initialise ([this] (float x) noexcept
+    {
+        switch (waveform)
+        {
+            case Waveform::saw:
+                return x / juce::MathConstants<float>::pi;
+
+            case Waveform::square:
+                return x < 0.0f ? -1.0f : 1.0f;
+
+            case Waveform::triangle:
+            {
+                const float absX = x < 0.0f ? -x : x;
+                return (2.0f / juce::MathConstants<float>::pi) * absX - 1.0f;
+            }
+
+            case Waveform::pulse:
+            {
+                const float edge = juce::MathConstants<float>::pi * (2.0f * pulseWidth - 1.0f);
+                return x < edge ? -1.0f : 1.0f;
+            }
+        }
+        return 0.0f;
+    }, 0);
+
     oscillator.prepare (monoSpec);
 
     baseCutoffHz = patch.cutoffHz;
