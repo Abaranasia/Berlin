@@ -3,13 +3,14 @@
 #include "core/Scale.h"
 #include "generation/DeterministicRandom.h"
 #include "generation/PitchGenerator.h"
-#include "generation/RhythmGenerator.h"
+#include "generation/SkipMaskGenerator.h"
 
 namespace
 {
     constexpr double kBpm         = 120.0;
     constexpr int    kStepsPerBeat = 4;
     constexpr int    kNumSteps     = 16;
+    constexpr int    kActiveSteps  = 11;   // research's cited 16 -> 11 displacement (design.md Decision 3)
     constexpr int    kSeed         = 12345;
     constexpr int    kMidiChannel     = 1;
     constexpr int    kMidiBufferBytes = 1024;
@@ -35,10 +36,10 @@ namespace
     }
 }
 
-berlin::Sequence MainComponent::buildSeededSequence()
+berlin::Sequence MainComponent::buildSeededSequence (juce::int64 seed)
 {
-    berlin::DeterministicRandom rng (kSeed);
-    auto sequence = berlin::RhythmGenerator (kNumSteps, 0.5f).generate (rng);
+    berlin::DeterministicRandom rng (seed);
+    auto sequence = berlin::SkipMaskGenerator (kNumSteps, kActiveSteps).generate (rng);
 
     berlin::PitchGenerator pitch (berlin::Scale::minor (48), 36, 72);
     for (int i = 0; i < sequence.size(); ++i)
@@ -59,8 +60,9 @@ juce::File MainComponent::defaultExportFile()
 
 //==============================================================================
 MainComponent::MainComponent()
-    : sequence (buildSeededSequence()),
-      player (sequence, berlin::Transport (kBpm, kStepsPerBeat)),
+    : currentSeed (kSeed),
+      currentSequence (buildSeededSequence (currentSeed)),
+      player (currentSequence, berlin::Transport (kBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel), midiSink (kMidiChannel)
 {
     addAndMakeVisible (exportButton);
@@ -76,6 +78,60 @@ MainComponent::MainComponent()
     // deliberately no setToggleState(true, ...) here (internal-synth-output:
     // Terminal Delay And Reverb, Bypassed By Default).
     fxToggle.onClick = [this] { synth.setEffectsEnabled (fxToggle.getToggleState()); };
+
+    // ---- Generation controls (roadmap Phase 10 / generation-randomize) ----
+    addAndMakeVisible (generationSectionLabel);
+    generationSectionLabel.setText ("GENERATION", juce::dontSendNotification);
+
+    auto validateSeedField = [this]
+    {
+        const juce::String text = seedEditor.getText().trim();
+
+        bool valid = ! text.isEmpty();
+        int  index = 0;
+
+        if (valid && text[0] == '-')
+        {
+            ++index;
+            valid = text.length() > 1;
+        }
+
+        for (; valid && index < text.length(); ++index)
+            if (! juce::CharacterFunctions::isDigit (text[index]))
+                valid = false;
+
+        if (valid)
+        {
+            currentSeed = text.getLargeIntValue();
+        }
+        else
+        {
+            // Reject: restore the previous seed's text, report why (Decision 4's
+            // validation contract). Editing alone never regenerates either way.
+            seedEditor.setText (juce::String (currentSeed), juce::dontSendNotification);
+            statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+            statusLabel.setText ("Seed must be a whole number.", juce::dontSendNotification);
+        }
+    };
+
+    addAndMakeVisible (seedLabel);
+    seedLabel.setText ("Seed", juce::dontSendNotification);
+    seedLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (seedEditor);
+    seedEditor.setText (juce::String (currentSeed), juce::dontSendNotification);
+    seedEditor.onFocusLost = validateSeedField;
+    seedEditor.onReturnKey = validateSeedField;
+
+    addAndMakeVisible (generateButton);
+    generateButton.onClick = [this] { regenerate (false); };
+
+    addAndMakeVisible (randomizeButton);
+    randomizeButton.onClick = [this] { regenerate (true); };
+
+    addAndMakeVisible (lockSeedToggle);
+    lockSeedToggle.setToggleState (false, juce::dontSendNotification);   // default off
+    lockSeedToggle.onClick = [this] { randomizeButton.setEnabled (! lockSeedToggle.getToggleState()); };
 
     // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
     // Every control must be constructed and valued here, BEFORE setAudioChannels()
@@ -270,6 +326,23 @@ void MainComponent::resized()
     fxToggle   .setBounds (toggleRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
+    // GENERATION section (roadmap Phase 10 / generation-randomize, design.md
+    // Decision 5) - placed after the toggle row, before the two-column split:
+    // a global transport-level action, alongside Export/status/toggles.
+    generationSectionLabel.setBounds (area.removeFromTop (kControlHeight));
+    area.removeFromTop (kMargin / 2);
+
+    auto seedRow = area.removeFromTop (kControlHeight);
+    seedLabel .setBounds (seedRow.removeFromLeft (kLabelWidth));
+    seedEditor.setBounds (seedRow);
+    area.removeFromTop (kMargin / 2);
+
+    auto generationButtonRow = area.removeFromTop (kControlHeight);
+    generateButton  .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
+    randomizeButton .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
+    lockSeedToggle  .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
     auto placeLabelled = [] (juce::Rectangle<int>& column, juce::Component& label, juce::Component& control)
     {
         auto row = column.removeFromTop (kControlHeight);
@@ -301,6 +374,33 @@ void MainComponent::resized()
     placeLabelled (right, lfoDestinationLabel, lfoDestinationBox);
     placeLabelled (right, lfoRateLabel, lfoRateSlider);
     placeLabelled (right, lfoDepthLabel, lfoDepthSlider);
+}
+
+void MainComponent::regenerate (bool drawNewSeed)
+{
+    if (drawNewSeed && ! lockSeedToggle.getToggleState())
+    {
+        currentSeed = juce::Random::getSystemRandom().nextInt64();
+        seedEditor.setText (juce::String (currentSeed), juce::dontSendNotification);
+    }
+
+    auto next = buildSeededSequence (currentSeed);
+
+    // `player.publishSequence` swaps THROUGH its argument (design.md Decision 1):
+    // on success, the argument ends up holding the stale, now-superseded buffer,
+    // not the freshly built one. Publish a COPY so `next` stays intact - it is
+    // what `currentSequence` (Export's source) must become, not the swapped-out
+    // leftover.
+    auto forPlayer = next;
+
+    if (! player.publishSequence (forPlayer))
+    {
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+        statusLabel.setText ("Busy, try again", juce::dontSendNotification);
+        return;
+    }
+
+    currentSequence = std::move (next);
 }
 
 void MainComponent::pushAllParametersToSynth()
@@ -345,7 +445,7 @@ void MainComponent::launchExportChooser()
 void MainComponent::exportSequenceTo (const juce::File& destination)
 {
     berlin::MidiExportTimeline exportTimeline;
-    const auto exportStatus = berlin::buildMidiExportTimeline (sequence, kStepsPerBeat, kExportRepeats, exportTimeline);
+    const auto exportStatus = berlin::buildMidiExportTimeline (currentSequence, kStepsPerBeat, kExportRepeats, exportTimeline);
 
     if (exportStatus != berlin::MidiExportStatus::ok)
     {
