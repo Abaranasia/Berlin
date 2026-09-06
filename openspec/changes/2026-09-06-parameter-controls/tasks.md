@@ -53,11 +53,11 @@ Chain strategy: pending
 
 ## Phase 5: MainComponent UI Wiring
 
-- [ ] 5.1 `MainComponent.h`: add 2 `ComboBox` + 8 `Slider` + 10 name `Label`s + 4 section `Label`s; declare `pushAllParametersToSynth()`.
-- [ ] 5.2 `MainComponent.cpp` ctor: add `configureSlider(slider, label, name, min, max, initial, midPoint)` lambda; wire 10 callbacks; every initial value read from `kDefaultPatch`; `setValue(v, dontSendNotification)`.
-- [ ] 5.3 `MainComponent.cpp::resized()`: two-column layout via `placeLabelled` lambda (Decision 7); merge `synthToggle`/`fxToggle` onto one row.
-- [ ] 5.4 `MainComponent.cpp::prepareToPlay`: call `pushAllParametersToSynth()` immediately after `synth.prepare(spec)` (Decision 6).
-- [ ] 5.5 Build `Berlin.sln`; confirm clean compile; no `.jucer` regen needed (no new files).
+- [x] 5.1 `MainComponent.h`: add 2 `ComboBox` + 9 `Slider` + 11 name `Label`s + 4 section `Label`s; declare `pushAllParametersToSynth()`. (9 sliders / 11 labels, not 8/10 — design.md's Interfaces section lists 11 total setters (9 float + waveform + lfoDestination) and the row-count math in Decision 7 only works out to "6 rows"/"9 rows" with 9 sliders; the task text's "8 Slider"/"10 name Labels" undercounts by one, same pattern as Phase 4's "ten" vs. design's "eleven" forwarders. Resolved in design's favor.)
+- [x] 5.2 `MainComponent.cpp` ctor: add `configureSlider(slider, label, name, min, max, initial, midPoint)` lambda; wire 11 callbacks (9 slider + 2 combo); every initial value read from `kDefaultPatch`; `setValue(v, dontSendNotification)`.
+- [x] 5.3 `MainComponent.cpp::resized()`: two-column layout via `placeLabelled` lambda (Decision 7); merge `synthToggle`/`fxToggle` onto one row.
+- [x] 5.4 `MainComponent.cpp::prepareToPlay`: call `pushAllParametersToSynth()` immediately after `synth.prepare(spec)` (Decision 6).
+- [x] 5.5 Build `Berlin.sln`; confirm clean compile (confirmed: `Berlin_App.vcxproj -> ...Berlin.exe`, only 2 pre-existing unrelated warnings in `Main.cpp`); no `.jucer` regen needed (no new files).
 
 ## Phase 6: Manual Audibility Gate (human-only)
 

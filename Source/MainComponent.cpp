@@ -16,7 +16,7 @@ namespace
     constexpr int    kExportRepeats   = 4;   // 4 x 16 steps @ 16ths = 16 beats = exactly 4 bars of 4/4
     const char*      kExportFileName  = "berlin-export.mid";
 
-    constexpr int kMargin = 12, kControlHeight = 28, kButtonWidth = 140;
+    constexpr int kMargin = 12, kControlHeight = 28, kButtonWidth = 140, kLabelWidth = 96;
 
     juce::String describeWriteFailure (berlin::MidiFileWriteResult result)
     {
@@ -77,6 +77,97 @@ MainComponent::MainComponent()
     // Terminal Delay And Reverb, Bypassed By Default).
     fxToggle.onClick = [this] { synth.setEffectsEnabled (fxToggle.getToggleState()); };
 
+    // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
+    // Every control must be constructed and valued here, BEFORE setAudioChannels()
+    // below - it can invoke prepareToPlay synchronously (design.md Decision 6's
+    // hard ordering constraint).
+    auto configureSlider = [this] (juce::Slider& slider, juce::Label& label, const juce::String& name,
+                                    double min, double max, double initial, double midPoint)
+    {
+        addAndMakeVisible (slider);
+        slider.setRange (min, max);
+        if (midPoint > 0.0)
+            slider.setSkewFactorFromMidPoint (midPoint);
+        slider.setValue (initial, juce::dontSendNotification);
+
+        addAndMakeVisible (label);
+        label.setText (name, juce::dontSendNotification);
+        label.setJustificationType (juce::Justification::centredLeft);
+    };
+
+    addAndMakeVisible (oscillatorSectionLabel);
+    oscillatorSectionLabel.setText ("OSCILLATOR", juce::dontSendNotification);
+    addAndMakeVisible (filterSectionLabel);
+    filterSectionLabel.setText ("FILTER", juce::dontSendNotification);
+    addAndMakeVisible (envelopeSectionLabel);
+    envelopeSectionLabel.setText ("ENVELOPE", juce::dontSendNotification);
+    addAndMakeVisible (lfoSectionLabel);
+    lfoSectionLabel.setText ("LFO", juce::dontSendNotification);
+
+    addAndMakeVisible (waveformBox);
+    waveformBox.addItem ("Saw",      static_cast<int> (berlin::Waveform::saw) + 1);
+    waveformBox.addItem ("Square",   static_cast<int> (berlin::Waveform::square) + 1);
+    waveformBox.addItem ("Pulse",    static_cast<int> (berlin::Waveform::pulse) + 1);
+    waveformBox.addItem ("Triangle", static_cast<int> (berlin::Waveform::triangle) + 1);
+    waveformBox.setSelectedId (static_cast<int> (berlin::kDefaultPatch.waveform) + 1, juce::dontSendNotification);
+    waveformBox.onChange = [this]
+    {
+        synth.setWaveform (static_cast<berlin::Waveform> (waveformBox.getSelectedId() - 1));
+    };
+    addAndMakeVisible (waveformLabel);
+    waveformLabel.setText ("Waveform", juce::dontSendNotification);
+    waveformLabel.setJustificationType (juce::Justification::centredLeft);
+
+    configureSlider (pulseWidthSlider, pulseWidthLabel, "Pulse Width",
+                      berlin::kMinPulseWidth, berlin::kMaxPulseWidth, berlin::kDefaultPatch.pulseWidth, 0.0);
+    pulseWidthSlider.onValueChange = [this] { synth.setPulseWidth ((float) pulseWidthSlider.getValue()); };
+
+    configureSlider (cutoffSlider, cutoffLabel, "Cutoff",
+                      berlin::kMinCutoffHz, berlin::kMaxCutoffHz, berlin::kDefaultPatch.cutoffHz, 1000.0);
+    cutoffSlider.onValueChange = [this] { synth.setCutoffHz ((float) cutoffSlider.getValue()); };
+
+    configureSlider (resonanceSlider, resonanceLabel, "Resonance",
+                      berlin::kMinResonance, berlin::kMaxResonance, berlin::kDefaultPatch.resonance, 2.0);
+    resonanceSlider.onValueChange = [this] { synth.setResonance ((float) resonanceSlider.getValue()); };
+
+    configureSlider (attackSlider, attackLabel, "Attack",
+                      berlin::kMinAttackSeconds, berlin::kMaxAttackSeconds, berlin::kDefaultPatch.attack, 0.2);
+    attackSlider.onValueChange = [this] { synth.setAttackSeconds ((float) attackSlider.getValue()); };
+
+    configureSlider (decaySlider, decayLabel, "Decay",
+                      berlin::kMinDecaySeconds, berlin::kMaxDecaySeconds, berlin::kDefaultPatch.decay, 0.3);
+    decaySlider.onValueChange = [this] { synth.setDecaySeconds ((float) decaySlider.getValue()); };
+
+    configureSlider (sustainSlider, sustainLabel, "Sustain",
+                      berlin::kMinSustain, berlin::kMaxSustain, berlin::kDefaultPatch.sustain, 0.0);
+    sustainSlider.onValueChange = [this] { synth.setSustain ((float) sustainSlider.getValue()); };
+
+    configureSlider (releaseSlider, releaseLabel, "Release",
+                      berlin::kMinReleaseSeconds, berlin::kMaxReleaseSeconds, berlin::kDefaultPatch.release, 0.5);
+    releaseSlider.onValueChange = [this] { synth.setReleaseSeconds ((float) releaseSlider.getValue()); };
+
+    addAndMakeVisible (lfoDestinationBox);
+    lfoDestinationBox.addItem ("Pitch",       static_cast<int> (berlin::LfoDestination::pitch) + 1);
+    lfoDestinationBox.addItem ("Cutoff",      static_cast<int> (berlin::LfoDestination::cutoff) + 1);
+    lfoDestinationBox.addItem ("Amplitude",   static_cast<int> (berlin::LfoDestination::amplitude) + 1);
+    lfoDestinationBox.addItem ("Pulse Width", static_cast<int> (berlin::LfoDestination::pulseWidth) + 1);
+    lfoDestinationBox.setSelectedId (static_cast<int> (berlin::kDefaultPatch.lfoDestination) + 1, juce::dontSendNotification);
+    lfoDestinationBox.onChange = [this]
+    {
+        synth.setLfoDestination (static_cast<berlin::LfoDestination> (lfoDestinationBox.getSelectedId() - 1));
+    };
+    addAndMakeVisible (lfoDestinationLabel);
+    lfoDestinationLabel.setText ("LFO Dest", juce::dontSendNotification);
+    lfoDestinationLabel.setJustificationType (juce::Justification::centredLeft);
+
+    configureSlider (lfoRateSlider, lfoRateLabel, "LFO Rate",
+                      berlin::kMinLfoRateHz, berlin::kMaxLfoRateHz, berlin::kDefaultPatch.lfoRateHz, 2.0);
+    lfoRateSlider.onValueChange = [this] { synth.setLfoRateHz ((float) lfoRateSlider.getValue()); };
+
+    configureSlider (lfoDepthSlider, lfoDepthLabel, "LFO Depth",
+                      berlin::kMinLfoDepth, berlin::kMaxLfoDepth, berlin::kDefaultPatch.lfoDepth, 0.0);
+    lfoDepthSlider.onValueChange = [this] { synth.setLfoDepth ((float) lfoDepthSlider.getValue()); };
+
     // Make sure you set the size of the component after
     // you add any child components.
     setSize (800, 600);
@@ -121,6 +212,7 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
                                         static_cast<juce::uint32> (samplesPerBlockExpected),
                                         static_cast<juce::uint32> (2) };
     synth.prepare (spec);
+    pushAllParametersToSynth();   // design.md Decision 6: re-seed after every (re)prepare, not just kDefaultPatch
 }
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
@@ -170,9 +262,60 @@ void MainComponent::resized()
     area.removeFromTop (kMargin / 2);
     statusLabel .setBounds (area.removeFromTop (kControlHeight));
     area.removeFromTop (kMargin / 2);
-    synthToggle .setBounds (area.removeFromTop (kControlHeight).removeFromLeft (kButtonWidth));
+
+    // synthToggle + fxToggle merged onto one shared row (design.md Decision 7 -
+    // the only change to the pre-existing header layout, freeing 34px).
+    auto toggleRow = area.removeFromTop (kControlHeight);
+    synthToggle.setBounds (toggleRow.removeFromLeft (kButtonWidth));
+    fxToggle   .setBounds (toggleRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
-    fxToggle    .setBounds (area.removeFromTop (kControlHeight).removeFromLeft (kButtonWidth));
+
+    auto placeLabelled = [] (juce::Rectangle<int>& column, juce::Component& label, juce::Component& control)
+    {
+        auto row = column.removeFromTop (kControlHeight);
+        label  .setBounds (row.removeFromLeft (kLabelWidth));
+        control.setBounds (row);
+        column .removeFromTop (kMargin / 2);
+    };
+
+    auto left  = area.removeFromLeft (area.getWidth() / 2 - kMargin / 2);
+    auto right = area;
+
+    // Left column - OSCILLATOR: waveform, pulse width. FILTER: cutoff, resonance.
+    oscillatorSectionLabel.setBounds (left.removeFromTop (kControlHeight));
+    placeLabelled (left, waveformLabel, waveformBox);
+    placeLabelled (left, pulseWidthLabel, pulseWidthSlider);
+
+    filterSectionLabel.setBounds (left.removeFromTop (kControlHeight));
+    placeLabelled (left, cutoffLabel, cutoffSlider);
+    placeLabelled (left, resonanceLabel, resonanceSlider);
+
+    // Right column - ENVELOPE: attack, decay, sustain, release. LFO: destination, rate, depth.
+    envelopeSectionLabel.setBounds (right.removeFromTop (kControlHeight));
+    placeLabelled (right, attackLabel, attackSlider);
+    placeLabelled (right, decayLabel, decaySlider);
+    placeLabelled (right, sustainLabel, sustainSlider);
+    placeLabelled (right, releaseLabel, releaseSlider);
+
+    lfoSectionLabel.setBounds (right.removeFromTop (kControlHeight));
+    placeLabelled (right, lfoDestinationLabel, lfoDestinationBox);
+    placeLabelled (right, lfoRateLabel, lfoRateSlider);
+    placeLabelled (right, lfoDepthLabel, lfoDepthSlider);
+}
+
+void MainComponent::pushAllParametersToSynth()
+{
+    synth.setWaveform       (static_cast<berlin::Waveform> (waveformBox.getSelectedId() - 1));
+    synth.setCutoffHz       ((float) cutoffSlider.getValue());
+    synth.setResonance      ((float) resonanceSlider.getValue());
+    synth.setPulseWidth     ((float) pulseWidthSlider.getValue());
+    synth.setAttackSeconds  ((float) attackSlider.getValue());
+    synth.setDecaySeconds   ((float) decaySlider.getValue());
+    synth.setSustain        ((float) sustainSlider.getValue());
+    synth.setReleaseSeconds ((float) releaseSlider.getValue());
+    synth.setLfoRateHz      ((float) lfoRateSlider.getValue());
+    synth.setLfoDepth       ((float) lfoDepthSlider.getValue());
+    synth.setLfoDestination (static_cast<berlin::LfoDestination> (lfoDestinationBox.getSelectedId() - 1));
 }
 
 //==============================================================================
