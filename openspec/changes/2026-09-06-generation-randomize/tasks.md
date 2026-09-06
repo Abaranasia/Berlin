@@ -26,9 +26,9 @@ Chain strategy: size-exception
 
 ## Phase 1: `Sequence::swap` (sequencing-core delta)
 
-- [ ] 1.1 RED: `Tests/Source/SequenceTests.cpp` — add cases for `A.swap(B)` exchanging contents/sizes, and a `noexcept` compile-time check (`static_assert(noexcept(a.swap(b)))`). Spec: `sequencing-core` "Sequence Supports O(1) Swap".
-- [ ] 1.2 GREEN: `Source/core/Sequence.h` add `void swap (Sequence& other) noexcept;`; `Source/core/Sequence.cpp` implement via `steps.swap (other.steps)`.
-- [ ] 1.3 Verify: run `BerlinTests.exe --category=Berlin --filter="*Sequence*"` green.
+- [x] 1.1 RED: `Tests/Source/SequenceTests.cpp` — add cases for `A.swap(B)` exchanging contents/sizes, and a `noexcept` compile-time check (`static_assert(noexcept(a.swap(b)))`). Spec: `sequencing-core` "Sequence Supports O(1) Swap".
+- [x] 1.2 GREEN: `Source/core/Sequence.h` add `void swap (Sequence& other) noexcept;`; `Source/core/Sequence.cpp` implement via `steps.swap (other.steps)`.
+- [x] 1.3 Verify: run `BerlinTests.exe --category=Berlin --filter="*Sequence*"` green.
 
 ## Phase 2: `SkipMaskGenerator` (deterministic-generation delta)
 

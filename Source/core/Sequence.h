@@ -36,6 +36,13 @@ public:
     Step&       operator[] (int index);        // precondition: 0 <= index < size()
     const Step& operator[] (int index) const;
 
+    // O(1), no heap allocation/deallocation: exchanges the backing vectors'
+    // internal pointers only. This is the primitive the audio thread uses to
+    // adopt a newly-published Sequence (realtime-audio-wiring handoff) - it
+    // must never touch the allocator, so it is NOT implemented via
+    // std::swap(*this, other) (which could move-assign through the vectors).
+    void swap (Sequence& other) noexcept;
+
 private:
     std::vector<Step> steps;
 };

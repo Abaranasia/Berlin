@@ -36,6 +36,11 @@ const Step& Sequence::operator[] (int index) const
     return steps[static_cast<std::size_t> (index)];
 }
 
+void Sequence::swap (Sequence& other) noexcept
+{
+    steps.swap (other.steps);
+}
+
 bool operator== (const Sequence& lhs, const Sequence& rhs)
 {
     if (lhs.size() != rhs.size())
