@@ -61,7 +61,7 @@ Chain strategy: pending
 
 ## Phase 6: Manual Audibility Gate (human-only)
 
-- [ ] 6.1 **(human-verified)** Drag every control while sustaining (immediate, no zipper/click); switch waveform mid-note (no dropout); switch LFO destination mid-note (nothing parked); saw/square/triangle sound like Phase 8; restart audio device (sliders/sound stay in sync).
+- [x] 6.1 **(human-verified)** Drag every control while sustaining (immediate, no zipper/click); switch waveform mid-note (no dropout); switch LFO destination mid-note (nothing parked); saw/square/triangle sound like Phase 8; restart audio device (sliders/sound stay in sync). Confirmed by user 2026-09-06: "everything works great and as expected."
 
 ## Phase 7: Final Cleanup & Verification
 
