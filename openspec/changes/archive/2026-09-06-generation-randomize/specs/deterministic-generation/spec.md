@@ -78,6 +78,16 @@ The system MUST provide a `SkipMaskGenerator` configured with `{numSteps, active
 
 #### Scenario: Only active is populated
 
-- GIVEN a `SkipMaskGenerator` configured with any valid `numSteps` and `activeSteps`
-- WHEN `generate` produces a `Sequence`
-- THEN every step's `note` field is left at its default/unset value, and only `active` is populated
+- GIVEN any `numSteps` and `activeSteps`
+- WHEN `SkipMaskGenerator::generate` is called
+- THEN each `Step`'s `note` field remains at its default value (uninitialized or zero-initialized per `Step`'s constructor)
+
+#### Scenario: activeSteps clamped at both ends
+
+- GIVEN `activeSteps` of 0 (below valid range)
+- WHEN `SkipMaskGenerator::generate` is called
+- THEN the clamped value of 1 is used, producing exactly 1 active step
+
+- GIVEN `activeSteps` greater than `numSteps`
+- WHEN `SkipMaskGenerator::generate` is called
+- THEN the clamped value of `numSteps` is used, producing all steps active

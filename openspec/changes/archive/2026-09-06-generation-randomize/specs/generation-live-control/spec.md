@@ -56,7 +56,7 @@ The seed control MUST be an editable text field, not a display-only label. A use
 
 ### Requirement: Audio-Thread-Safe Regeneration Handoff
 
-Regeneration MUST use a message-thread-to-audio-thread publish/adopt handoff: the message thread builds a complete `Sequence` and publishes it into a staging slot; the audio thread, at the top of its own processing step, adopts it only as a whole — emitting a note-off for any currently-sounding note first (the same note-off contract `flushPendingNoteOff` provides, applied inline as part of adoption rather than via a second call to that method), swapping the sequence in without allocation, and resetting its playhead to step 1. Adoption on the audio thread MUST NOT allocate, MUST NOT use a blocking lock, and MUST NOT introduce logging.
+Regeneration MUST use a message-thread-to-audio-thread publish/adopt handoff: the message thread builds a complete `Sequence` and publishes it into a staging slot (`SequencePlayer::publishSequence`); the audio thread, at the top of its own `process()`, adopts it only as a whole — emitting a note-off for any currently-sounding note first (the same note-off contract `flushPendingNoteOff` provides, applied inline as part of adoption rather than via a second call to that method), swapping the sequence in without allocation (`Sequence::swap`), and resetting its playhead to step 1. Adoption on the audio thread MUST NOT allocate, MUST NOT use a blocking lock, and MUST NOT introduce logging.
 
 #### Scenario: Regeneration while audio is running causes no hung note, dropout, assert, or crash
 
@@ -68,4 +68,4 @@ Regeneration MUST use a message-thread-to-audio-thread publish/adopt handoff: th
 
 - GIVEN the message thread is mid-build of a new `Sequence`
 - WHEN the audio thread is simultaneously rendering
-- THEN the audio thread reads either the complete old `Sequence` or the complete new one, never a torn mixture [mechanism pinned by design]
+- THEN the audio thread reads either the complete old `Sequence` or the complete new one, never a torn mixture (the audio thread only ever reads `sequence`, which it alone replaces via `swap`; the message thread never touches `sequence` directly, only the `pendingSequence` staging slot behind the `sequencePending` atomic flag)
