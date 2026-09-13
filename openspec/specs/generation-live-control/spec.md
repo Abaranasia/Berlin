@@ -10,11 +10,12 @@ A brief audible discontinuity at the moment of a user-triggered regeneration is 
 
 ### Requirement: Generate Rebuilds the Sequence From the Current Seed and Restarts Playback
 
-Pressing Generate MUST rebuild a `Sequence` by composing `SkipMaskGenerator` and `PitchGenerator` against a `DeterministicRandom` constructed from the current seed, publish it through the handoff, and restart the transport from step 1 — not a mid-loop swap that keeps the previous playhead running.
+Pressing Generate MUST rebuild a `Sequence` by composing the currently selected rhythm source (`SkipMaskGenerator` in Random mode, `EuclideanRhythmGenerator` in Euclidean mode) and `PitchGenerator` against a `DeterministicRandom` constructed from the current seed, publish it through the handoff, and restart the transport from step 1 — not a mid-loop swap that keeps the previous playhead running.
+(Previously: rhythm source was always `SkipMaskGenerator`, no mode branch existed.)
 
-#### Scenario: Generate with an unchanged seed reproduces an identical Sequence
+#### Scenario: Generate with an unchanged seed and mode reproduces an identical Sequence
 
-- GIVEN the current seed is unchanged since the last Generate
+- GIVEN the current seed and rhythm mode (and mode parameters) are unchanged since the last Generate
 - WHEN Generate is pressed again
 - THEN the resulting `Sequence` is byte-identical to the previous one
 
@@ -49,6 +50,59 @@ While Lock Seed is enabled, Randomize/New Seed MUST NOT draw or apply a new seed
 - GIVEN Lock Seed is enabled
 - WHEN the user loads a preset with a different saved seed
 - THEN the seed value changes to the preset's saved seed, and a new `Sequence` is generated from it
+
+### Requirement: Rhythm-Mode Selection Controls
+
+The UI MUST expose one row of controls for rhythm mode: a mode selector (Random | Euclidean), a Pulses control, and a Rotation control. Pulses and Rotation MUST be inert (not affect generation) while Random mode is selected. Switching to Euclidean mode for the first time MUST default `pulses` to 5, `rotation` to 0.
+
+#### Scenario: Switching to Euclidean mode uses the default pulses value
+
+- GIVEN the mode has never been switched to Euclidean before
+- WHEN the user selects Euclidean mode
+- THEN Pulses defaults to 5 and Rotation defaults to 0
+
+#### Scenario: Pulses/Rotation controls are inert in Random mode
+
+- GIVEN Random mode is selected
+- WHEN the user changes Pulses or Rotation
+- THEN the generated Sequence is unaffected until the mode is switched to Euclidean
+
+### Requirement: Randomize Rerolls Pitch Only in Euclidean Mode
+
+In Euclidean mode, Randomize/New Seed MUST draw a fresh seed and regenerate pitches, but MUST NOT alter the current `pulses` or `rotation` values — the rhythm pattern stays fixed while pitch varies. This differs from Random mode, where a new seed changes both rhythm and pitch.
+(Previously: Randomize/New Seed drew a fresh seed and regenerated both rhythm and pitch uniformly, with no mode distinction.)
+
+#### Scenario: Randomize in Euclidean mode holds rhythm, varies pitch
+
+- GIVEN Euclidean mode is active with `pulses=5, rotation=2`
+- WHEN Randomize/New Seed is pressed
+- THEN a new seed is drawn, the active-step pattern (still `pulses=5, rotation=2`) is unchanged, and the resulting notes differ from before
+
+#### Scenario: Randomize in Random mode still varies rhythm and pitch
+
+- GIVEN Random mode is active
+- WHEN Randomize/New Seed is pressed
+- THEN a new seed is drawn and both the active-step pattern and the notes may differ from before
+
+### Requirement: Rhythm Mode Is Not Persisted This Slice — Live UI State Wins on Preset Load
+
+Loading a preset MUST NOT change the current rhythm mode, `pulses`, or `rotation` — these remain at whatever the UI currently holds, and that live state (not any prior-saved rhythm, since `Preset` has no rhythm field to begin with) is what gets applied together with the preset's seed when the preset load rebuilds the Sequence. This is a known, explicit gap (Preset schema/version change is out of scope for this slice), not a defect: the user's currently-selected rhythm mode/parameters persist across the load exactly as if Generate had been pressed with the preset's seed.
+
+#### Scenario: Preset load leaves rhythm mode untouched and applies it with the preset's seed
+
+- GIVEN Euclidean mode is active with `pulses=7, rotation=3`
+- WHEN the user loads a preset saved while Random mode was active
+- THEN rhythm mode remains Euclidean with `pulses=7, rotation=3` after load, and the resulting Sequence is built from the preset's seed combined with THIS live Euclidean configuration — not any rhythm the preset was originally saved with
+
+### Requirement: pulses=0 Silently Disables Mutate and Auto-Evolve (Known Limitation)
+
+Because `MutationEngine`'s transforms that require at least one active step (e.g. `addNote`) early-return unchanged on an all-inactive `Sequence`, setting Euclidean `pulses` to 0 produces an all-inactive Sequence on which manual Mutate clicks and Auto-Evolve's automatic triggers become permanent no-ops (no crash, no error, no status feedback) until `pulses` is raised above 0 again. This is an accepted known limitation for this slice, not a defect to fix here — future slices MAY add UI feedback or disable Mutate/Auto-Evolve controls when the active-step count is 0.
+
+#### Scenario: pulses=0 makes Mutate a silent no-op
+
+- GIVEN Euclidean mode with `pulses=0` (an all-inactive Sequence)
+- WHEN the user clicks Mutate
+- THEN the Sequence remains all-inactive and unchanged, with no error or status message distinguishing this from a normal successful mutation
 
 ### Requirement: Loading A Preset Applies Its Saved Seed, Then Generates
 

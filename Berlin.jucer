@@ -26,6 +26,8 @@
       <FILE id="geSmkC" name="SkipMaskGenerator.cpp" compile="1" resource="0" file="Source/generation/SkipMaskGenerator.cpp"/>
       <FILE id="geMteH" name="MutationEngine.h" compile="0" resource="0" file="Source/generation/MutationEngine.h"/>
       <FILE id="geMteC" name="MutationEngine.cpp" compile="1" resource="0" file="Source/generation/MutationEngine.cpp"/>
+      <FILE id="geEucH" name="EuclideanRhythmGenerator.h" compile="0" resource="0" file="Source/generation/EuclideanRhythmGenerator.h"/>
+      <FILE id="geEucC" name="EuclideanRhythmGenerator.cpp" compile="1" resource="0" file="Source/generation/EuclideanRhythmGenerator.cpp"/>
     </GROUP>
     <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
       <FILE id="pbEvtH" name="StepEvent.h" compile="0" resource="0" file="Source/playback/StepEvent.h"/>

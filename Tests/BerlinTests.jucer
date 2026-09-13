@@ -22,6 +22,8 @@
             file="Source/SkipMaskGeneratorTests.cpp"/>
       <FILE id="btMteC" name="MutationEngineTests.cpp" compile="1" resource="0"
             file="Source/MutationEngineTests.cpp"/>
+      <FILE id="btEucC" name="EuclideanRhythmGeneratorTests.cpp" compile="1" resource="0"
+            file="Source/EuclideanRhythmGeneratorTests.cpp"/>
       <FILE id="btSevC" name="StepEventTests.cpp" compile="1" resource="0"
             file="Source/StepEventTests.cpp"/>
       <FILE id="btSebC" name="StepEventBufferTests.cpp" compile="1" resource="0"
@@ -78,6 +80,10 @@
             file="../Source/generation/MutationEngine.h"/>
       <FILE id="tgMteC" name="MutationEngine.cpp" compile="1" resource="0"
             file="../Source/generation/MutationEngine.cpp"/>
+      <FILE id="tgEucH" name="EuclideanRhythmGenerator.h" compile="0" resource="0"
+            file="../Source/generation/EuclideanRhythmGenerator.h"/>
+      <FILE id="tgEucC" name="EuclideanRhythmGenerator.cpp" compile="1" resource="0"
+            file="../Source/generation/EuclideanRhythmGenerator.cpp"/>
     </GROUP>
     <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
       <FILE id="tpEvtH" name="StepEvent.h" compile="0" resource="0" file="../Source/playback/StepEvent.h"/>

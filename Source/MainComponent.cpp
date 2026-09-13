@@ -2,6 +2,7 @@
 
 #include "core/Scale.h"
 #include "generation/DeterministicRandom.h"
+#include "generation/EuclideanRhythmGenerator.h"
 #include "generation/MutationEngine.h"
 #include "generation/PitchGenerator.h"
 #include "generation/SkipMaskGenerator.h"
@@ -12,6 +13,8 @@ namespace
     constexpr int    kStepsPerBeat = 4;
     constexpr int    kNumSteps     = 16;
     constexpr int    kActiveSteps  = 11;   // research's cited 16 -> 11 displacement (design.md Decision 3)
+    constexpr int    kDefaultPulses   = 5;   // roadmap Phase 10 / euclidean-rhythm, design.md Decision 14
+    constexpr int    kDefaultRotation = 0;
     constexpr int    kSeed         = 12345;
     constexpr int    kMidiChannel     = 1;
     constexpr int    kMidiBufferBytes = 1024;
@@ -37,10 +40,12 @@ namespace
     }
 }
 
-berlin::Sequence MainComponent::buildSeededSequence (juce::int64 seed)
+berlin::Sequence MainComponent::buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation)
 {
     berlin::DeterministicRandom rng (seed);
-    auto sequence = berlin::SkipMaskGenerator (kNumSteps, kActiveSteps).generate (rng);
+    auto sequence = (mode == RhythmMode::euclidean)
+        ? berlin::EuclideanRhythmGenerator (kNumSteps, pulses, rotation).generate()  // 0 draws
+        : berlin::SkipMaskGenerator (kNumSteps, kActiveSteps).generate (rng);        // exactly 5 draws (design.md V1)
 
     berlin::PitchGenerator pitch (berlin::Scale::minor (48), 36, 72);
     for (int i = 0; i < sequence.size(); ++i)
@@ -62,7 +67,7 @@ juce::File MainComponent::defaultExportFile()
 //==============================================================================
 MainComponent::MainComponent()
     : currentSeed (kSeed),
-      currentSequence (buildSeededSequence (currentSeed)),
+      currentSequence (buildSeededSequence (currentSeed, RhythmMode::random, kDefaultPulses, kDefaultRotation)),
       sequenceSeed (kSeed),
       player (currentSequence, berlin::Transport (kBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel), midiSink (kMidiChannel)
@@ -200,6 +205,36 @@ MainComponent::MainComponent()
     evolveRateBox.addItem ("Every 16 loops", 16);
     evolveRateBox.setSelectedId (4, juce::dontSendNotification);   // default rate: every 4 loops
 
+    // ---- Euclidean Rhythms controls (roadmap Phase 10 / euclidean-rhythm,
+    // design.md Decision 10) - STAGED, not live: no onChange/onValueChange
+    // here calls regenerate(). Changing mode/pulses/rotation does nothing
+    // until Generate or Randomize is pressed (mirrors the seed-field
+    // precedent, avoids flooding the status label during a slider drag).
+    addAndMakeVisible (rhythmModeLabel);
+    rhythmModeLabel.setText ("Rhythm", juce::dontSendNotification);
+    rhythmModeLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (rhythmModeBox);
+    rhythmModeBox.addItem ("Random",    static_cast<int> (RhythmMode::random) + 1);
+    rhythmModeBox.addItem ("Euclidean", static_cast<int> (RhythmMode::euclidean) + 1);
+    rhythmModeBox.setSelectedId (static_cast<int> (RhythmMode::random) + 1, juce::dontSendNotification);
+
+    addAndMakeVisible (pulsesLabel);
+    pulsesLabel.setText ("Pulses", juce::dontSendNotification);
+    pulsesLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (pulsesSlider);
+    pulsesSlider.setRange (0, kNumSteps, 1);
+    pulsesSlider.setValue (kDefaultPulses, juce::dontSendNotification);
+
+    addAndMakeVisible (rotationLabel);
+    rotationLabel.setText ("Rotation", juce::dontSendNotification);
+    rotationLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (rotationSlider);
+    rotationSlider.setRange (0, kNumSteps - 1, 1);
+    rotationSlider.setValue (kDefaultRotation, juce::dontSendNotification);
+
     // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
     // Every control must be constructed and valued here, BEFORE setAudioChannels()
     // below - it can invoke prepareToPlay synchronously (design.md Decision 6's
@@ -293,7 +328,8 @@ MainComponent::MainComponent()
 
     // Make sure you set the size of the component after
     // you add any child components.
-    setSize (800, 600);
+    setSize (800, 640);   // bumped from 600 (roadmap Phase 10 / euclidean-rhythm, design.md Decision 11):
+                          // the new EUCLIDEAN row needs 34px, only 10px of headroom remained
 
     player.start();
     midiSink.openFirstAvailableDevice();   // return ignored: false is the valid silent state
@@ -413,6 +449,21 @@ void MainComponent::resized()
     mutateButton    .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
+    // EUCLIDEAN (roadmap Phase 10 / euclidean-rhythm, design.md Decision 12) -
+    // one row between the generation block and EVOLUTION: rhythm mode
+    // configures what Generate produces, so it belongs with GENERATION and
+    // before EVOLUTION, which mutates the generated result.
+    auto euclideanRow = area.removeFromTop (kControlHeight);
+    rhythmModeLabel.setBounds (euclideanRow.removeFromLeft (kLabelWidth));
+    rhythmModeBox  .setBounds (euclideanRow.removeFromLeft (kButtonWidth));
+    euclideanRow.removeFromLeft (6);
+    pulsesLabel    .setBounds (euclideanRow.removeFromLeft (kLabelWidth));
+    pulsesSlider   .setBounds (euclideanRow.removeFromLeft (kButtonWidth));
+    euclideanRow.removeFromLeft (6);
+    rotationLabel  .setBounds (euclideanRow.removeFromLeft (kLabelWidth));
+    rotationSlider .setBounds (euclideanRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
     // EVOLUTION (roadmap Phase 9 "Evolution", Slice 2 / auto-evolution spec,
     // design.md's resized() insertion) - one row between the generation block
     // and PRESETS: label 96 | toggle 140 | 6 | rate label 96 | rate box 140
@@ -482,7 +533,11 @@ void MainComponent::regenerate (bool drawNewSeed)
         seedEditor.setText (juce::String (currentSeed), juce::dontSendNotification);
     }
 
-    auto next = buildSeededSequence (currentSeed);
+    const auto mode = static_cast<RhythmMode> (rhythmModeBox.getSelectedId() - 1);
+    const int  pulses   = (int) pulsesSlider.getValue();
+    const int  rotation = (int) rotationSlider.getValue();
+
+    auto next = buildSeededSequence (currentSeed, mode, pulses, rotation);
 
     // `player.publishSequence` swaps THROUGH its argument (design.md Decision 1):
     // on success, the argument ends up holding the stale, now-superseded buffer,

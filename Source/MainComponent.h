@@ -36,7 +36,17 @@ public:
 private:
     //==============================================================================
     // Your private member variables go here...
-    static berlin::Sequence buildSeededSequence (juce::int64 seed);
+
+    // ---- Euclidean Rhythms (roadmap Phase 10 / euclidean-rhythm, design.md
+    // Decision 3) - a composition-root/UI concept, not a generator-level one:
+    // Source/generation/ stays mode-agnostic.
+    enum class RhythmMode { random, euclidean };
+
+    // MUST take mode/pulses/rotation as explicit parameters (design.md
+    // Decision 2 / V5): this is static and runs from the ctor member-init
+    // list before any widget exists, so reading widgets here would be
+    // undefined behaviour, not just bad style.
+    static berlin::Sequence buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation);
     static juce::File       defaultExportFile();     // default destination seeded into the save dialog
 
     void launchExportChooser();
@@ -164,6 +174,17 @@ private:
     juce::ToggleButton autoEvolveToggle { "Auto-Evolve" };
     juce::Label        evolveRateLabel;
     juce::ComboBox     evolveRateBox;
+
+    // ---- Euclidean Rhythms controls (roadmap Phase 10 / euclidean-rhythm,
+    // design.md Decision 10) - staged, not live: mode/pulses/rotation edits
+    // do nothing until Generate or Randomize is pressed (mirrors the
+    // existing seed-field precedent).
+    juce::Label      rhythmModeLabel;
+    juce::ComboBox   rhythmModeBox;
+    juce::Label      pulsesLabel;
+    juce::Slider     pulsesSlider;
+    juce::Label      rotationLabel;
+    juce::Slider     rotationSlider;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
