@@ -55,6 +55,14 @@ private:
     // pattern, never a stale one.
     void regenerate (bool drawNewSeed);
 
+    // Applies exactly one random MutationEngine transform to `currentSequence`
+    // and publishes the result via the same audio-thread-safe handoff as
+    // `regenerate()` (evolution-mutation-engine spec, design.md Data Flow).
+    // On success, `currentSequence` is updated and `mutationCount` advances;
+    // on a busy-publish rejection, both are left unchanged so a retry
+    // reproduces the same candidate mutation.
+    void mutate();
+
     // ---- Preset controls (roadmap Phase 11 / preset-system, design.md
     // Decision 5) - `regenerate()` and `pushAllParametersToSynth()` above are
     // reused VERBATIM by the load path; neither is modified for presets.
@@ -68,6 +76,16 @@ private:
 
     juce::int64                 currentSeed;
     berlin::Sequence            currentSequence;      // MUST precede `player` (Decision 2); audio-thread-exclusive once published
+
+    // ---- Manual Mutate (evolution-mutation-engine spec, Manual Mutate,
+    // Slice 1) - sequenceSeed is the base seed the CURRENT sequence was
+    // actually built from (set only inside regenerate()'s success path,
+    // NOT read live from currentSeed/the seed field, which can diverge -
+    // design.md Decision 4). mutationCount is the per-click generation
+    // counter, advanced only after a successful publish (Decision 5) and
+    // reset to 0 whenever regenerate() succeeds (the undo story).
+    juce::int64 sequenceSeed;
+    int         mutationCount { 0 };
     berlin::SequencePlayer      player;
     berlin::StepEventBuffer     blockEvents;
     berlin::MidiEventTranslator midiTranslator;
@@ -104,6 +122,7 @@ private:
     juce::TextEditor   seedEditor;
     juce::TextButton   generateButton { "Generate" };
     juce::TextButton   randomizeButton { "Randomize" };
+    juce::TextButton   mutateButton { "Mutate" };
     juce::ToggleButton lockSeedToggle { "Lock Seed" };
 
     // ---- Preset controls (roadmap Phase 11 / preset-system) ----
