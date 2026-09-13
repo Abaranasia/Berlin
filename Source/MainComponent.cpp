@@ -2,6 +2,7 @@
 
 #include "core/Scale.h"
 #include "generation/DeterministicRandom.h"
+#include "generation/MutationEngine.h"
 #include "generation/PitchGenerator.h"
 #include "generation/SkipMaskGenerator.h"
 
@@ -62,6 +63,7 @@ juce::File MainComponent::defaultExportFile()
 MainComponent::MainComponent()
     : currentSeed (kSeed),
       currentSequence (buildSeededSequence (currentSeed)),
+      sequenceSeed (kSeed),
       player (currentSequence, berlin::Transport (kBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel), midiSink (kMidiChannel)
 {
@@ -128,6 +130,9 @@ MainComponent::MainComponent()
 
     addAndMakeVisible (randomizeButton);
     randomizeButton.onClick = [this] { regenerate (true); };
+
+    addAndMakeVisible (mutateButton);
+    mutateButton.onClick = [this] { mutate(); };
 
     addAndMakeVisible (lockSeedToggle);
     lockSeedToggle.setToggleState (false, juce::dontSendNotification);   // default off
@@ -369,6 +374,7 @@ void MainComponent::resized()
     generateButton  .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
     randomizeButton .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
     lockSeedToggle  .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
+    mutateButton    .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
     // PRESETS: one full-width row, deliberately compressing the section-label
@@ -445,6 +451,37 @@ void MainComponent::regenerate (bool drawNewSeed)
     }
 
     currentSequence = std::move (next);
+
+    // Undo story (evolution-mutation-engine spec, "Generate restores the
+    // seeded original"): Generate with the seed field unchanged rebuilds the
+    // exact same sequence sequenceSeed already points at, so re-anchoring
+    // here is a no-op in that case; when a NEW seed was drawn, this ties
+    // sequenceSeed to it. Either way, any mutation chain built on the old
+    // sequence is discarded and the next Mutate click starts at generation 1.
+    sequenceSeed = currentSeed;
+    mutationCount = 0;
+}
+
+void MainComponent::mutate()
+{
+    berlin::DeterministicRandom rng (berlin::MutationEngine::mutationSeed (sequenceSeed, mutationCount + 1));
+
+    auto next = berlin::MutationEngine::applyRandomTransform (currentSequence, rng);
+
+    // Same rationale as regenerate(): player.publishSequence swaps THROUGH
+    // its argument, so publish a COPY and keep `next` intact as the value
+    // `currentSequence` (Export's source) must become.
+    auto forPlayer = next;
+
+    if (! player.publishSequence (forPlayer))
+    {
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::red);
+        statusLabel.setText ("Busy, try again", juce::dontSendNotification);
+        return; // currentSequence AND mutationCount unchanged: retry reproduces the same candidate
+    }
+
+    currentSequence = std::move (next);
+    ++mutationCount;
 }
 
 void MainComponent::pushAllParametersToSynth()
