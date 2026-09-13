@@ -37,6 +37,19 @@
    in-place initialiser-list construction in MainComponent, so the compiler
    enforces "fully built before setAudioChannels" rather than a comment.
 
+   loopCount (auto-evolution spec, step-event-scheduling "Loop Completion
+   Counter") is a second observability seam mirroring playhead exactly:
+   audio-thread relaxed store inside the boundary loop of process(), any-
+   thread relaxed load via getLoopCount(). It increments exactly once per
+   genuine wrap (stepIndex == 0 && previousStep != 0) and is monotonic -
+   never reset or decremented, including by publish/adopt, since the adopt
+   path already zeroes playhead before the boundary loop runs (so the first
+   post-adopt boundary reads previousStep == 0 and is correctly excluded).
+   isPublishPending() is a third, read-only seam letting a caller check
+   busy state (sequencePending) before attempting a publish-dependent
+   action, rather than only discovering it from that action's own
+   rejection.
+
   ==============================================================================
 */
 
@@ -80,7 +93,10 @@ public:
     // it emitted.
     bool flushPendingNoteOff (StepEventBuffer& out) noexcept;
 
-    int getPlayheadStep() const noexcept;   // atomic load, any thread; the ONLY observability seam
+    int getPlayheadStep() const noexcept;   // atomic load, any thread; one of three observability seams
+
+    int  getLoopCount()     const noexcept;   // atomic load, any thread; monotonic, +1 per genuine wrap
+    bool isPublishPending() const noexcept;   // atomic load, any thread; true while a publish awaits adoption
 
 private:
     Sequence sequence;               // AUDIO-THREAD-EXCLUSIVE after construction
@@ -90,6 +106,7 @@ private:
     int pendingNote { -1 };    // -1 = nothing sounding
     int pendingStep { 0 };
     std::atomic<int> playhead { 0 };
+    std::atomic<int> loopCount { 0 };
 };
 
 } // namespace berlin

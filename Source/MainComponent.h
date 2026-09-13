@@ -16,7 +16,8 @@
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
-class MainComponent  : public juce::AudioAppComponent
+class MainComponent  : public juce::AudioAppComponent,
+                       private juce::Timer
 {
 public:
     //==============================================================================
@@ -63,6 +64,14 @@ private:
     // reproduces the same candidate mutation.
     void mutate();
 
+    // ---- Auto-Evolve (roadmap Phase 9 "Evolution", Slice 2 / auto-evolution
+    // spec, design.md Data Flow) - polls player.getLoopCount() at 60 Hz while
+    // enabled and calls the existing mutate() unchanged once per `rate`
+    // completed loops. isPublishPending() gates the call so a busy publish
+    // is retried silently on the next tick instead of ever reaching
+    // mutate()'s own "Busy, try again" rejection path (design.md Decision 6).
+    void timerCallback() override;
+
     // ---- Preset controls (roadmap Phase 11 / preset-system, design.md
     // Decision 5) - `regenerate()` and `pushAllParametersToSynth()` above are
     // reused VERBATIM by the load path; neither is modified for presets.
@@ -86,6 +95,18 @@ private:
     // reset to 0 whenever regenerate() succeeds (the undo story).
     juce::int64 sequenceSeed;
     int         mutationCount { 0 };
+
+    // ---- Auto-Evolve schedule state (auto-evolution spec, design.md
+    // Decision 7) - lastMutationLoopCount is the baseline the next threshold
+    // is measured from; dueAtLoopCount (-1 = nothing due) remembers the
+    // loop-count value AT WHICH a threshold crossing became due, and on
+    // success the baseline advances to that remembered value, NOT to
+    // whatever getLoopCount() reads at delivery time - this keeps the
+    // cadence anchored to the triggering boundary even across busy-retry
+    // delays.
+    int lastMutationLoopCount { 0 };
+    int dueAtLoopCount { -1 };
+
     berlin::SequencePlayer      player;
     berlin::StepEventBuffer     blockEvents;
     berlin::MidiEventTranslator midiTranslator;
@@ -133,6 +154,16 @@ private:
     juce::TextButton savePresetButton { "Save" };
     juce::ComboBox   presetBox;
     juce::TextButton loadPresetButton { "Load" };
+
+    // ---- Auto-Evolve controls (roadmap Phase 9 "Evolution", Slice 2 /
+    // auto-evolution spec) - one full-width row inserted between the
+    // generation block and the PRESETS block in resized(): EVOLUTION label |
+    // Auto-Evolve toggle (default off) | Every | rate selector (1/2/4/8/16
+    // loops, ComboBox item ID == rate, default 4).
+    juce::Label        evolutionSectionLabel;
+    juce::ToggleButton autoEvolveToggle { "Auto-Evolve" };
+    juce::Label        evolveRateLabel;
+    juce::ComboBox     evolveRateBox;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

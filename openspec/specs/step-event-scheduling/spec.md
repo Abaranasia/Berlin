@@ -131,3 +131,41 @@ The only production call site MUST be `MainComponent::releaseResources()`, on th
 - GIVEN repeated cycles of starting playback, processing several blocks, and stopping — including a stop that lands mid-step and a stop with nothing sounding
 - WHEN `flushPendingNoteOff` is called at the end of each cycle before any `reset()`
 - THEN every note-on emitted during that cycle has a matching note-off, with none left hanging
+
+### Requirement: Loop Completion Counter
+
+The system MUST expose, via `SequencePlayer`, an RT-safe `std::atomic<int> loopCount` and `getLoopCount() const noexcept`, mirroring the existing `playhead`/`getPlayheadStep()` cross-thread pattern exactly (audio thread writes via a relaxed atomic store inside `process()`; message thread reads via the getter — no lock, no allocation). `loopCount` MUST increment exactly once per genuine loop completion, defined as the step position wrapping from a non-zero step back to 0 during normal playback advancement. `loopCount` MUST NOT increment when the step position is set to 0 by `reset()` (e.g., on publish-adopt), since that is not a loop completion. `loopCount` MUST remain monotonic — it is never reset or decremented by any operation in this change, including publish-adopt.
+
+#### Scenario: Loop completion increments the counter
+
+- GIVEN a running `SequencePlayer` processing a `Sequence` of N steps
+- WHEN the step position wraps from step N-1 back to step 0 during normal advancement
+- THEN `getLoopCount()` reflects exactly one additional completed loop
+
+#### Scenario: Publish-triggered reset does not count as a loop completion
+
+- GIVEN a running `SequencePlayer` with `loopCount` at value V, mid-loop at a non-zero step
+- WHEN a new sequence is published and adopted, calling `reset()` and setting the step position to 0
+- THEN `getLoopCount()` remains at V, unchanged by the reset
+
+#### Scenario: Counter stays exact across many wraps, including around publishes
+
+- GIVEN a `SequencePlayer` processed across many loop wraps interspersed with occasional publish-adopts
+- WHEN `getLoopCount()` is inspected after each wrap and after each adopt
+- THEN it increases by exactly one per genuine loop completion only, with no missed or double counts
+
+#### Scenario: Device restart does not fabricate a loop completion
+
+- GIVEN a running `SequencePlayer` mid-loop at a non-zero step, with `loopCount` at value V
+- WHEN `prepare()` is called (e.g. on audio device restart) and playback then advances past the first step-0 boundary
+- THEN `getLoopCount()` is still exactly V + 1 for that one genuine boundary — not V + 2 — i.e. `prepare()` itself must not leave stale wrap-detection state that fabricates an extra completion
+
+### Requirement: Publish-Pending Observability
+
+The system MUST expose, via `SequencePlayer`, an RT-safe `bool isPublishPending() const noexcept` that reports whether a published sequence is currently awaiting adoption by the audio thread, readable from the message thread with no lock or allocation. This lets a caller check busy state before attempting a publish-dependent action, rather than only discovering busy state from that action's own rejection.
+
+#### Scenario: Reflects pending state accurately across the handoff
+
+- GIVEN a `SequencePlayer` with no pending publish
+- WHEN a sequence is published via `publishSequence()`
+- THEN `isPublishPending()` returns true until the audio thread adopts it, and false once adopted

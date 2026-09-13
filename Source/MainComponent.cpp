@@ -166,6 +166,40 @@ MainComponent::MainComponent()
 
     refreshPresetList();
 
+    // ---- Auto-Evolve controls (roadmap Phase 9 "Evolution", Slice 2 /
+    // auto-evolution spec) ----
+    addAndMakeVisible (evolutionSectionLabel);
+    evolutionSectionLabel.setText ("EVOLUTION", juce::dontSendNotification);
+
+    addAndMakeVisible (autoEvolveToggle);
+    autoEvolveToggle.setToggleState (false, juce::dontSendNotification);   // default off (byte-identical when off)
+    autoEvolveToggle.onClick = [this]
+    {
+        if (autoEvolveToggle.getToggleState())
+        {
+            lastMutationLoopCount = player.getLoopCount();
+            dueAtLoopCount = -1;
+            startTimerHz (60);
+        }
+        else
+        {
+            stopTimer();
+            dueAtLoopCount = -1;
+        }
+    };
+
+    addAndMakeVisible (evolveRateLabel);
+    evolveRateLabel.setText ("Every", juce::dontSendNotification);
+    evolveRateLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (evolveRateBox);
+    evolveRateBox.addItem ("Every 1 loops",  1);
+    evolveRateBox.addItem ("Every 2 loops",  2);
+    evolveRateBox.addItem ("Every 4 loops",  4);
+    evolveRateBox.addItem ("Every 8 loops",  8);
+    evolveRateBox.addItem ("Every 16 loops", 16);
+    evolveRateBox.setSelectedId (4, juce::dontSendNotification);   // default rate: every 4 loops
+
     // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
     // Every control must be constructed and valued here, BEFORE setAudioChannels()
     // below - it can invoke prepareToPlay synchronously (design.md Decision 6's
@@ -280,6 +314,8 @@ MainComponent::MainComponent()
 
 MainComponent::~MainComponent()
 {
+    stopTimer();   // MUST be first (design.md): the timer callback touches `player`/`this`
+
     exportChooser.reset();
 
     // This shuts down the audio device and clears the audio source.
@@ -375,6 +411,18 @@ void MainComponent::resized()
     randomizeButton .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
     lockSeedToggle  .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
     mutateButton    .setBounds (generationButtonRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    // EVOLUTION (roadmap Phase 9 "Evolution", Slice 2 / auto-evolution spec,
+    // design.md's resized() insertion) - one row between the generation block
+    // and PRESETS: label 96 | toggle 140 | 6 | rate label 96 | rate box 140
+    // = 478 <= 776.
+    auto evolutionRow = area.removeFromTop (kControlHeight);
+    evolutionSectionLabel.setBounds (evolutionRow.removeFromLeft (kLabelWidth));
+    autoEvolveToggle     .setBounds (evolutionRow.removeFromLeft (kButtonWidth));
+    evolutionRow.removeFromLeft (6);
+    evolveRateLabel      .setBounds (evolutionRow.removeFromLeft (kLabelWidth));
+    evolveRateBox        .setBounds (evolutionRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
     // PRESETS: one full-width row, deliberately compressing the section-label
@@ -482,6 +530,39 @@ void MainComponent::mutate()
 
     currentSequence = std::move (next);
     ++mutationCount;
+}
+
+void MainComponent::timerCallback()
+{
+    const int rate  = evolveRateBox.getSelectedId();   // item ID == rate (design.md Decision 8)
+    const int loops = player.getLoopCount();
+
+    if (dueAtLoopCount < 0)
+    {
+        // Not due yet: mark due on the threshold crossing, remembering the
+        // loop-count value AT WHICH it became due (design.md Decision 7) -
+        // NOT whatever getLoopCount() reads later at delivery time.
+        if (loops - lastMutationLoopCount >= rate)
+            dueAtLoopCount = loops;
+
+        return;
+    }
+
+    // Due: gate on isPublishPending() BEFORE calling mutate() at all, so a
+    // busy publish never reaches mutate()'s own "Busy, try again" rejection
+    // path for an automatic attempt the user did not initiate (design.md
+    // Decision 6). Silently retry on a later tick instead.
+    if (player.isPublishPending())
+        return;
+
+    const int before = mutationCount;
+    mutate();
+
+    if (mutationCount == before)
+        return;   // rejected (shouldn't happen given the pre-check, but stay due just in case) - retry next tick
+
+    lastMutationLoopCount = dueAtLoopCount;   // re-baseline to the REMEMBERED due value, not `loops`
+    dueAtLoopCount = -1;
 }
 
 void MainComponent::pushAllParametersToSynth()

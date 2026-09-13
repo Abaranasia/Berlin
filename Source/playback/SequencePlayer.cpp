@@ -19,7 +19,12 @@ SequencePlayer::SequencePlayer (Sequence sequenceToPlay, Transport transportToUs
 
 void SequencePlayer::prepare (double sampleRate) noexcept
 {
-    transport.prepare (sampleRate);
+    transport.prepare (sampleRate);   // internally calls Transport::reset(), restarting the step counter at 0
+
+    // V3 fix: without this, a restart mid-loop (e.g. audio device restart)
+    // left playhead stale and non-zero while the step counter restarted at
+    // 0, so the next step-0 boundary would read as a false wrap.
+    playhead.store (0, std::memory_order_relaxed);
 }
 
 void SequencePlayer::start() noexcept
@@ -71,6 +76,12 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
     {
         const int n = transport.countBoundaries (numSamples);
 
+        // Hoisted AFTER the adopt block above: on a post-adopt call this reads
+        // 0 (adopt already zeroed playhead before this loop runs), which
+        // correctly excludes the post-adopt step-0 boundary from counting as
+        // a genuine wrap (design.md Decision 1 / V2).
+        int previousStep = playhead.load (std::memory_order_relaxed);
+
         for (int i = 0; i < n; ++i)
         {
             const StepBoundary b = transport.getBoundary (i);
@@ -89,7 +100,11 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
                 pendingStep = stepIndex;
             }
 
+            if (stepIndex == 0 && previousStep != 0)   // genuine wrap; post-adopt reads 0 -> excluded
+                loopCount.store (loopCount.load (std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+
             playhead.store (stepIndex, std::memory_order_relaxed);
+            previousStep = stepIndex;
         }
     }
 
@@ -111,6 +126,16 @@ bool SequencePlayer::flushPendingNoteOff (StepEventBuffer& out) noexcept
 int SequencePlayer::getPlayheadStep() const noexcept
 {
     return playhead.load (std::memory_order_relaxed);
+}
+
+int SequencePlayer::getLoopCount() const noexcept
+{
+    return loopCount.load (std::memory_order_relaxed);
+}
+
+bool SequencePlayer::isPublishPending() const noexcept
+{
+    return sequencePending.load (std::memory_order_acquire);
 }
 
 } // namespace berlin
