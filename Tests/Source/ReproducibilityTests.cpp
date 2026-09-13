@@ -36,6 +36,7 @@
 #include "core/Scale.h"
 #include "core/Sequence.h"
 #include "generation/DeterministicRandom.h"
+#include "generation/MutationEngine.h"
 #include "generation/PitchGenerator.h"
 #include "generation/RhythmGenerator.h"
 #include "generation/SkipMaskGenerator.h"
@@ -81,6 +82,29 @@ berlin::Sequence generateFullSkipMaskSequence (int numSteps, int activeSteps, in
             sequence[i].note = pitchGenerator.generateNextNote (random);
 
     return sequence;
+}
+
+// Mutation-chain golden (evolution-mutation-engine spec, Manual Mutate,
+// Slice 1). Same "replicate production composition test-locally" convention
+// as generateFullSkipMaskSequence above: MainComponent::mutate() derives its
+// per-click RNG via mutationSeed(sequenceSeed, mutationCount + 1) and applies
+// exactly one transform via applyRandomTransform, chaining the result into
+// the next click's input. Running that chain twice, from the same base
+// Sequence and base seed, for the same number of clicks, must produce
+// byte-identical Sequences - since mutationSeed is a pure function of
+// (baseSeed, generation) and applyRandomTransform's draw count is a pure
+// function of its inputs.
+berlin::Sequence runMutationChain (const berlin::Sequence& base, juce::int64 baseSeed, int clicks)
+{
+    berlin::Sequence current = base;
+
+    for (int generation = 1; generation <= clicks; ++generation)
+    {
+        berlin::DeterministicRandom random (berlin::MutationEngine::mutationSeed (baseSeed, generation));
+        current = berlin::MutationEngine::applyRandomTransform (current, random);
+    }
+
+    return current;
 }
 
 } // namespace
@@ -140,6 +164,23 @@ public:
             const berlin::Sequence sequenceB = generateFullSkipMaskSequence (numSteps, activeSteps, rootNote, randomB);
 
             expect (sequenceA == sequenceB);
+        }
+
+        beginTest ("mutation chain: same base Sequence, seed, and click count reproduce an identical Sequence");
+        {
+            constexpr int numSteps = 16;
+            constexpr int activeSteps = 11;
+            constexpr int rootNote = 60;
+            constexpr juce::int64 seed = 4242;
+            constexpr int clicks = 5;
+
+            berlin::DeterministicRandom baseRandom (seed);
+            const berlin::Sequence base = generateFullSkipMaskSequence (numSteps, activeSteps, rootNote, baseRandom);
+
+            const berlin::Sequence resultA = runMutationChain (base, seed, clicks);
+            const berlin::Sequence resultB = runMutationChain (base, seed, clicks);
+
+            expect (resultA == resultB);
         }
     }
 };

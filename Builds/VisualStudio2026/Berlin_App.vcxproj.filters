@@ -886,6 +886,9 @@
     <ClCompile Include="..\..\Source\generation\SkipMaskGenerator.cpp">
       <Filter>Berlin\generation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\generation\MutationEngine.cpp">
+      <Filter>Berlin\generation</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\playback\Transport.cpp">
       <Filter>Berlin\playback</Filter>
     </ClCompile>
@@ -4192,6 +4195,9 @@
       <Filter>Berlin\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\generation\SkipMaskGenerator.h">
+      <Filter>Berlin\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\generation\MutationEngine.h">
       <Filter>Berlin\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\playback\StepEvent.h">

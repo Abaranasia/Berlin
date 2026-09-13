@@ -156,6 +156,7 @@
     <ClCompile Include="..\..\Source\RhythmGeneratorTests.cpp"/>
     <ClCompile Include="..\..\Source\ReproducibilityTests.cpp"/>
     <ClCompile Include="..\..\Source\SkipMaskGeneratorTests.cpp"/>
+    <ClCompile Include="..\..\Source\MutationEngineTests.cpp"/>
     <ClCompile Include="..\..\Source\StepEventTests.cpp"/>
     <ClCompile Include="..\..\Source\StepEventBufferTests.cpp"/>
     <ClCompile Include="..\..\Source\TransportTests.cpp"/>
@@ -176,6 +177,7 @@
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\RhythmGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\SkipMaskGenerator.cpp"/>
+    <ClCompile Include="..\..\..\Source\generation\MutationEngine.cpp"/>
     <ClCompile Include="..\..\..\Source\playback\Transport.cpp"/>
     <ClCompile Include="..\..\..\Source\playback\SequencePlayer.cpp"/>
     <ClCompile Include="..\..\..\Source\export\MidiExportTimeline.cpp"/>
@@ -1153,6 +1155,7 @@
     <ClInclude Include="..\..\..\Source\generation\PitchGenerator.h"/>
     <ClInclude Include="..\..\..\Source\generation\RhythmGenerator.h"/>
     <ClInclude Include="..\..\..\Source\generation\SkipMaskGenerator.h"/>
+    <ClInclude Include="..\..\..\Source\generation\MutationEngine.h"/>
     <ClInclude Include="..\..\..\Source\playback\StepEvent.h"/>
     <ClInclude Include="..\..\..\Source\playback\StepEventBuffer.h"/>
     <ClInclude Include="..\..\..\Source\playback\Transport.h"/>
