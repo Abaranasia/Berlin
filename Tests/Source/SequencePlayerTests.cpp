@@ -221,6 +221,97 @@ public:
             expect (buffer.hasOverflowed());
             expectEquals (buffer.size(), berlin::StepEventBuffer::capacity);
         }
+
+        // ---- Loop-completion counter (auto-evolution spec, step-event-scheduling
+        // "Loop Completion Counter"). Reuses the {bpm=60, stepsPerBeat=1} @
+        // sampleRate=4.0 convention above -> samplesPerStep == 4.0 exactly.
+
+        beginTest ("fresh player: getLoopCount() == 0; no increment before the first wrap");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // N = 4
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            expectEquals (player.getLoopCount(), 0);
+
+            berlin::StepEventBuffer buffer;
+
+            // Boundaries k=0..3 (steps 0,1,2,3): the FIRST pass through the
+            // sequence never wraps, so loopCount must stay 0 throughout.
+            for (int i = 0; i < 4; ++i)
+            {
+                player.process (4, buffer);
+                expectEquals (player.getLoopCount(), 0);
+            }
+        }
+
+        beginTest ("N full passes over a size-4 sequence yield exactly N-1 loopCount increments, exact across mixed/irregular block sizes");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // N = 4
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+
+            // 5 passes of 4 boundaries = boundaries k=0..19 (20 boundaries), which
+            // fire at sample offsets 0,4,...,76 - all strictly below 79 samples.
+            // Irregular sizes, several shorter than one step (4 samples); sums to 79.
+            const std::vector<int> blockSizes { 1, 1, 2, 3, 5, 8, 13, 21, 25 };
+            for (const auto blockSize : blockSizes)
+                player.process (blockSize, buffer);
+
+            expectEquals (player.getLoopCount(), 4);   // 5 passes -> exactly N-1 = 4
+        }
+
+        beginTest ("prepare() after a non-zero playhead does not fabricate a loop completion (V3 regression)");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // N = 4
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);   // boundary 0: step 0
+            player.process (4, buffer);   // boundary 1: step 1 (non-zero playhead)
+            expectEquals (player.getPlayheadStep(), 1);
+            expectEquals (player.getLoopCount(), 0);
+
+            player.prepare (4.0);   // simulates an audio-device restart mid-loop
+            expectEquals (player.getPlayheadStep(), 0);   // V3 fix: prepare() must reset playhead too
+
+            player.process (4, buffer);   // first boundary after prepare(): stepIndex 0, previousStep now 0 -> no false wrap
+            expectEquals (player.getLoopCount(), 0);
+        }
+
+        beginTest ("stopped player never increments loopCount; size-1 sequence never increments loopCount");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // N = 4
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            // never call start(): transport.countBoundaries() returns 0 while stopped
+
+            berlin::StepEventBuffer buffer;
+            for (int i = 0; i < 50; ++i)
+            {
+                player.process (4, buffer);
+                expectEquals (player.getLoopCount(), 0);
+            }
+
+            // Size-1 sequence: every step is step 0, so the wrap condition
+            // (stepIndex == 0 && previousStep != 0) is unreachable (Decision 3).
+            auto sizeOneSequence = makeSequence ({ { 60, true } });
+            berlin::SequencePlayer sizeOnePlayer (sizeOneSequence, berlin::Transport (60.0, 1));
+            sizeOnePlayer.prepare (4.0);
+            sizeOnePlayer.start();
+
+            for (int i = 0; i < 50; ++i)
+            {
+                sizeOnePlayer.process (4, buffer);
+                expectEquals (sizeOnePlayer.getLoopCount(), 0);
+            }
+        }
     }
 };
 

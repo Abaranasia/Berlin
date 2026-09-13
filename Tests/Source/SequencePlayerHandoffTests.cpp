@@ -176,6 +176,56 @@ public:
             expect (buffer[1] == berlin::StepEvent { 0, 0, 70, true });
             expectEquals (player.getPlayheadStep(), 0);
         }
+
+        // ---- Loop-completion counter across the handoff, and isPublishPending()
+        // observability (auto-evolution spec).
+
+        beginTest ("publish/adopt does not increment loopCount; the counter never decreases across a handoff");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // old size 4
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+
+            // Boundaries k=0..4: k=4 wraps the size-4 sequence back to step 0 -> +1.
+            for (int i = 0; i < 5; ++i)
+                player.process (4, buffer);
+            expectEquals (player.getLoopCount(), 1);
+
+            auto sequenceB = makeSequence ({ { 70, true }, { 71, true }, { 72, true } });   // new size 3
+            expect (player.publishSequence (sequenceB));
+
+            player.process (4, buffer);   // adoption at TOP of this call: playhead reset to 0, NOT a genuine wrap
+            expectEquals (player.getLoopCount(), 1);   // unchanged by the adopt-triggered reset
+            expectEquals (player.getPlayheadStep(), 0);
+
+            // Continue on the NEW size-3 sequence: step 1, step 2, then a genuine
+            // wrap back to step 0 -> exactly one more increment, never a decrease.
+            player.process (4, buffer);   // step 1
+            player.process (4, buffer);   // step 2
+            player.process (4, buffer);   // wraps to step 0 of the new sequence -> +1
+            expectEquals (player.getLoopCount(), 2);
+        }
+
+        beginTest ("isPublishPending() is false initially, true after publishSequence(), false after the adopting process()");
+        {
+            auto sequenceA = makeSequence ({ { 60, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            expect (! player.isPublishPending());
+
+            auto sequenceB = makeSequence ({ { 70, true } });
+            expect (player.publishSequence (sequenceB));
+            expect (player.isPublishPending());
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);   // adoption happens at the TOP of this call
+            expect (! player.isPublishPending());
+        }
     }
 };
 
