@@ -9,9 +9,13 @@
    roadmap Phase 10 (generation-randomize), MainComponent::buildSeededSequence
    composes SkipMaskGenerator + PitchGenerator in production, driven by the
    Generate/Randomize UI (generation-live-control spec, design.md Decision
-   1/2). RhythmGenerator itself, however, still has no production call site -
-   see the separate SkipMaskGenerator + PitchGenerator golden further below,
-   which exercises the actual production composition.
+   1/2). RhythmGenerator itself ALSO now has a production call site: since the
+   probability-matrices slice, buildSeededSequence composes RhythmGenerator
+   (vector ctor) + PitchGenerator when Probability mode is selected - see the
+   generateFullProbabilitySequence golden further below, which exercises that
+   composition. See also the separate SkipMaskGenerator + PitchGenerator
+   golden further below, which exercises the Random-mode production
+   composition.
 
    Builds a 16-step Sequence from a root note and Scale::minor(root), seed
    12345: RhythmGenerator.generate() first decides which steps are active
@@ -32,6 +36,8 @@
 */
 
 #include <juce_core/juce_core.h>
+
+#include <vector>
 
 #include "core/Scale.h"
 #include "core/Sequence.h"
@@ -76,6 +82,29 @@ berlin::Sequence generateFullSkipMaskSequence (int numSteps, int activeSteps, in
     const berlin::PitchGenerator pitchGenerator (scale, rootNote, rootNote + 24);
 
     berlin::Sequence sequence = maskGenerator.generate (random);
+
+    for (int i = 0; i < sequence.size(); ++i)
+        if (sequence[i].active)
+            sequence[i].note = pitchGenerator.generateNextNote (random);
+
+    return sequence;
+}
+
+// Same composition order as generateFullSequence above, but using the
+// vector ctor (production shape, probability-matrices) with a uniform
+// probability vector in place of the scalar ctor - the RhythmGenerator
+// golden above is untouched by this addition. Mirrors
+// generateFullSkipMaskSequence's "replicate production composition
+// test-locally" convention: this is what MainComponent::buildSeededSequence
+// composes when Probability mode is selected.
+berlin::Sequence generateFullProbabilitySequence (int numSteps, float stepProbability, int rootNote, berlin::DeterministicRandom& random)
+{
+    const berlin::Scale scale = berlin::Scale::minor (rootNote);
+
+    const berlin::RhythmGenerator rhythmGenerator (numSteps, std::vector<float> ((std::size_t) numSteps, stepProbability));
+    const berlin::PitchGenerator pitchGenerator (scale, rootNote, rootNote + 24);
+
+    berlin::Sequence sequence = rhythmGenerator.generate (random);
 
     for (int i = 0; i < sequence.size(); ++i)
         if (sequence[i].active)
@@ -162,6 +191,22 @@ public:
 
             const berlin::Sequence sequenceA = generateFullSkipMaskSequence (numSteps, activeSteps, rootNote, randomA);
             const berlin::Sequence sequenceB = generateFullSkipMaskSequence (numSteps, activeSteps, rootNote, randomB);
+
+            expect (sequenceA == sequenceB);
+        }
+
+        beginTest ("RhythmGenerator (vector ctor) + PitchGenerator: same seed produces an identical 16-step Sequence end-to-end");
+        {
+            constexpr int numSteps = 16;
+            constexpr float stepProbability = 0.5f;
+            constexpr int rootNote = 60;
+            constexpr juce::int64 seed = 12345;
+
+            berlin::DeterministicRandom randomA (seed);
+            berlin::DeterministicRandom randomB (seed);
+
+            const berlin::Sequence sequenceA = generateFullProbabilitySequence (numSteps, stepProbability, rootNote, randomA);
+            const berlin::Sequence sequenceB = generateFullProbabilitySequence (numSteps, stepProbability, rootNote, randomB);
 
             expect (sequenceA == sequenceB);
         }

@@ -277,6 +277,9 @@
     <ClCompile Include="..\..\Source\MutationEngineTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\EuclideanRhythmGeneratorTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\StepEventTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
@@ -338,6 +341,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\generation\MutationEngine.cpp">
+      <Filter>BerlinTests\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\generation\EuclideanRhythmGenerator.cpp">
       <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\playback\Transport.cpp">
@@ -1411,6 +1417,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\generation\MutationEngine.h">
+      <Filter>BerlinTests\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\generation\EuclideanRhythmGenerator.h">
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\playback\StepEvent.h">
