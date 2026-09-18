@@ -30,8 +30,8 @@ The system MUST provide a `DeterministicRandom` type wrapping `juce::Random(int6
 
 ### Requirement: Seed-In, Identical-Out Reproducibility Contract
 
-Every generator in this capability MUST produce byte-identical output given the same seed and the same input parameters, within a single build. For the live app's composed Generate/Randomize path (which now has a selectable rhythm mode), this contract is scoped to: same seed + same rhythm mode + same mode parameters (`kActiveSteps`, or `pulses`/`rotation`) -> identical resulting Sequence. It does NOT guarantee identical output across different modes for the same seed (see the divergence scenario above).
-(Previously: stated as "same seed and same input parameters -> identical output" with no mode dimension, since only one rhythm source existed.)
+Every generator in this capability MUST produce byte-identical output given the same seed and the same input parameters, within a single build. For the live app's composed Generate/Randomize path (which now has a selectable rhythm mode with three options), this contract is scoped to: same seed + same rhythm mode + same mode parameters (`kActiveSteps`; or `pulses`/`rotation`; or the Probability-mode uniform probability value) -> identical resulting Sequence. It does NOT guarantee identical output across different modes for the same seed.
+(Previously: scoped to two modes' parameters — `kActiveSteps` or `pulses`/`rotation` — with no Probability-mode parameter.)
 
 #### Scenario: Same seed, identical Sequence output
 
@@ -63,47 +63,97 @@ The system MUST provide a `PitchGenerator` configured with `{Scale, rangeLow, ra
 - THEN the returned note is the nearest in-scale note to the configured range (outside the range if necessary)
 - AND no exception is thrown and no out-of-scale note is ever returned
 
-### Requirement: RhythmGenerator Density as Per-Step Probability
+### Requirement: RhythmGenerator Configured via Per-Step Probability Vector
 
-The system MUST provide a `RhythmGenerator` configured with `{numSteps, density}` that produces a `Sequence` via `generate(DeterministicRandom&)`, populating only the `active` field of each step. Each step's `active` flag MUST be determined by an independent probability equal to `density`, NOT by a guaranteed/exact active-step count.
+The system MUST provide a `RhythmGenerator` configured with `{numSteps, std::vector<float> probabilities}` that produces a `Sequence` via `generate(DeterministicRandom&)`, populating only the `active` field of each step. Each step `i`'s `active` flag MUST be determined by an independent draw against `probabilities[i]` (clamped `[0,1]`), NOT by a guaranteed/exact active-step count. The existing scalar-density constructor `(numSteps, float density)` MUST remain available and MUST delegate to the vector constructor by expanding `density` into a uniform vector of length `numSteps`, so it is a thin wrapper, not a parallel implementation.
+(Previously: only a scalar `{numSteps, density}` constructor existed; this generalizes it to per-step vector configuration while keeping the scalar form as a delegating overload.)
 
 #### Scenario: Output size matches numSteps
 
-- GIVEN `numSteps = 16` and any valid `density`
+- GIVEN `numSteps = 16` and any valid probability configuration (scalar or vector)
 - WHEN `RhythmGenerator::generate` is called
 - THEN the resulting `Sequence` has exactly 16 steps
 
 #### Scenario: Density approximates average active-step count, not an exact count
 
-- GIVEN `numSteps = 16` and `density = 0.5`
+- GIVEN `numSteps = 16` and a uniform vector with every element `0.5`
 - WHEN `RhythmGenerator::generate` is run across many distinct seeds
-- THEN the mean active-step count across runs approximates 8 (within statistical tolerance)
-- AND individual runs are permitted to report differing exact active-step counts (e.g. 7, 8, or 9)
+- THEN the mean active-step count approximates 8, with individual runs varying (e.g. 7, 8, 9)
+
+#### Scenario: Per-step probability endpoints are exact, not statistical
+
+- GIVEN a vector where step 3 has probability `0.0` and step 7 has probability `1.0`
+- WHEN `generate` is called across many distinct seeds
+- THEN step 3 is never active and step 7 is always active in every run
+
+#### Scenario: Scalar constructor is behavior-preserving delegation
+
+- GIVEN a `RhythmGenerator` built via the scalar ctor `(numSteps, density)` and another built via the vector ctor with a uniform vector of that same `density`
+- WHEN both are driven by `DeterministicRandom` instances seeded identically
+- THEN both produce byte-identical `Sequence` output, proving the scalar path is a pure delegation
+
+#### Scenario: Exactly one RNG draw per step regardless of per-step probability
+
+- GIVEN any valid probability vector (including elements of `0.0` or `1.0`)
+- WHEN `generate` runs
+- THEN exactly one `nextFloat()` draw is consumed per step, in ascending step order, never short-circuited by an endpoint value
+
+#### Scenario: Vector shorter or longer than numSteps is padded/truncated at construction
+
+- GIVEN a probability vector with fewer or more elements than `numSteps`
+- WHEN the `RhythmGenerator` is constructed
+- THEN the vector is padded (with `0.0`) or truncated to exactly `numSteps` elements at construction time, immutably, before any `generate` call
 
 #### Scenario: RhythmGenerator only touches active
 
-- GIVEN a `RhythmGenerator` configured with any valid `numSteps` and `density`
+- GIVEN a `RhythmGenerator` configured with any valid `numSteps` and probability configuration
 - WHEN `generate` produces a `Sequence`
-- THEN every step's `note` field is left at its default/unset value
-- AND only `active` is populated by the generator
+- THEN every step's `note` field is left at its default/unset value, and only `active` is populated
+
+#### Scenario: All-zero probability vector no-ops downstream MutationEngine — accepted, not a defect
+
+- GIVEN a probability vector of all `0.0` (or near-zero) elements
+- WHEN `generate` produces an all-inactive `Sequence` and that `Sequence` is later passed through `MutationEngine` transforms (e.g. transpose)
+- THEN the transform's `hasActive` guard makes it a silent no-op, matching the existing accepted `EuclideanRhythmGenerator pulses=0` precedent — this is expected, documented behavior, not a bug to fix in this slice
 
 ### Requirement: Production Composition of a Rhythm Source and PitchGenerator
 
-The system MUST compose a rhythm-producing generator with `PitchGenerator` together in production code, driven by a single `DeterministicRandom` per generation, and this composition MUST be callable at runtime (not only during construction). For the live app's Generate/Randomize path, the rhythm source is selectable per a rhythm-mode switch: `SkipMaskGenerator` (Random mode) or `EuclideanRhythmGenerator` (Euclidean mode, this change) — `RhythmGenerator` remains a separate, fully valid, independently-tested capability with no production call site of its own. Because `EuclideanRhythmGenerator::generate()` takes no `DeterministicRandom`, it consumes zero RNG draws before the `PitchGenerator` pass runs. `SkipMaskGenerator`, by contrast, consumes exactly `kNumSteps - kActiveSteps` draws (one per skipped step, per its existing "Deterministic Displacement Pattern" requirement) — with the current production constants (`kNumSteps=16`, `kActiveSteps=11`), that is exactly 5 draws, a fixed constant that does NOT vary with the Euclidean-mode `pulses` parameter (the two are unrelated values). The same seed therefore produces different pitches depending on which rhythm mode is active, because `PitchGenerator` begins drawing from a different `DeterministicRandom` stream position in each mode (index 5 in Random mode, index 0 in Euclidean mode).
-(Previously: composition used only `SkipMaskGenerator`; no mode switch, no draw-count divergence existed.)
+The system MUST compose a rhythm-producing generator with `PitchGenerator` together in production code, driven by a single `DeterministicRandom` per generation, callable at runtime (not only during construction). For the live app's Generate/Randomize path, the rhythm source is selectable per a rhythm-mode switch with three branches: `SkipMaskGenerator` (Random mode), `EuclideanRhythmGenerator` (Euclidean mode), and `RhythmGenerator` (Probability mode, this change) — `buildSeededSequence` (static, ctor-member-init-list-safe) dispatches on `RhythmMode`. `EuclideanRhythmGenerator::generate()` consumes zero RNG draws before the `PitchGenerator` pass. `SkipMaskGenerator` consumes exactly `kNumSteps - kActiveSteps` draws (5 with current production constants). `RhythmGenerator` in Probability mode consumes exactly `kNumSteps` draws (16, one per step, per the stream-length invariant), regardless of the per-step probability values used. The same seed therefore produces different pitches depending on which of the three modes is active, because `PitchGenerator` begins drawing from a different `DeterministicRandom` stream position in each mode.
+(Previously: only two modes — Random and Euclidean — existed in the switch; Probability mode and its 16-draw stream-position contribution did not exist.)
 
-#### Scenario: Production build composes both generators at runtime
+#### Scenario: Production build composes all three rhythm sources at runtime
 
 - GIVEN a running app with an existing `Sequence`
 - WHEN a Generate or Randomize action is triggered
-- THEN the currently selected rhythm source (`SkipMaskGenerator` in Random mode, `EuclideanRhythmGenerator` in Euclidean mode) and `PitchGenerator` are recomposed against a fresh `DeterministicRandom`, not only during `MainComponent` construction
+- THEN the currently selected rhythm source (`SkipMaskGenerator`, `EuclideanRhythmGenerator`, or `RhythmGenerator` per the active `RhythmMode`) and `PitchGenerator` are recomposed against a fresh `DeterministicRandom`, not only during `MainComponent` construction
 
-#### Scenario: Same seed diverges in pitch across modes — expected, not a bug
+#### Scenario: Same seed diverges in pitch across all three modes — expected, not a bug
 
-- GIVEN the same seed value, Random mode active (draws exactly 5 RNG values — `kNumSteps - kActiveSteps` — before the pitch pass)
-- AND the same seed value, Euclidean mode active with any `(pulses, rotation)` (draws 0 RNG values before the pitch pass)
+- GIVEN the same seed value in Random mode (5 draws before the pitch pass), Euclidean mode (0 draws), and Probability mode (16 draws, one per step)
 - WHEN a Sequence is generated in each mode
-- THEN the two resulting Sequences' pitches differ (the pitch pass starts from different `DeterministicRandom` stream positions), and this divergence is expected, documented behavior, not a defect
+- THEN the three resulting Sequences' pitches differ from each other, because the pitch pass starts from a different `DeterministicRandom` stream position in each mode — expected, documented behavior
+
+#### Scenario: Probability mode uses a single staged-apply uniform-probability control
+
+- GIVEN Probability mode is selected and a user adjusts the single scalar probability control (analogous to Euclidean's pulses/rotation sliders)
+- WHEN Generate is pressed
+- THEN the control's value is expanded into a uniform 16-element probability vector via the vector constructor and used for that generation — no per-step UI exists this slice
+
+### Requirement: Per-Step Editing and Preset Persistence Are Explicit Non-Goals This Slice
+
+Per-step probability editing UI and persistence of rhythm-mode configuration (mode, pulses, rotation, probability value) in `Preset.h`/`PresetManager.cpp` MUST NOT be implemented in this slice. The single staged-apply scalar control is the entire UI surface for Probability mode; presets continue persisting only `seed`, unchanged from the prior two-mode state.
+
+#### Scenario: No per-step editor exists
+
+- GIVEN Probability mode is active
+- WHEN inspecting the UI
+- THEN no per-step (16-cell) probability editor exists; only the single scalar staged-apply control is present
+
+#### Scenario: Saving a preset does not persist mode, pulses, rotation, or probability
+
+- GIVEN Probability mode is active with a non-default probability value
+- WHEN a preset is saved and later loaded
+- THEN the loaded preset does not restore rhythm mode, pulses, rotation, or the probability value — only `seed` round-trips, an unchanged pre-existing gap
 
 ### Requirement: Seed Is User-Editable, Not Display-Only
 

@@ -1,10 +1,13 @@
 #include "MainComponent.h"
 
+#include <vector>
+
 #include "core/Scale.h"
 #include "generation/DeterministicRandom.h"
 #include "generation/EuclideanRhythmGenerator.h"
 #include "generation/MutationEngine.h"
 #include "generation/PitchGenerator.h"
+#include "generation/RhythmGenerator.h"
 #include "generation/SkipMaskGenerator.h"
 
 namespace
@@ -15,6 +18,7 @@ namespace
     constexpr int    kActiveSteps  = 11;   // research's cited 16 -> 11 displacement (design.md Decision 3)
     constexpr int    kDefaultPulses   = 5;   // roadmap Phase 10 / euclidean-rhythm, design.md Decision 14
     constexpr int    kDefaultRotation = 0;
+    constexpr float  kDefaultStepProbability = 0.5f;   // roadmap Phase 10 / probability-matrices, design.md Decision 11
     constexpr int    kSeed         = 12345;
     constexpr int    kMidiChannel     = 1;
     constexpr int    kMidiBufferBytes = 1024;
@@ -40,12 +44,23 @@ namespace
     }
 }
 
-berlin::Sequence MainComponent::buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation)
+berlin::Sequence MainComponent::buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation, float stepProbability)
 {
     berlin::DeterministicRandom rng (seed);
-    auto sequence = (mode == RhythmMode::euclidean)
-        ? berlin::EuclideanRhythmGenerator (kNumSteps, pulses, rotation).generate()  // 0 draws
-        : berlin::SkipMaskGenerator (kNumSteps, kActiveSteps).generate (rng);        // exactly 5 draws (design.md V1)
+    auto sequence = [&]
+    {
+        switch (mode)
+        {
+            case RhythmMode::euclidean:
+                return berlin::EuclideanRhythmGenerator (kNumSteps, pulses, rotation).generate();   // 0 draws
+            case RhythmMode::probability:
+                return berlin::RhythmGenerator (kNumSteps, std::vector<float> ((std::size_t) kNumSteps, stepProbability))
+                    .generate (rng);   // exactly kNumSteps draws (probability-matrices)
+            case RhythmMode::random:
+            default:
+                return berlin::SkipMaskGenerator (kNumSteps, kActiveSteps).generate (rng);   // exactly 5 draws (design.md V1)
+        }
+    }();
 
     berlin::PitchGenerator pitch (berlin::Scale::minor (48), 36, 72);
     for (int i = 0; i < sequence.size(); ++i)
@@ -67,7 +82,7 @@ juce::File MainComponent::defaultExportFile()
 //==============================================================================
 MainComponent::MainComponent()
     : currentSeed (kSeed),
-      currentSequence (buildSeededSequence (currentSeed, RhythmMode::random, kDefaultPulses, kDefaultRotation)),
+      currentSequence (buildSeededSequence (currentSeed, RhythmMode::random, kDefaultPulses, kDefaultRotation, kDefaultStepProbability)),
       sequenceSeed (kSeed),
       player (currentSequence, berlin::Transport (kBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel), midiSink (kMidiChannel)
@@ -215,8 +230,9 @@ MainComponent::MainComponent()
     rhythmModeLabel.setJustificationType (juce::Justification::centredLeft);
 
     addAndMakeVisible (rhythmModeBox);
-    rhythmModeBox.addItem ("Random",    static_cast<int> (RhythmMode::random) + 1);
-    rhythmModeBox.addItem ("Euclidean", static_cast<int> (RhythmMode::euclidean) + 1);
+    rhythmModeBox.addItem ("Random",      static_cast<int> (RhythmMode::random) + 1);
+    rhythmModeBox.addItem ("Euclidean",   static_cast<int> (RhythmMode::euclidean) + 1);
+    rhythmModeBox.addItem ("Probability", static_cast<int> (RhythmMode::probability) + 1);   // appended last (probability-matrices P10)
     rhythmModeBox.setSelectedId (static_cast<int> (RhythmMode::random) + 1, juce::dontSendNotification);
 
     addAndMakeVisible (pulsesLabel);
@@ -234,6 +250,19 @@ MainComponent::MainComponent()
     addAndMakeVisible (rotationSlider);
     rotationSlider.setRange (0, kNumSteps - 1, 1);
     rotationSlider.setValue (kDefaultRotation, juce::dontSendNotification);
+
+    // ---- Probability Matrices controls (roadmap Phase 10 / probability-
+    // matrices, design.md Decisions 10/13) - configured manually, same as
+    // the Euclidean widgets just above: configureSlider is declared further
+    // down (P6), after this block. STAGED, not live - deliberately no
+    // onValueChange.
+    addAndMakeVisible (stepProbabilityLabel);
+    stepProbabilityLabel.setText ("Chance %", juce::dontSendNotification);
+    stepProbabilityLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (stepProbabilitySlider);
+    stepProbabilitySlider.setRange (0.0, 100.0, 1.0);
+    stepProbabilitySlider.setValue (kDefaultStepProbability * 100.0, juce::dontSendNotification);
 
     // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
     // Every control must be constructed and valued here, BEFORE setAudioChannels()
@@ -328,8 +357,8 @@ MainComponent::MainComponent()
 
     // Make sure you set the size of the component after
     // you add any child components.
-    setSize (800, 640);   // bumped from 600 (roadmap Phase 10 / euclidean-rhythm, design.md Decision 11):
-                          // the new EUCLIDEAN row needs 34px, only 10px of headroom remained
+    setSize (800, 680);   // bumped from 640 (roadmap Phase 10 / probability-matrices, design.md Decision 9):
+                          // the new PROBABILITY row needs 34px, only 16px of headroom remained
 
     player.start();
     midiSink.openFirstAvailableDevice();   // return ignored: false is the valid silent state
@@ -464,6 +493,15 @@ void MainComponent::resized()
     rotationSlider .setBounds (euclideanRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
+    // PROBABILITY (roadmap Phase 10 / probability-matrices, design.md
+    // Decision 8) - own row immediately after EUCLIDEAN, before EVOLUTION:
+    // euclideanRow has only 56px of slack left (P4), not enough for a
+    // label+slider pair (236px needed).
+    auto probabilityRow = area.removeFromTop (kControlHeight);
+    stepProbabilityLabel .setBounds (probabilityRow.removeFromLeft (kLabelWidth));
+    stepProbabilitySlider.setBounds (probabilityRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
     // EVOLUTION (roadmap Phase 9 "Evolution", Slice 2 / auto-evolution spec,
     // design.md's resized() insertion) - one row between the generation block
     // and PRESETS: label 96 | toggle 140 | 6 | rate label 96 | rate box 140
@@ -536,8 +574,9 @@ void MainComponent::regenerate (bool drawNewSeed)
     const auto mode = static_cast<RhythmMode> (rhythmModeBox.getSelectedId() - 1);
     const int  pulses   = (int) pulsesSlider.getValue();
     const int  rotation = (int) rotationSlider.getValue();
+    const float chance  = (float) stepProbabilitySlider.getValue() / 100.0f;   // 0..100 -> 0.0..1.0 exactly
 
-    auto next = buildSeededSequence (currentSeed, mode, pulses, rotation);
+    auto next = buildSeededSequence (currentSeed, mode, pulses, rotation, chance);
 
     // `player.publishSequence` swaps THROUGH its argument (design.md Decision 1):
     // on success, the argument ends up holding the stale, now-superseded buffer,

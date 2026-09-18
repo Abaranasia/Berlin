@@ -40,13 +40,16 @@ private:
     // ---- Euclidean Rhythms (roadmap Phase 10 / euclidean-rhythm, design.md
     // Decision 3) - a composition-root/UI concept, not a generator-level one:
     // Source/generation/ stays mode-agnostic.
-    enum class RhythmMode { random, euclidean };
+    // probability-matrices (roadmap Phase 10, Slice 2): probability appended
+    // LAST so existing ordinals (random=0, euclidean=1) stay untouched.
+    enum class RhythmMode { random, euclidean, probability };
 
-    // MUST take mode/pulses/rotation as explicit parameters (design.md
-    // Decision 2 / V5): this is static and runs from the ctor member-init
-    // list before any widget exists, so reading widgets here would be
-    // undefined behaviour, not just bad style.
-    static berlin::Sequence buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation);
+    // MUST take mode/pulses/rotation/stepProbability as explicit parameters
+    // (design.md Decision 2 / V5, and probability-matrices Decision 7): this
+    // is static and runs from the ctor member-init list before any widget
+    // exists, so reading widgets here would be undefined behaviour, not just
+    // bad style.
+    static berlin::Sequence buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation, float stepProbability);
     static juce::File       defaultExportFile();     // default destination seeded into the save dialog
 
     void launchExportChooser();
@@ -185,6 +188,12 @@ private:
     juce::Slider     pulsesSlider;
     juce::Label      rotationLabel;
     juce::Slider     rotationSlider;
+
+    // ---- Probability Matrices controls (roadmap Phase 10 / probability-
+    // matrices, design.md Decisions 10/13) - staged, not live: NO
+    // onValueChange, mirrors the Euclidean pulses/rotation precedent above.
+    juce::Label  stepProbabilityLabel;
+    juce::Slider stepProbabilitySlider;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
