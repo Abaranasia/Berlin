@@ -53,7 +53,9 @@ public:
                 berlin::MutationEngine::transpose,  berlin::MutationEngine::reverse,
                 berlin::MutationEngine::rotate,     berlin::MutationEngine::changeNote,
                 berlin::MutationEngine::addNote,    berlin::MutationEngine::removeNote,
-                berlin::MutationEngine::stretch,    berlin::MutationEngine::compress
+                berlin::MutationEngine::stretch,    berlin::MutationEngine::compress,
+                berlin::MutationEngine::invert,     berlin::MutationEngine::scaleIntervals,
+                berlin::MutationEngine::palindrome
             };
 
             const int sizes[] = { 0, 1, 4, 64 };
@@ -281,6 +283,202 @@ public:
             const berlin::Sequence zeroActive (4);
             berlin::DeterministicRandom random (3);
             expect (berlin::MutationEngine::addNote (zeroActive, random) == zeroActive);
+        }
+
+        beginTest ("invert mirrors active notes about the first active step's note; inactive steps and size untouched");
+        {
+            berlin::Sequence input (4);
+            input[0].active = true;  input[0].note = 60; // axis
+            input[1].active = false; input[1].note = 40;
+            input[2].active = true;  input[2].note = 64;
+            input[3].active = false; input[3].note = 20;
+
+            berlin::DeterministicRandom random (1);
+            const berlin::Sequence result = berlin::MutationEngine::invert (input, random);
+
+            expectEquals (result.size(), 4);
+            expect (result[0].active);
+            expectEquals (result[0].note, 60); // axis is a fixed point: 2*60 - 60 = 60
+            expect (! result[1].active);
+            expectEquals (result[1].note, 40);
+            expect (result[2].active);
+            expectEquals (result[2].note, 56); // 2*60 - 64 = 56
+            expect (! result[3].active);
+            expectEquals (result[3].note, 20);
+        }
+
+        beginTest ("invert is an involution when no correction applies");
+        {
+            berlin::Sequence input (4);
+            input[0].active = true;  input[0].note = 60;
+            input[1].active = true;  input[1].note = 64;
+            input[2].active = false; input[2].note = 10;
+            input[3].active = true;  input[3].note = 55;
+
+            berlin::DeterministicRandom randomA (1);
+            const berlin::Sequence once = berlin::MutationEngine::invert (input, randomA);
+
+            berlin::DeterministicRandom randomB (2);
+            const berlin::Sequence twice = berlin::MutationEngine::invert (once, randomB);
+
+            expect (twice == input);
+        }
+
+        beginTest ("invert restores [0, 127] with one uniform corrective offset, never per-note clamping");
+        {
+            berlin::Sequence input (2);
+            input[0].active = true; input[0].note = 0;   // axis
+            input[1].active = true; input[1].note = 127; // mirrors to 2*0 - 127 = -127
+
+            berlin::DeterministicRandom random (1);
+            const berlin::Sequence result = berlin::MutationEngine::invert (input, random);
+
+            // Uncorrected mirror: axis stays 0, other note -> -127. A single
+            // uniform offset of +127 brings the out-of-range note to 0 while
+            // preserving the interval between the two notes.
+            expect (result[0].note >= 0 && result[0].note <= 127);
+            expect (result[1].note >= 0 && result[1].note <= 127);
+            expectEquals (result[1].note - result[0].note, -127);
+        }
+
+        beginTest ("invert is a no-op copy with zero active steps");
+        {
+            const berlin::Sequence zeroActive (4);
+            berlin::DeterministicRandom random (1);
+            expect (berlin::MutationEngine::invert (zeroActive, random) == zeroActive);
+        }
+
+        beginTest ("scaleIntervals augments (doubles) the interval from the axis on the upward draw");
+        {
+            berlin::Sequence input (3);
+            input[0].active = true; input[0].note = 60; // axis
+            input[1].active = true; input[1].note = 64; // +4 from axis
+            input[2].active = true; input[2].note = 55; // -5 from axis
+
+            bool foundAugment = false;
+
+            for (juce::int64 seed = 0; seed < 10000 && ! foundAugment; ++seed)
+            {
+                berlin::DeterministicRandom random (seed);
+                const berlin::Sequence result = berlin::MutationEngine::scaleIntervals (input, random);
+
+                // Augment doubles the distance from the axis: a + 2(n - a).
+                if (result[0].note == 60 && result[1].note == 68 && result[2].note == 50)
+                    foundAugment = true;
+            }
+
+            expect (foundAugment);
+        }
+
+        beginTest ("scaleIntervals diminishes (halves, truncating toward axis) the interval from the axis on the downward draw");
+        {
+            berlin::Sequence input (3);
+            input[0].active = true; input[0].note = 60; // axis
+            input[1].active = true; input[1].note = 64; // +4 -> diminish +2
+            input[2].active = true; input[2].note = 55; // -5 -> diminish -2 (truncation toward axis)
+
+            bool foundDiminish = false;
+
+            for (juce::int64 seed = 0; seed < 10000 && ! foundDiminish; ++seed)
+            {
+                berlin::DeterministicRandom random (seed);
+                const berlin::Sequence result = berlin::MutationEngine::scaleIntervals (input, random);
+
+                if (result[0].note == 60 && result[1].note == 62 && result[2].note == 58)
+                    foundDiminish = true;
+            }
+
+            expect (foundDiminish);
+        }
+
+        beginTest ("scaleIntervals no-ops when the augmented span cannot be corrected with a single uniform offset");
+        {
+            berlin::Sequence input (2);
+            input[0].active = true; input[0].note = 0;   // axis
+            input[1].active = true; input[1].note = 100; // augment span = 200, exceeds 127 even after uniform shift
+
+            for (juce::int64 seed = 0; seed < 10000; ++seed)
+            {
+                berlin::DeterministicRandom random (seed);
+                const berlin::Sequence result = berlin::MutationEngine::scaleIntervals (input, random);
+
+                // Whether augment or diminish is drawn, an unfittable augmented
+                // span must fall back to an unmodified copy - never a partial
+                // or per-note-clamped result.
+                if (result[0].note != 0 || result[1].note != 100)
+                {
+                    // A fitting diminish draw is a legitimate non-no-op result.
+                    expectEquals (result[0].note, 0);
+                    expectEquals (result[1].note, 50); // diminish: 0 + (100-0)/2
+                }
+            }
+        }
+
+        beginTest ("scaleIntervals is a no-op copy with zero active steps");
+        {
+            const berlin::Sequence zeroActive (4);
+            berlin::DeterministicRandom random (1);
+            expect (berlin::MutationEngine::scaleIntervals (zeroActive, random) == zeroActive);
+        }
+
+        beginTest ("scaleIntervals consumes exactly one draw regardless of content (mirrors transpose)");
+        {
+            berlin::Sequence input (4); // zero active steps: no-op path, but the draw must still happen
+            berlin::DeterministicRandom randomA (5);
+            berlin::DeterministicRandom randomB (5);
+
+            berlin::MutationEngine::scaleIntervals (input, randomA);
+            const int consumedDraw = randomB.nextInt (2);
+            const int nextFromA = randomA.nextInt (2);
+            const int nextFromB = randomB.nextInt (2);
+
+            // Both streams started from the same seed; randomB manually consumed
+            // one nextInt(2) draw before continuing. If scaleIntervals also
+            // consumed exactly one draw, both streams stay in lockstep from here.
+            juce::ignoreUnused (consumedDraw);
+            expectEquals (nextFromA, nextFromB);
+        }
+
+        beginTest ("palindrome mirrors a 16-step sequence into 32 steps, second half mirroring the first");
+        {
+            berlin::Sequence input (16);
+            for (int i = 0; i < 16; ++i)
+            {
+                input[i].active = (i % 2 == 0);
+                input[i].note = 60 + i;
+            }
+
+            berlin::DeterministicRandom random (1);
+            const berlin::Sequence result = berlin::MutationEngine::palindrome (input, random);
+
+            expectEquals (result.size(), 32);
+
+            for (int i = 0; i < 16; ++i)
+                expect (result[i] == input[i]);
+
+            for (int i = 16; i < 32; ++i)
+                expect (result[i] == input[31 - i]);
+        }
+
+        beginTest ("palindrome respects the [4, 64] length bound like stretch/compress (60 -> 64 ceiling, 64 -> 64, 1 -> 4 floor)");
+        {
+            berlin::DeterministicRandom random (1);
+
+            expectEquals (berlin::MutationEngine::palindrome (berlin::Sequence (60), random).size(), 64);
+            expectEquals (berlin::MutationEngine::palindrome (berlin::Sequence (64), random).size(), 64);
+            expectEquals (berlin::MutationEngine::palindrome (berlin::Sequence (1), random).size(), 4);
+        }
+
+        beginTest ("palindrome makes no RNG draw and handles size 0 without crashing");
+        {
+            berlin::DeterministicRandom randomA (9);
+            berlin::DeterministicRandom randomB (9);
+
+            const berlin::Sequence zeroSize (0);
+            const berlin::Sequence result = berlin::MutationEngine::palindrome (zeroSize, randomA);
+
+            expectEquals (result.size(), 0);
+            expectEquals (randomA.nextInt (1000), randomB.nextInt (1000)); // no draw consumed
         }
 
         beginTest ("mutationSeed avoids the (seed+1, gen 2) == (seed+2, gen 1) collision, and is stable across repeated calls");
