@@ -43,8 +43,16 @@ inline constexpr float kMinReleaseSeconds = 0.005f, kMaxReleaseSeconds = 8.0f;
 inline constexpr float kMinLfoRateHz = 0.05f,       kMaxLfoRateHz = 20.0f;
 inline constexpr float kMinLfoDepth = 0.0f,         kMaxLfoDepth = 1.0f;
 
+// NaN compares false against both bounds, so a naive std::clamp passes it
+// through unchanged - the one case its [lo, hi] guarantee doesn't cover.
+// Found reachable via host-supplied preset/session XML ("nan" text parses to
+// a real NaN) during the vst3-au-plugin review; clamp it to `lo` like any
+// other out-of-range input, since NaN is exactly that: not a valid value.
 constexpr float clampParameter (float v, float lo, float hi) noexcept
 {
+    if (v != v)
+        return lo;
+
     return std::clamp (v, lo, hi);
 }
 

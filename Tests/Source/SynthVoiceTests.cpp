@@ -58,6 +58,12 @@ public:
             expectEquals (berlin::clampParameter (berlin::kMinResonance, berlin::kMinResonance, berlin::kMaxResonance), berlin::kMinResonance);
             expectEquals (berlin::clampParameter (berlin::kMaxResonance, berlin::kMinResonance, berlin::kMaxResonance), berlin::kMaxResonance);
 
+            // NaN is neither < lo nor > hi, so a naive std::clamp passes it through unchanged;
+            // a NaN reaching the synth would corrupt audio output for the session (found via
+            // the vst3-au-plugin review's risk lens: host-supplied preset XML can contain
+            // "nan" text, which juce::String::getFloatValue() parses to a real NaN). Must clamp to lo.
+            expectEquals (berlin::clampParameter (std::numeric_limits<float>::quiet_NaN(), berlin::kMinCutoffHz, berlin::kMaxCutoffHz), berlin::kMinCutoffHz);
+
             // A second parameter's bounds, to triangulate against a different range.
             expectEquals (berlin::clampParameter (0.5f, berlin::kMinLfoDepth, berlin::kMaxLfoDepth), 0.5f);
             expectEquals (berlin::clampParameter (-5.0f, berlin::kMinLfoDepth, berlin::kMaxLfoDepth), berlin::kMinLfoDepth);
