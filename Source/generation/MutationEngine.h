@@ -58,6 +58,25 @@ Sequence stretch (const Sequence& input, DeterministicRandom& random);
 // /2 keep every other step, clamped to [4, 64] steps (design.md Decision 8).
 Sequence compress (const Sequence& input, DeterministicRandom& random);
 
+// Mirrors active notes about an axis: n' = 2a - n, where a is the note of the
+// FIRST active step. Inactive steps untouched, size unchanged. No draw. Range
+// restored by ONE uniform offset (never per-note). An involution when no
+// corrective offset applies. No-op copy with zero active steps.
+Sequence invert (const Sequence& input, DeterministicRandom& random);
+
+// Augment/diminish as PITCH-INTERVAL scaling about the same axis a:
+// augment n' = a + 2(n - a), diminish n' = a + (n - a) / 2 (C++ truncation,
+// toward the axis). Exactly one draw (nextInt(2)), always, before any guard -
+// same invariant as transpose. No-op copy with zero active steps OR when the
+// scaled span exceeds 127, where no single uniform shift fits.
+Sequence scaleIntervals (const Sequence& input, DeterministicRandom& random);
+
+// Forward then backward mirror, pivot NOT shared: result[i] = input[j] with
+// j = (i < n) ? i : 2n - 1 - i, wrapped via ((j % n) + n) % n. No draw.
+// targetSize = std::clamp(n * 2, 4, 64), stretch/compress's precedent.
+// n == 0 -> early-return copy (the modulo would be UB).
+Sequence palindrome (const Sequence& input, DeterministicRandom& random);
+
 // Exactly ONE selection draw (design.md Decision 2, mirrors RhythmGenerator's
 // "one draw regardless of density" invariant), then delegates to the chosen
 // transform.

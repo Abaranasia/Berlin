@@ -13,6 +13,76 @@
 #include <cstddef>
 #include <vector>
 
+namespace
+{
+
+// Finds the note of the FIRST active step. Returns false (axis left
+// untouched) when there is no active step at all - callers use this to
+// early-return an unmodified copy.
+bool firstActiveNote (const berlin::Sequence& input, int& axis)
+{
+    for (int i = 0; i < input.size(); ++i)
+    {
+        if (input[i].active)
+        {
+            axis = input[i].note;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Applies mappedNotes (one entry per step, aligned by index) to every active
+// step in result via a SINGLE uniform corrective offset - never a per-note
+// clamp, which would compress/expand intervals (design.md). Returns false and
+// leaves result untouched when no single offset can bring every mapped note
+// into [0, 127] (max - min > 127).
+bool commitWithUniformOffset (berlin::Sequence& result, const std::vector<int>& mappedNotes)
+{
+    int minNote = 0, maxNote = 0;
+    bool hasActive = false;
+
+    for (int i = 0; i < result.size(); ++i)
+    {
+        if (! result[i].active)
+            continue;
+
+        const int mapped = mappedNotes[(std::size_t) i];
+
+        if (! hasActive)
+        {
+            minNote = maxNote = mapped;
+            hasActive = true;
+        }
+        else
+        {
+            minNote = std::min (minNote, mapped);
+            maxNote = std::max (maxNote, mapped);
+        }
+    }
+
+    if (! hasActive)
+        return true; // nothing to commit; result is already well-formed
+
+    if (maxNote - minNote > 127)
+        return false; // no single uniform offset fits every mapped note in [0, 127]
+
+    int offset = 0;
+    if (minNote < 0)
+        offset = -minNote;
+    else if (maxNote > 127)
+        offset = 127 - maxNote;
+
+    for (int i = 0; i < result.size(); ++i)
+        if (result[i].active)
+            result[i].note = mappedNotes[(std::size_t) i] + offset;
+
+    return true;
+}
+
+} // namespace
+
 namespace berlin::MutationEngine
 {
 
@@ -181,12 +251,75 @@ Sequence compress (const Sequence& input, DeterministicRandom&)
     return result;
 }
 
+Sequence invert (const Sequence& input, DeterministicRandom&)
+{
+    Sequence result = input;
+
+    int axis = 0;
+    if (! firstActiveNote (input, axis))
+        return result; // zero active steps: no-op copy
+
+    std::vector<int> mappedNotes ((std::size_t) input.size());
+    for (int i = 0; i < input.size(); ++i)
+        mappedNotes[(std::size_t) i] = 2 * axis - input[i].note;
+
+    if (! commitWithUniformOffset (result, mappedNotes))
+        return input; // defensive totality; unreachable for in-range input
+
+    return result;
+}
+
+Sequence scaleIntervals (const Sequence& input, DeterministicRandom& random)
+{
+    // Exactly one draw, always, before any guard - keeps the RNG stream
+    // length independent of content (mirrors transpose's invariant).
+    const bool augment = random.nextInt (2) == 1;
+
+    Sequence result = input;
+
+    int axis = 0;
+    if (! firstActiveNote (input, axis))
+        return result; // zero active steps: no-op copy
+
+    std::vector<int> mappedNotes ((std::size_t) input.size());
+    for (int i = 0; i < input.size(); ++i)
+    {
+        const int interval = input[i].note - axis;
+        mappedNotes[(std::size_t) i] = augment ? axis + 2 * interval : axis + interval / 2;
+    }
+
+    if (! commitWithUniformOffset (result, mappedNotes))
+        return input; // augmented span exceeds 127; no single offset fits
+
+    return result;
+}
+
+Sequence palindrome (const Sequence& input, DeterministicRandom&)
+{
+    const int n = input.size();
+    if (n == 0)
+        return input; // n == 0 would make the modulo below UB
+
+    const int targetSize = std::clamp (n * 2, 4, 64);
+    Sequence result (targetSize);
+
+    for (int i = 0; i < targetSize; ++i)
+    {
+        const int j = (i < n) ? i : (2 * n - 1 - i);
+        const int wrapped = ((j % n) + n) % n; // wrap-safe for out-of-range j at either bound
+        result[i] = input[wrapped];
+    }
+
+    return result;
+}
+
 Sequence applyRandomTransform (const Sequence& input, DeterministicRandom& random)
 {
     // Exactly ONE selection draw, always first (design.md Decision 2), then
     // delegate to the chosen transform's own draws.
     static constexpr Transform transforms[] = {
-        transpose, reverse, rotate, changeNote, addNote, removeNote, stretch, compress
+        transpose, reverse, rotate, changeNote, addNote, removeNote, stretch, compress,
+        invert, scaleIntervals, palindrome
     };
 
     const int index = random.nextInt ((int) (sizeof (transforms) / sizeof (transforms[0])));
