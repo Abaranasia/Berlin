@@ -1,23 +1,21 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "playback/SequencePlayer.h"
-#include "playback/StepEventBuffer.h"
-#include "midi/MidiEventTranslator.h"
 #include "midi/MidiOutputSink.h"
-#include "export/MidiExportTimeline.h"
-#include "export/MidiFileWriter.h"
-#include "synth/SynthEngine.h"
-#include "preset/Preset.h"
-#include "preset/PresetManager.h"
+#include "plugin/BerlinAudioProcessor.h"
+#include "plugin/BerlinAudioProcessorEditor.h"
 
 //==============================================================================
 /*
-    This component lives inside our window, and this is where you should put all
-    your controls and content.
+    Standalone shell (roadmap Phase 11 / vst3-au-plugin, plugin-host-integration
+    spec's "Standalone Shell Preserves Today's Observable Behavior"
+    requirement, design.md's standalone sub-buffer view). All engine/GUI logic
+    now lives in berlin::BerlinAudioProcessor / berlin::BerlinAudioProcessorEditor
+    - this class owns exactly one of each, plus the standalone-only
+    MidiOutputSink (BerlinAudioProcessor never references it - see
+    MidiOutputSink.h), and forwards the three AudioAppComponent callbacks.
 */
-class MainComponent  : public juce::AudioAppComponent,
-                       private juce::Timer
+class MainComponent  : public juce::AudioAppComponent
 {
 public:
     //==============================================================================
@@ -35,165 +33,13 @@ public:
 
 private:
     //==============================================================================
-    // Your private member variables go here...
+    static constexpr int kMidiChannel     = 1;
+    static constexpr int kMidiBufferBytes = 1024;
 
-    // ---- Euclidean Rhythms (roadmap Phase 10 / euclidean-rhythm, design.md
-    // Decision 3) - a composition-root/UI concept, not a generator-level one:
-    // Source/generation/ stays mode-agnostic.
-    // probability-matrices (roadmap Phase 10, Slice 2): probability appended
-    // LAST so existing ordinals (random=0, euclidean=1) stay untouched.
-    enum class RhythmMode { random, euclidean, probability };
-
-    // MUST take mode/pulses/rotation/stepProbability as explicit parameters
-    // (design.md Decision 2 / V5, and probability-matrices Decision 7): this
-    // is static and runs from the ctor member-init list before any widget
-    // exists, so reading widgets here would be undefined behaviour, not just
-    // bad style.
-    static berlin::Sequence buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation, float stepProbability);
-    static juce::File       defaultExportFile();     // default destination seeded into the save dialog
-
-    void launchExportChooser();
-    void exportSequenceTo (const juce::File& destination);
-
-    // Re-pushes every control's current value to `synth` (design.md Decision 6).
-    // Called once from prepareToPlay, immediately after synth.prepare(spec) -
-    // SynthEngine::prepare seeds the voice from kDefaultPatch, so without this a
-    // device/sample-rate change would silently snap parameters back to default
-    // while the sliders still showed the user's values.
-    void pushAllParametersToSynth();
-
-    // Rebuilds a Sequence from the current (or freshly drawn) seed and
-    // publishes it to `player` via the audio-thread-safe handoff
-    // (generation-live-control spec, design.md Decision 1). On success,
-    // `currentSequence` is updated too so Export always reflects the CURRENT
-    // pattern, never a stale one.
-    void regenerate (bool drawNewSeed);
-
-    // Applies exactly one random MutationEngine transform to `currentSequence`
-    // and publishes the result via the same audio-thread-safe handoff as
-    // `regenerate()` (evolution-mutation-engine spec, design.md Data Flow).
-    // On success, `currentSequence` is updated and `mutationCount` advances;
-    // on a busy-publish rejection, both are left unchanged so a retry
-    // reproduces the same candidate mutation.
-    void mutate();
-
-    // ---- Auto-Evolve (roadmap Phase 9 "Evolution", Slice 2 / auto-evolution
-    // spec, design.md Data Flow) - polls player.getLoopCount() at 60 Hz while
-    // enabled and calls the existing mutate() unchanged once per `rate`
-    // completed loops. isPublishPending() gates the call so a busy publish
-    // is retried silently on the next tick instead of ever reaching
-    // mutate()'s own "Busy, try again" rejection path (design.md Decision 6).
-    void timerCallback() override;
-
-    // ---- Preset controls (roadmap Phase 11 / preset-system, design.md
-    // Decision 5) - `regenerate()` and `pushAllParametersToSynth()` above are
-    // reused VERBATIM by the load path; neither is modified for presets.
-    berlin::SynthPatch currentPatchFromWidgets() const;
-    void                applyPatchToWidgets (const berlin::SynthPatch& patch);
-    void                savePreset();
-    void                writePresetFile (const berlin::Preset& preset);
-    void                loadSelectedPreset();
-    void                refreshPresetList (const juce::String& nameToSelect = {});
-    juce::String        describePresetFailure (berlin::PresetResult result) const;
-
-    juce::int64                 currentSeed;
-    berlin::Sequence            currentSequence;      // MUST precede `player` (Decision 2); audio-thread-exclusive once published
-
-    // ---- Manual Mutate (evolution-mutation-engine spec, Manual Mutate,
-    // Slice 1) - sequenceSeed is the base seed the CURRENT sequence was
-    // actually built from (set only inside regenerate()'s success path,
-    // NOT read live from currentSeed/the seed field, which can diverge -
-    // design.md Decision 4). mutationCount is the per-click generation
-    // counter, advanced only after a successful publish (Decision 5) and
-    // reset to 0 whenever regenerate() succeeds (the undo story).
-    juce::int64 sequenceSeed;
-    int         mutationCount { 0 };
-
-    // ---- Auto-Evolve schedule state (auto-evolution spec, design.md
-    // Decision 7) - lastMutationLoopCount is the baseline the next threshold
-    // is measured from; dueAtLoopCount (-1 = nothing due) remembers the
-    // loop-count value AT WHICH a threshold crossing became due, and on
-    // success the baseline advances to that remembered value, NOT to
-    // whatever getLoopCount() reads at delivery time - this keeps the
-    // cadence anchored to the triggering boundary even across busy-retry
-    // delays.
-    int lastMutationLoopCount { 0 };
-    int dueAtLoopCount { -1 };
-
-    berlin::SequencePlayer      player;
-    berlin::StepEventBuffer     blockEvents;
-    berlin::MidiEventTranslator midiTranslator;
-    berlin::MidiOutputSink      midiSink;
-    juce::MidiBuffer            midiBlock;
-    berlin::SynthEngine         synth;
-    berlin::PresetManager       presetManager;
-
-    juce::TextButton   exportButton { "Export MIDI..." };
-    juce::Label        statusLabel;
-    juce::ToggleButton synthToggle { "Synth" };
-    juce::ToggleButton fxToggle { "FX" };
-    std::unique_ptr<juce::FileChooser> exportChooser;
-
-    // ---- Parameter controls (roadmap Phase 9 / parameter-controls) ----
-    // Left column: OSCILLATOR (waveform, pulse width), FILTER (cutoff, resonance).
-    // Right column: ENVELOPE (attack, decay, sustain, release), LFO (destination, rate, depth).
-    juce::Label oscillatorSectionLabel, filterSectionLabel, envelopeSectionLabel, lfoSectionLabel;
-
-    juce::ComboBox waveformBox, lfoDestinationBox;
-    juce::Label    waveformLabel, lfoDestinationLabel;
-
-    juce::Slider cutoffSlider, resonanceSlider, pulseWidthSlider;
-    juce::Slider attackSlider, decaySlider, sustainSlider, releaseSlider;
-    juce::Slider lfoRateSlider, lfoDepthSlider;
-
-    juce::Label cutoffLabel, resonanceLabel, pulseWidthLabel;
-    juce::Label attackLabel, decayLabel, sustainLabel, releaseLabel;
-    juce::Label lfoRateLabel, lfoDepthLabel;
-
-    // ---- Generation controls (roadmap Phase 10 / generation-randomize) ----
-    juce::Label        generationSectionLabel;
-    juce::Label        seedLabel;
-    juce::TextEditor   seedEditor;
-    juce::TextButton   generateButton { "Generate" };
-    juce::TextButton   randomizeButton { "Randomize" };
-    juce::TextButton   mutateButton { "Mutate" };
-    juce::ToggleButton lockSeedToggle { "Lock Seed" };
-
-    // ---- Preset controls (roadmap Phase 11 / preset-system) ----
-    // One full-width row (design.md Decision 6): PRESETS label | name editor |
-    // Save | preset selector | Load.
-    juce::Label      presetSectionLabel;
-    juce::TextEditor presetNameEditor;
-    juce::TextButton savePresetButton { "Save" };
-    juce::ComboBox   presetBox;
-    juce::TextButton loadPresetButton { "Load" };
-
-    // ---- Auto-Evolve controls (roadmap Phase 9 "Evolution", Slice 2 /
-    // auto-evolution spec) - one full-width row inserted between the
-    // generation block and the PRESETS block in resized(): EVOLUTION label |
-    // Auto-Evolve toggle (default off) | Every | rate selector (1/2/4/8/16
-    // loops, ComboBox item ID == rate, default 4).
-    juce::Label        evolutionSectionLabel;
-    juce::ToggleButton autoEvolveToggle { "Auto-Evolve" };
-    juce::Label        evolveRateLabel;
-    juce::ComboBox     evolveRateBox;
-
-    // ---- Euclidean Rhythms controls (roadmap Phase 10 / euclidean-rhythm,
-    // design.md Decision 10) - staged, not live: mode/pulses/rotation edits
-    // do nothing until Generate or Randomize is pressed (mirrors the
-    // existing seed-field precedent).
-    juce::Label      rhythmModeLabel;
-    juce::ComboBox   rhythmModeBox;
-    juce::Label      pulsesLabel;
-    juce::Slider     pulsesSlider;
-    juce::Label      rotationLabel;
-    juce::Slider     rotationSlider;
-
-    // ---- Probability Matrices controls (roadmap Phase 10 / probability-
-    // matrices, design.md Decisions 10/13) - staged, not live: NO
-    // onValueChange, mirrors the Euclidean pulses/rotation precedent above.
-    juce::Label  stepProbabilityLabel;
-    juce::Slider stepProbabilitySlider;
+    berlin::BerlinAudioProcessor       processor;   // MUST precede `editor` - editor takes a reference to it
+    berlin::BerlinAudioProcessorEditor editor;
+    berlin::MidiOutputSink             midiSink;
+    juce::MidiBuffer                   midiBlock;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

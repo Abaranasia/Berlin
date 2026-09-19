@@ -155,6 +155,8 @@
     <ClCompile Include="..\..\Source\generation\SkipMaskGenerator.cpp"/>
     <ClCompile Include="..\..\Source\generation\MutationEngine.cpp"/>
     <ClCompile Include="..\..\Source\generation\EuclideanRhythmGenerator.cpp"/>
+    <ClCompile Include="..\..\Source\generation\SequenceBuilder.cpp"/>
+    <ClCompile Include="..\..\Source\generation\AutoEvolveSchedule.cpp"/>
     <ClCompile Include="..\..\Source\playback\Transport.cpp"/>
     <ClCompile Include="..\..\Source\playback\SequencePlayer.cpp"/>
     <ClCompile Include="..\..\Source\midi\MidiEventTranslator.cpp"/>
@@ -166,6 +168,8 @@
     <ClCompile Include="..\..\Source\synth\Lfo.cpp"/>
     <ClCompile Include="..\..\Source\synth\SynthEffects.cpp"/>
     <ClCompile Include="..\..\Source\preset\PresetManager.cpp"/>
+    <ClCompile Include="..\..\Source\plugin\BerlinAudioProcessor.cpp"/>
+    <ClCompile Include="..\..\Source\plugin\BerlinAudioProcessorEditor.cpp"/>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3224,6 +3228,9 @@
     <ClInclude Include="..\..\Source\generation\SkipMaskGenerator.h"/>
     <ClInclude Include="..\..\Source\generation\MutationEngine.h"/>
     <ClInclude Include="..\..\Source\generation\EuclideanRhythmGenerator.h"/>
+    <ClInclude Include="..\..\Source\generation\GenerationParams.h"/>
+    <ClInclude Include="..\..\Source\generation\SequenceBuilder.h"/>
+    <ClInclude Include="..\..\Source\generation\AutoEvolveSchedule.h"/>
     <ClInclude Include="..\..\Source\playback\StepEvent.h"/>
     <ClInclude Include="..\..\Source\playback\StepEventBuffer.h"/>
     <ClInclude Include="..\..\Source\playback\Transport.h"/>
@@ -3240,6 +3247,8 @@
     <ClInclude Include="..\..\Source\synth\SynthEffects.h"/>
     <ClInclude Include="..\..\Source\preset\Preset.h"/>
     <ClInclude Include="..\..\Source\preset\PresetManager.h"/>
+    <ClInclude Include="..\..\Source\plugin\BerlinAudioProcessor.h"/>
+    <ClInclude Include="..\..\Source\plugin\BerlinAudioProcessorEditor.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

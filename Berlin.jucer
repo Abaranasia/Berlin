@@ -28,6 +28,11 @@
       <FILE id="geMteC" name="MutationEngine.cpp" compile="1" resource="0" file="Source/generation/MutationEngine.cpp"/>
       <FILE id="geEucH" name="EuclideanRhythmGenerator.h" compile="0" resource="0" file="Source/generation/EuclideanRhythmGenerator.h"/>
       <FILE id="geEucC" name="EuclideanRhythmGenerator.cpp" compile="1" resource="0" file="Source/generation/EuclideanRhythmGenerator.cpp"/>
+      <FILE id="geGprH" name="GenerationParams.h" compile="0" resource="0" file="Source/generation/GenerationParams.h"/>
+      <FILE id="geSqbH" name="SequenceBuilder.h" compile="0" resource="0" file="Source/generation/SequenceBuilder.h"/>
+      <FILE id="geSqbC" name="SequenceBuilder.cpp" compile="1" resource="0" file="Source/generation/SequenceBuilder.cpp"/>
+      <FILE id="geAesH" name="AutoEvolveSchedule.h" compile="0" resource="0" file="Source/generation/AutoEvolveSchedule.h"/>
+      <FILE id="geAesC" name="AutoEvolveSchedule.cpp" compile="1" resource="0" file="Source/generation/AutoEvolveSchedule.cpp"/>
     </GROUP>
     <GROUP id="{2E6F8A1B-5C3D-4F70-9A82-6B4D8E0F2A31}" name="playback">
       <FILE id="pbEvtH" name="StepEvent.h" compile="0" resource="0" file="Source/playback/StepEvent.h"/>
@@ -65,6 +70,12 @@
       <FILE id="prPstH" name="Preset.h" compile="0" resource="0" file="Source/preset/Preset.h"/>
       <FILE id="prPmgH" name="PresetManager.h" compile="0" resource="0" file="Source/preset/PresetManager.h"/>
       <FILE id="prPmgC" name="PresetManager.cpp" compile="1" resource="0" file="Source/preset/PresetManager.cpp"/>
+    </GROUP>
+    <GROUP id="{4A6C8E0F-2D4B-4F71-9A83-7C5D9E1F3A42}" name="plugin">
+      <FILE id="plBapH" name="BerlinAudioProcessor.h" compile="0" resource="0" file="Source/plugin/BerlinAudioProcessor.h"/>
+      <FILE id="plBapC" name="BerlinAudioProcessor.cpp" compile="1" resource="0" file="Source/plugin/BerlinAudioProcessor.cpp"/>
+      <FILE id="plBaeH" name="BerlinAudioProcessorEditor.h" compile="0" resource="0" file="Source/plugin/BerlinAudioProcessorEditor.h"/>
+      <FILE id="plBaeC" name="BerlinAudioProcessorEditor.cpp" compile="1" resource="0" file="Source/plugin/BerlinAudioProcessorEditor.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

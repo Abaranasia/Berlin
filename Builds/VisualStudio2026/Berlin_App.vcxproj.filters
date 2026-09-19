@@ -26,6 +26,9 @@
     <Filter Include="Berlin\preset">
       <UniqueIdentifier>{D8EBFB99-536E-3543-8DF1-354D5B7840E7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\plugin">
+      <UniqueIdentifier>{892AFE47-600F-5EEB-E1B3-6EB2DBB943D0}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -892,6 +895,12 @@
     <ClCompile Include="..\..\Source\generation\EuclideanRhythmGenerator.cpp">
       <Filter>Berlin\generation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\generation\SequenceBuilder.cpp">
+      <Filter>Berlin\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\generation\AutoEvolveSchedule.cpp">
+      <Filter>Berlin\generation</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\playback\Transport.cpp">
       <Filter>Berlin\playback</Filter>
     </ClCompile>
@@ -924,6 +933,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\preset\PresetManager.cpp">
       <Filter>Berlin\preset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\plugin\BerlinAudioProcessor.cpp">
+      <Filter>Berlin\plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\plugin\BerlinAudioProcessorEditor.cpp">
+      <Filter>Berlin\plugin</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -4206,6 +4221,15 @@
     <ClInclude Include="..\..\Source\generation\EuclideanRhythmGenerator.h">
       <Filter>Berlin\generation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\generation\GenerationParams.h">
+      <Filter>Berlin\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\generation\SequenceBuilder.h">
+      <Filter>Berlin\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\generation\AutoEvolveSchedule.h">
+      <Filter>Berlin\generation</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\playback\StepEvent.h">
       <Filter>Berlin\playback</Filter>
     </ClInclude>
@@ -4253,6 +4277,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\preset\PresetManager.h">
       <Filter>Berlin\preset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\plugin\BerlinAudioProcessor.h">
+      <Filter>Berlin\plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\plugin\BerlinAudioProcessorEditor.h">
+      <Filter>Berlin\plugin</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
