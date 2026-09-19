@@ -11,10 +11,12 @@
 
 namespace
 {
-    constexpr int   kNumSteps               = 16;
-    constexpr int   kDefaultPulses          = 5;
-    constexpr int   kDefaultRotation        = 0;
-    constexpr float kDefaultStepProbability = 0.5f;
+    // Widget-seeding defaults for pulses/rotation/stepProbability come from a
+    // default-constructed GenerationParams rather than redeclared constants
+    // (vst3-au-plugin followup-fixes cleanup) - GenerationParams.h's own
+    // default member initializers are the single source of truth; this local
+    // instance exists only so widget setup below stays a one-line read.
+    const berlin::GenerationParams kDefaultGenerationParams {};
 
     constexpr int kMargin = 12, kControlHeight = 28, kButtonWidth = 140, kLabelWidth = 96;
 
@@ -203,16 +205,16 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     pulsesLabel.setJustificationType (juce::Justification::centredLeft);
 
     addAndMakeVisible (pulsesSlider);
-    pulsesSlider.setRange (0, kNumSteps, 1);
-    pulsesSlider.setValue (kDefaultPulses, juce::dontSendNotification);
+    pulsesSlider.setRange (0, berlin::kNumSteps, 1);
+    pulsesSlider.setValue (kDefaultGenerationParams.pulses, juce::dontSendNotification);
 
     addAndMakeVisible (rotationLabel);
     rotationLabel.setText ("Rotation", juce::dontSendNotification);
     rotationLabel.setJustificationType (juce::Justification::centredLeft);
 
     addAndMakeVisible (rotationSlider);
-    rotationSlider.setRange (0, kNumSteps - 1, 1);
-    rotationSlider.setValue (kDefaultRotation, juce::dontSendNotification);
+    rotationSlider.setRange (0, berlin::kNumSteps - 1, 1);
+    rotationSlider.setValue (kDefaultGenerationParams.rotation, juce::dontSendNotification);
 
     // ---- Probability Matrices controls (staged, not live) ----
     addAndMakeVisible (stepProbabilityLabel);
@@ -221,7 +223,7 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
 
     addAndMakeVisible (stepProbabilitySlider);
     stepProbabilitySlider.setRange (0.0, 100.0, 1.0);
-    stepProbabilitySlider.setValue (kDefaultStepProbability * 100.0, juce::dontSendNotification);
+    stepProbabilitySlider.setValue (kDefaultGenerationParams.stepProbability * 100.0, juce::dontSendNotification);
 
     // ---- Parameter controls ----
     auto configureSlider = [this] (juce::Slider& slider, juce::Label& label, const juce::String& name,

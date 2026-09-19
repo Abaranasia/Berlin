@@ -22,7 +22,6 @@
 
 namespace
 {
-    constexpr int kNumSteps    = 16;
     constexpr int kActiveSteps = 11;   // research's cited 16 -> 11 displacement (design.md Decision 3)
 }
 

@@ -43,6 +43,7 @@
       <FILE id="pbSplC" name="SequencePlayer.cpp" compile="1" resource="0" file="Source/playback/SequencePlayer.cpp"/>
     </GROUP>
     <GROUP id="{3F7A9C2D-6E4B-481A-B5C3-7D9E1F0A4B26}" name="midi">
+      <FILE id="mdChnH" name="MidiChannel.h" compile="0" resource="0" file="Source/midi/MidiChannel.h"/>
       <FILE id="mdMsgH" name="MidiMessageBytes.h" compile="0" resource="0" file="Source/midi/MidiMessageBytes.h"/>
       <FILE id="mdTrnH" name="MidiEventTranslator.h" compile="0" resource="0" file="Source/midi/MidiEventTranslator.h"/>
       <FILE id="mdTrnC" name="MidiEventTranslator.cpp" compile="1" resource="0" file="Source/midi/MidiEventTranslator.cpp"/>

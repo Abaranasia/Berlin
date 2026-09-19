@@ -356,6 +356,31 @@ public:
             }
         }
 
+        beginTest ("getTailLengthSeconds() stays finite and bounded when delayFeedback approaches 1.0");
+        {
+            // delayFeedback this close to 1.0 is reachable only via a saved/hand-edited
+            // preset - no UI slider exposes this range today - but getTailLengthSeconds()
+            // must never report an arbitrarily large or non-finite tail regardless of how
+            // the patch arrived (vst3-au-plugin followup-fixes cleanup, obs #274).
+            berlin::BerlinAudioProcessor processor;
+            berlin::SynthPatch patch = processor.getPatch();
+            patch.delayFeedback = 0.9999f;
+            processor.setPatch (patch);
+
+            const double tail = processor.getTailLengthSeconds();
+            expect (std::isfinite (tail));
+            expect (tail <= 60.0);
+        }
+
+        beginTest ("getTailLengthSeconds() with the default patch stays well under the clamp");
+        {
+            berlin::BerlinAudioProcessor processor;   // kDefaultPatch: delayFeedback == 0.3f
+            const double tail = processor.getTailLengthSeconds();
+            expect (std::isfinite (tail));
+            expect (tail > 0.0);
+            expect (tail < 60.0);
+        }
+
         beginTest ("acceptsMidi/producesMidi/isMidiEffect report the locked contract");
         {
             // acceptsMidi() == true (D8, post-manual-gate correction): the VST3 SDK

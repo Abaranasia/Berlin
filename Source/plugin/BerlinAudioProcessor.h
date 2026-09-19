@@ -57,6 +57,7 @@
 #include "core/Sequence.h"
 #include "generation/AutoEvolveSchedule.h"
 #include "generation/GenerationParams.h"
+#include "midi/MidiChannel.h"
 #include "midi/MidiEventTranslator.h"
 #include "playback/SequencePlayer.h"
 #include "playback/StepEventBuffer.h"
@@ -143,7 +144,6 @@ private:
 
     static constexpr double kBpm            = 120.0;
     static constexpr int    kStepsPerBeat   = 4;
-    static constexpr int    kMidiChannel    = 1;
     static constexpr int    kExportRepeats  = 4;
     static constexpr juce::int64 kDefaultSeed = 12345;
 
