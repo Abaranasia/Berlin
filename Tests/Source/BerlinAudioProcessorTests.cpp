@@ -187,6 +187,56 @@ public:
             expect (loader.getSeed() == 2468);
         }
 
+        beginTest ("loadPreset applies scaleType/rootPitchClass/rangeLow/rangeHigh without clobbering staged mode/pulses/rotation/stepProbability");
+        {
+            // scale-aware-generation: Preset persists ONLY scaleType/
+            // rootPitchClass/rangeLow/rangeHigh - mode/pulses/rotation/
+            // stepProbability remain transient staged GUI configuration
+            // (design.md's scoped exception to prior D4). This is the
+            // BerlinAudioProcessor-level integration test tasks.md 6.1
+            // describes; PresetManagerFileTests.cpp (PresetManager-only,
+            // no GenerationParams ownership) is not the right home for it.
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor saver (temp.dir);
+
+            berlin::GenerationParams savedParams;
+            savedParams.scaleType      = berlin::ScaleType::dorian;
+            savedParams.rootPitchClass = 2;    // D
+            savedParams.rangeLow       = 40;
+            savedParams.rangeHigh      = 64;
+            saver.setGenerationParams (savedParams);
+            saver.setSeed (13579);
+
+            expect (saver.save ("ScalePreset") == berlin::PresetResult::ok);
+
+            berlin::BerlinAudioProcessor loader (temp.dir);
+
+            berlin::GenerationParams stagedParams;
+            stagedParams.mode            = berlin::RhythmMode::euclidean;
+            stagedParams.pulses          = 9;
+            stagedParams.rotation        = 3;
+            stagedParams.stepProbability = 0.7f;
+            loader.setGenerationParams (stagedParams);
+
+            expect (loader.loadPreset ("ScalePreset") == berlin::PresetResult::ok);
+
+            const auto& result = loader.getGenerationParams();
+            expect (result.scaleType == berlin::ScaleType::dorian);
+            expectEquals (result.rootPitchClass, 2);
+            expectEquals (result.rangeLow, 40);
+            expectEquals (result.rangeHigh, 64);
+
+            // Staged rhythm fields must be untouched by loadPreset - proves
+            // loadPreset applies the 4 fields individually, NOT via a
+            // whole-GenerationParams-struct assignment.
+            expect (result.mode == berlin::RhythmMode::euclidean);
+            expectEquals (result.pulses, 9);
+            expectEquals (result.rotation, 3);
+            expectEquals (result.stepProbability, 0.7f);
+
+            expect (loader.getSeed() == 13579);
+        }
+
         beginTest ("prepareToPlay -> N x processBlock -> releaseResources across block sizes and sample rates");
         {
             const int blockSizes[] = { 1, 7, 512, 4096 };

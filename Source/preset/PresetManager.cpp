@@ -8,6 +8,7 @@
 
 #include "PresetManager.h"
 
+#include "generation/SequenceBuilder.h"
 #include "synth/SynthPatch.h"
 
 namespace
@@ -26,6 +27,29 @@ namespace
     {
         static const juce::StringArray names { "pitch", "cutoff", "amplitude", "pulseWidth" };
         return names;
+    }
+
+    // scale-aware-generation schema v2: mirrors waveformNames()'s "name string,
+    // not a raw ordinal" convention (PresetManager.h's ScaleType-ordinals-are-
+    // UI-only note). Order MUST match berlin::ScaleType's declaration order.
+    const juce::StringArray& scaleNames()
+    {
+        static const juce::StringArray names { "minor", "major", "dorian", "phrygian", "mixolydian", "harmonicMinor" };
+        return names;
+    }
+
+    juce::String scaleTypeToName (berlin::ScaleType type)
+    {
+        return scaleNames()[static_cast<int> (type)];
+    }
+
+    bool scaleTypeFromName (const juce::String& name, berlin::ScaleType& out)
+    {
+        const int index = scaleNames().indexOf (name);
+        if (index < 0)
+            return false;
+        out = static_cast<berlin::ScaleType> (index);
+        return true;
     }
 
     juce::String waveformToName (berlin::Waveform waveform)
@@ -102,6 +126,10 @@ juce::ValueTree PresetManager::toValueTree (const Preset& preset)
 
     juce::ValueTree generationNode (kGenerationType);
     generationNode.setProperty ("seed", juce::String (preset.seed), nullptr);
+    generationNode.setProperty ("scaleType",      scaleTypeToName (preset.scaleType), nullptr);
+    generationNode.setProperty ("rootPitchClass", juce::String (preset.rootPitchClass), nullptr);
+    generationNode.setProperty ("rangeLow",       juce::String (preset.rangeLow), nullptr);
+    generationNode.setProperty ("rangeHigh",      juce::String (preset.rangeHigh), nullptr);
     root.appendChild (generationNode, nullptr);
 
     return root;
@@ -152,8 +180,51 @@ PresetResult PresetManager::fromValueTree (const juce::ValueTree& tree, Preset& 
     if (! lfoDestinationFromName (synthNode.getProperty ("lfoDestination").toString(), lfoDestination))
         return PresetResult::parseFailed;
 
+    // scale-aware-generation schema v2: scaleType/rootPitchClass/rangeLow/
+    // rangeHigh are REQUIRED for version >= 2 (missing -> parseFailed); a v1
+    // file is missing them BY DEFINITION and defaults to minor/C/36-72
+    // (PresetManager.h's Schema decision / design.md's migration policy).
+    ScaleType scaleType     = ScaleType::minor;
+    int       rootPitchClass = 0;
+    int       rangeLow       = 36;
+    int       rangeHigh      = 72;
+
+    if (version >= 2)
+    {
+        static const char* const requiredGenerationAttributes[] =
+        {
+            "scaleType", "rootPitchClass", "rangeLow", "rangeHigh"
+        };
+
+        for (auto* attribute : requiredGenerationAttributes)
+            if (! generationNode.hasProperty (attribute))
+                return PresetResult::parseFailed;
+
+        if (! scaleTypeFromName (generationNode.getProperty ("scaleType").toString(), scaleType))
+            return PresetResult::parseFailed;
+
+        rootPitchClass = generationNode.getProperty ("rootPitchClass").toString().getIntValue();
+        rangeLow       = generationNode.getProperty ("rangeLow").toString().getIntValue();
+        rangeHigh      = generationNode.getProperty ("rangeHigh").toString().getIntValue();
+
+        // Bounded-review correction (finding R4-001, CRITICAL): these 3 fields
+        // came from untrusted preset XML with no bounds check, unlike scaleType
+        // (enum-validated above) and every SynthPatch field (clampParameter
+        // below). An out-of-[0,11] rootPitchClass desyncs the editor's Root
+        // combo box (ComboBox::setSelectedId deselects on an unmatched ID),
+        // silently corrupting the root on the next Generate/Randomize/Lock-Seed
+        // click. Normalize here so the STORED value is always sane, matching
+        // normalizePitchRange's own "covers preset-loaded params" contract.
+        rootPitchClass = ((rootPitchClass % 12) + 12) % 12;
+        normalizePitchRange (rangeLow, rangeHigh);
+    }
+
     Preset result;
     result.name                 = tree.getProperty ("name").toString();
+    result.scaleType            = scaleType;
+    result.rootPitchClass       = rootPitchClass;
+    result.rangeLow             = rangeLow;
+    result.rangeHigh            = rangeHigh;
     result.patch.waveform       = waveform;
     result.patch.lfoDestination = lfoDestination;
     result.patch.cutoffHz   = clampParameter (synthNode.getProperty ("cutoffHz").toString().getFloatValue(),   kMinCutoffHz,       kMaxCutoffHz);

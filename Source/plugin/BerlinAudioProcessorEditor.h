@@ -68,7 +68,8 @@ private:
     berlin::SynthPatch currentPatchFromWidgets() const;
     void                applyPatchToWidgets (const berlin::SynthPatch& patch);
     void                pushPatchFromWidgets();          // currentPatchFromWidgets() -> owner.setPatch()
-    void                pushGenerationParamsFromWidgets(); // stages mode/pulses/rotation/probability/lockSeed
+    void                pushGenerationParamsFromWidgets(); // stages mode/pulses/rotation/probability/lockSeed/scale/root/range
+    void                applyGenerationParamsToWidgets (const berlin::GenerationParams& params); // writes back ONLY the 4 persisted fields
 
     void         savePreset();
     void         writePresetFile (const juce::String& name);
@@ -118,6 +119,17 @@ private:
     // ---- Probability Matrices controls ----
     juce::Label  stepProbabilityLabel;
     juce::Slider stepProbabilitySlider;
+
+    // ---- Scale-Aware Generation controls (staged, not live - mirrors the
+    // Pulses/Rotation precedent; scale-aware-generation) ----
+    juce::Label    scaleLabel;
+    juce::ComboBox scaleBox;
+    juce::Label    rootLabel;
+    juce::ComboBox rootBox;
+    juce::Label    rangeLowLabel;
+    juce::Slider   rangeLowSlider;
+    juce::Label    rangeHighLabel;
+    juce::Slider   rangeHighSlider;
 
     // ---- Parameter controls ----
     juce::Label oscillatorSectionLabel, filterSectionLabel, envelopeSectionLabel, lfoSectionLabel;

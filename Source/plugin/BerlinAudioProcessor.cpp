@@ -25,8 +25,7 @@ namespace berlin
 BerlinAudioProcessor::BerlinAudioProcessor (juce::File presetDirectory)
     : juce::AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       currentSeed (kDefaultSeed),
-      currentSequence (buildSeededSequence (currentSeed, generationParams.mode, generationParams.pulses,
-                                             generationParams.rotation, generationParams.stepProbability)),
+      currentSequence (buildSeededSequence (currentSeed, generationParams)),
       sequenceSeed (kDefaultSeed),
       player (currentSequence, Transport (kBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel),
@@ -114,8 +113,12 @@ double BerlinAudioProcessor::getTailLengthSeconds() const
 void BerlinAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     Preset preset;
-    preset.patch = currentPatch;
-    preset.seed  = currentSeed;
+    preset.patch          = currentPatch;
+    preset.seed           = currentSeed;
+    preset.scaleType      = generationParams.scaleType;
+    preset.rootPitchClass = generationParams.rootPitchClass;
+    preset.rangeLow       = generationParams.rangeLow;
+    preset.rangeHigh      = generationParams.rangeHigh;
 
     if (auto xml = PresetManager::toValueTree (preset).createXml())
         copyXmlToBinary (*xml, destData);
@@ -146,6 +149,12 @@ void BerlinAudioProcessor::setStateInformation (const void* data, int sizeInByte
         {
             setPatch (preset.patch);
             setSeed (preset.seed);
+
+            generationParams.scaleType      = preset.scaleType;
+            generationParams.rootPitchClass = preset.rootPitchClass;
+            generationParams.rangeLow       = preset.rangeLow;
+            generationParams.rangeHigh      = preset.rangeHigh;
+
             regenerate (false);   // re-derive the sequence from the restored seed; does NOT replay mutation history (D4)
             sendChangeMessage();
         }
@@ -158,8 +167,7 @@ bool BerlinAudioProcessor::regenerate (bool drawNewSeed)
     if (drawNewSeed && ! generationParams.lockSeed)
         currentSeed = juce::Random::getSystemRandom().nextInt64();
 
-    auto next = buildSeededSequence (currentSeed, generationParams.mode, generationParams.pulses,
-                                      generationParams.rotation, generationParams.stepProbability);
+    auto next = buildSeededSequence (currentSeed, generationParams);
 
     // player.publishSequence swaps THROUGH its argument: on success `forPlayer`
     // ends up holding the stale, now-superseded buffer, not the freshly built
@@ -194,9 +202,13 @@ bool BerlinAudioProcessor::mutate()
 PresetResult BerlinAudioProcessor::save (const juce::String& name)
 {
     Preset preset;
-    preset.name  = name;
-    preset.patch = currentPatch;
-    preset.seed  = currentSeed;
+    preset.name           = name;
+    preset.patch          = currentPatch;
+    preset.seed           = currentSeed;
+    preset.scaleType      = generationParams.scaleType;
+    preset.rootPitchClass = generationParams.rootPitchClass;
+    preset.rangeLow       = generationParams.rangeLow;
+    preset.rangeHigh      = generationParams.rangeHigh;
     return presetManager.save (preset);   // unconditional; editor owns the overwrite prompt (D2)
 }
 
@@ -210,6 +222,15 @@ PresetResult BerlinAudioProcessor::loadPreset (const juce::String& name)
 
     setPatch (preset.patch);
     setSeed (preset.seed);
+
+    // Apply the 4 fields INDIVIDUALLY (design.md invariant) - a whole-struct
+    // GenerationParams assignment would clobber the deliberately-unpersisted
+    // mode/pulses/rotation/stepProbability/lockSeed with defaults.
+    generationParams.scaleType      = preset.scaleType;
+    generationParams.rootPitchClass = preset.rootPitchClass;
+    generationParams.rangeLow       = preset.rangeLow;
+    generationParams.rangeHigh      = preset.rangeHigh;
+
     regenerate (false);   // drawNewSeed=false: the preset's saved seed applies even if Lock Seed is on
 
     return PresetResult::ok;

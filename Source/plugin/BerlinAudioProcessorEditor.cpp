@@ -9,6 +9,8 @@
 
 #include "BerlinAudioProcessorEditor.h"
 
+#include "generation/SequenceBuilder.h"   // normalizePitchRange - interactive range-slider constraint
+
 namespace
 {
     // Widget-seeding defaults for pulses/rotation/stepProbability come from a
@@ -21,6 +23,11 @@ namespace
     constexpr int kMargin = 12, kControlHeight = 28, kButtonWidth = 140, kLabelWidth = 96;
 
     const char* kExportFileName = "berlin-export.mid";
+
+    // scale-aware-generation: UI display names. Order matches
+    // berlin::ScaleType's declaration order / PresetManager::scaleNames().
+    const char* const kScaleNames[] = { "Minor", "Major", "Dorian", "Phrygian", "Mixolydian", "Harmonic Minor" };
+    const char* const kRootNames[]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 
     juce::File defaultExportFile()
     {
@@ -225,6 +232,57 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     stepProbabilitySlider.setRange (0.0, 100.0, 1.0);
     stepProbabilitySlider.setValue (kDefaultGenerationParams.stepProbability * 100.0, juce::dontSendNotification);
 
+    // ---- Scale-Aware Generation controls (staged, not live - mirrors the
+    // Pulses/Rotation precedent) ----
+    addAndMakeVisible (scaleLabel);
+    scaleLabel.setText ("Scale", juce::dontSendNotification);
+    scaleLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (scaleBox);
+    for (int i = 0; i < (int) (sizeof (kScaleNames) / sizeof (kScaleNames[0])); ++i)
+        scaleBox.addItem (kScaleNames[i], i + 1);
+    scaleBox.setSelectedId (static_cast<int> (kDefaultGenerationParams.scaleType) + 1, juce::dontSendNotification);
+
+    addAndMakeVisible (rootLabel);
+    rootLabel.setText ("Root", juce::dontSendNotification);
+    rootLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (rootBox);
+    for (int i = 0; i < (int) (sizeof (kRootNames) / sizeof (kRootNames[0])); ++i)
+        rootBox.addItem (kRootNames[i], i + 1);
+    rootBox.setSelectedId (kDefaultGenerationParams.rootPitchClass + 1, juce::dontSendNotification);
+
+    // Interactive constraint (design.md): normalizePitchRange runs again here
+    // so the two sliders visually reflect the >= one-octave invariant while
+    // dragging - buildSeededSequence's chokepoint enforces it regardless, so
+    // this is UX feedback, not a correctness dependency.
+    auto constrainRangeSliders = [this]
+    {
+        int low  = (int) rangeLowSlider.getValue();
+        int high = (int) rangeHighSlider.getValue();
+        berlin::normalizePitchRange (low, high);
+        rangeLowSlider.setValue (low, juce::dontSendNotification);
+        rangeHighSlider.setValue (high, juce::dontSendNotification);
+    };
+
+    addAndMakeVisible (rangeLowLabel);
+    rangeLowLabel.setText ("Range Lo", juce::dontSendNotification);
+    rangeLowLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (rangeLowSlider);
+    rangeLowSlider.setRange (berlin::kMinPitch, berlin::kMaxPitch, 1);
+    rangeLowSlider.setValue (kDefaultGenerationParams.rangeLow, juce::dontSendNotification);
+    rangeLowSlider.onValueChange = constrainRangeSliders;
+
+    addAndMakeVisible (rangeHighLabel);
+    rangeHighLabel.setText ("Range Hi", juce::dontSendNotification);
+    rangeHighLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (rangeHighSlider);
+    rangeHighSlider.setRange (berlin::kMinPitch, berlin::kMaxPitch, 1);
+    rangeHighSlider.setValue (kDefaultGenerationParams.rangeHigh, juce::dontSendNotification);
+    rangeHighSlider.onValueChange = constrainRangeSliders;
+
     // ---- Parameter controls ----
     auto configureSlider = [this] (juce::Slider& slider, juce::Label& label, const juce::String& name,
                                     double min, double max, double initial, double midPoint)
@@ -310,7 +368,10 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     refreshFromProcessor();   // pull owner's CURRENT patch/seed (may already differ from kDefaultPatch/kDefaultSeed)
     owner.addChangeListener (this);
 
-    setSize (800, 680);
+    // +68px = 2 new rows (scale/root, range lo/hi), each kControlHeight (28) +
+    // kMargin/2 (6) spacing - scale-aware-generation, resolving design.md's
+    // open editor-height question against this file's live layout constants.
+    setSize (800, 680 + 2 * (kControlHeight + kMargin / 2));
 }
 
 BerlinAudioProcessorEditor::~BerlinAudioProcessorEditor()
@@ -329,6 +390,7 @@ void BerlinAudioProcessorEditor::refreshFromProcessor()
 {
     applyPatchToWidgets (owner.getPatch());
     seedEditor.setText (juce::String (owner.getSeed()), juce::dontSendNotification);
+    applyGenerationParamsToWidgets (owner.getGenerationParams());
 }
 
 //==============================================================================
@@ -379,6 +441,22 @@ void BerlinAudioProcessorEditor::resized()
     auto probabilityRow = area.removeFromTop (kControlHeight);
     stepProbabilityLabel .setBounds (probabilityRow.removeFromLeft (kLabelWidth));
     stepProbabilitySlider.setBounds (probabilityRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    auto scaleRootRow = area.removeFromTop (kControlHeight);
+    scaleLabel.setBounds (scaleRootRow.removeFromLeft (kLabelWidth));
+    scaleBox  .setBounds (scaleRootRow.removeFromLeft (kButtonWidth));
+    scaleRootRow.removeFromLeft (6);
+    rootLabel .setBounds (scaleRootRow.removeFromLeft (kLabelWidth));
+    rootBox   .setBounds (scaleRootRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    auto rangeRow = area.removeFromTop (kControlHeight);
+    rangeLowLabel  .setBounds (rangeRow.removeFromLeft (kLabelWidth));
+    rangeLowSlider .setBounds (rangeRow.removeFromLeft (kButtonWidth));
+    rangeRow.removeFromLeft (6);
+    rangeHighLabel .setBounds (rangeRow.removeFromLeft (kLabelWidth));
+    rangeHighSlider.setBounds (rangeRow.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
     auto evolutionRow = area.removeFromTop (kControlHeight);
@@ -479,7 +557,24 @@ void BerlinAudioProcessorEditor::pushGenerationParamsFromWidgets()
     params.rotation        = (int) rotationSlider.getValue();
     params.stepProbability = (float) stepProbabilitySlider.getValue() / 100.0f;   // 0..100 -> 0.0..1.0 exactly
     params.lockSeed        = lockSeedToggle.getToggleState();
+
+    params.scaleType      = static_cast<berlin::ScaleType> (scaleBox.getSelectedId() - 1);
+    params.rootPitchClass = rootBox.getSelectedId() - 1;
+    params.rangeLow       = (int) rangeLowSlider.getValue();
+    params.rangeHigh      = (int) rangeHighSlider.getValue();
+
     owner.setGenerationParams (params);
+}
+
+void BerlinAudioProcessorEditor::applyGenerationParamsToWidgets (const berlin::GenerationParams& params)
+{
+    // Writes back ONLY the 4 persisted fields (design.md's data-flow diagram)
+    // - the rhythm widgets (mode/pulses/rotation/stepProbability/lockSeed)
+    // stay the staging source of truth and are never overwritten here.
+    scaleBox.setSelectedId (static_cast<int> (params.scaleType) + 1, juce::dontSendNotification);
+    rootBox.setSelectedId (params.rootPitchClass + 1, juce::dontSendNotification);
+    rangeLowSlider.setValue (params.rangeLow, juce::dontSendNotification);
+    rangeHighSlider.setValue (params.rangeHigh, juce::dontSendNotification);
 }
 
 //==============================================================================
