@@ -18,28 +18,51 @@
 #include "generation/RhythmGenerator.h"
 #include "generation/SkipMaskGenerator.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace
 {
-    constexpr int kNumSteps    = 16;
     constexpr int kActiveSteps = 11;   // research's cited 16 -> 11 displacement (design.md Decision 3)
 }
 
 namespace berlin
 {
 
-Sequence buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int rotation, float stepProbability)
+void normalizePitchRange (int& low, int& high) noexcept
+{
+    if (low > high)
+        std::swap (low, high);
+
+    low  = juce::jlimit (kMinPitch, kMaxPitch, low);
+    high = juce::jlimit (kMinPitch, kMaxPitch, high);
+
+    if (low > high)
+        std::swap (low, high);
+
+    // Widen upward preferentially; only widen downward once high is pinned
+    // at the ceiling (scale-aware-generation design.md: "span at the 127
+    // ceiling widens downward").
+    while (high - low < kMinPitchRangeSpan)
+    {
+        if (high < kMaxPitch)
+            ++high;
+        else
+            --low;
+    }
+}
+
+Sequence buildSeededSequence (juce::int64 seed, const GenerationParams& params)
 {
     DeterministicRandom rng (seed);
     auto sequence = [&]
     {
-        switch (mode)
+        switch (params.mode)
         {
             case RhythmMode::euclidean:
-                return EuclideanRhythmGenerator (kNumSteps, pulses, rotation).generate();   // 0 draws
+                return EuclideanRhythmGenerator (kNumSteps, params.pulses, params.rotation).generate();   // 0 draws
             case RhythmMode::probability:
-                return RhythmGenerator (kNumSteps, std::vector<float> ((std::size_t) kNumSteps, stepProbability))
+                return RhythmGenerator (kNumSteps, std::vector<float> ((std::size_t) kNumSteps, params.stepProbability))
                     .generate (rng);   // exactly kNumSteps draws (probability-matrices)
             case RhythmMode::random:
             default:
@@ -47,7 +70,11 @@ Sequence buildSeededSequence (juce::int64 seed, RhythmMode mode, int pulses, int
         }
     }();
 
-    PitchGenerator pitch (Scale::minor (48), 36, 72);
+    int rangeLow  = params.rangeLow;
+    int rangeHigh = params.rangeHigh;
+    normalizePitchRange (rangeLow, rangeHigh);
+
+    PitchGenerator pitch (Scale::fromPitchClass (params.scaleType, params.rootPitchClass), rangeLow, rangeHigh);
     for (int i = 0; i < sequence.size(); ++i)
     {
         if (sequence[i].active)

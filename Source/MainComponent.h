@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "midi/MidiChannel.h"
 #include "midi/MidiOutputSink.h"
 #include "plugin/BerlinAudioProcessor.h"
 #include "plugin/BerlinAudioProcessorEditor.h"
@@ -33,7 +34,6 @@ public:
 
 private:
     //==============================================================================
-    static constexpr int kMidiChannel     = 1;
     static constexpr int kMidiBufferBytes = 1024;
 
     berlin::BerlinAudioProcessor       processor;   // MUST precede `editor` - editor takes a reference to it

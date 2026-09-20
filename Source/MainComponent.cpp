@@ -3,7 +3,7 @@
 //==============================================================================
 MainComponent::MainComponent()
     : editor (processor),
-      midiSink (kMidiChannel)
+      midiSink (berlin::kMidiChannel)
 {
     addAndMakeVisible (editor);
     setSize (800, 680);

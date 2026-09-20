@@ -15,10 +15,15 @@
 
    Schema (Decision 3): root element "BerlinPreset" carries a schemaVersion
    attribute and a "name" attribute; two child sections, "Synth" (the 11 live
-   parameters) and "Generation" (the seed). A version newer than
-   kSchemaVersion is rejected (unsupportedVersion, unknown future semantics
-   unguessable); a version older is accepted with any field the older schema
-   didn't have filled from kDefaultPatch (policy only - unreachable at v1).
+   parameters) and "Generation" (the seed, plus - since schema v2,
+   scale-aware-generation - scaleType/rootPitchClass/rangeLow/rangeHigh). A
+   version newer than kSchemaVersion is rejected (unsupportedVersion, unknown
+   future semantics unguessable); a version older than kSchemaVersion is
+   accepted with any field the older schema didn't have filled from a
+   documented default - kDefaultPatch for Synth fields (policy only -
+   unreachable at v1 today), and minor/C/36-72 for a v1 file's absent
+   scaleType/rootPitchClass/rangeLow/rangeHigh (the first real exercise of
+   this migration path, scale-aware-generation design.md).
 
    Malformed input (Decision 4): structural defects (not the right root
    element, missing/unparseable schemaVersion, a missing required section or
@@ -48,7 +53,7 @@ namespace berlin
 class PresetManager
 {
 public:
-    static constexpr int kSchemaVersion = 1;
+    static constexpr int kSchemaVersion = 2;
 
     explicit PresetManager (juce::File presetDirectoryToUse = defaultPresetDirectory());
 

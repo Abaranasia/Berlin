@@ -93,6 +93,56 @@ public:
 
             expect (! scale.contains (61 - 12)); // C#, one octave below root - still not in scale
         }
+
+        beginTest ("fromPitchClass(minor, 0) is degree-for-degree equal to Scale::minor(48)");
+        {
+            // scale-aware-generation design.md: kPitchClassAnchor == 48, so the
+            // default construction is LITERALLY Scale::minor(48) - this is the
+            // byte-identical-output regression anchor.
+            const berlin::Scale fromCatalog = berlin::Scale::fromPitchClass (berlin::ScaleType::minor, 0);
+            const berlin::Scale reference   = berlin::Scale::minor (48);
+
+            expectEquals (fromCatalog.getRoot(), reference.getRoot());
+            expectEquals (fromCatalog.getNumDegrees(), reference.getNumDegrees());
+
+            for (int i = 0; i < reference.getNumDegrees(); ++i)
+                expectEquals (fromCatalog.getDegree (i), reference.getDegree (i));
+        }
+
+        beginTest ("fromPitchClass interval sets match the documented catalog for all 6 ScaleTypes");
+        {
+            using berlin::ScaleType;
+
+            auto checkIntervals = [this] (ScaleType type, const std::vector<int>& expectedIntervals)
+            {
+                const berlin::Scale scale = berlin::Scale::fromPitchClass (type, 0);
+                expectEquals (scale.getNumDegrees(), (int) expectedIntervals.size());
+
+                for (int i = 0; i < scale.getNumDegrees(); ++i)
+                    expectEquals (scale.getDegree (i) - scale.getRoot(), expectedIntervals[(std::size_t) i]);
+            };
+
+            checkIntervals (ScaleType::minor,         { 0, 2, 3, 5, 7, 8, 10 });
+            checkIntervals (ScaleType::major,          { 0, 2, 4, 5, 7, 9, 11 });
+            checkIntervals (ScaleType::dorian,         { 0, 2, 3, 5, 7, 9, 10 });
+            checkIntervals (ScaleType::phrygian,       { 0, 1, 3, 5, 7, 8, 10 });
+            checkIntervals (ScaleType::mixolydian,     { 0, 2, 4, 5, 7, 9, 10 });
+            checkIntervals (ScaleType::harmonicMinor,  { 0, 2, 3, 5, 7, 8, 11 });
+        }
+
+        beginTest ("fromPitchClass anchors the root at kPitchClassAnchor + pitchClass, floored-mod 12");
+        {
+            const berlin::Scale scale = berlin::Scale::fromPitchClass (berlin::ScaleType::major, 2); // D
+            expectEquals (scale.getRoot(), berlin::kPitchClassAnchor + 2);
+
+            // Floored-mod: pitchClass 14 (== 2 mod 12) must anchor identically to pitchClass 2.
+            const berlin::Scale wrapped = berlin::Scale::fromPitchClass (berlin::ScaleType::major, 14);
+            expectEquals (wrapped.getRoot(), berlin::kPitchClassAnchor + 2);
+
+            // Floored-mod: a negative pitchClass wraps forward, never truncates toward 0.
+            const berlin::Scale negative = berlin::Scale::fromPitchClass (berlin::ScaleType::major, -1);
+            expectEquals (negative.getRoot(), berlin::kPitchClassAnchor + 11);
+        }
     }
 };
 

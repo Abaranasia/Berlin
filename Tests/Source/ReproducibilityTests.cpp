@@ -42,9 +42,11 @@
 #include "core/Scale.h"
 #include "core/Sequence.h"
 #include "generation/DeterministicRandom.h"
+#include "generation/GenerationParams.h"
 #include "generation/MutationEngine.h"
 #include "generation/PitchGenerator.h"
 #include "generation/RhythmGenerator.h"
+#include "generation/SequenceBuilder.h"
 #include "generation/SkipMaskGenerator.h"
 
 namespace
@@ -134,6 +136,26 @@ berlin::Sequence runMutationChain (const berlin::Sequence& base, juce::int64 bas
     }
 
     return current;
+}
+
+// Byte-identical replica of buildSeededSequence's PRE-scale-aware-generation
+// RhythmMode::random branch: SkipMaskGenerator(16, 11) + PitchGenerator
+// (Scale::minor(48), 36, 72), composed in the same fixed order (rhythm draws
+// first, then one pitch draw per active step). This is the regression golden
+// scale-aware-generation's default GenerationParams must reproduce exactly.
+berlin::Sequence generatePreChangeGoldenSequence (juce::int64 seed)
+{
+    berlin::DeterministicRandom rng (seed);
+
+    const berlin::SkipMaskGenerator maskGenerator (berlin::kNumSteps, 11);
+    berlin::Sequence sequence = maskGenerator.generate (rng);
+
+    const berlin::PitchGenerator pitchGenerator (berlin::Scale::minor (48), 36, 72);
+    for (int i = 0; i < sequence.size(); ++i)
+        if (sequence[i].active)
+            sequence[i].note = pitchGenerator.generateNextNote (rng);
+
+    return sequence;
 }
 
 } // namespace
@@ -226,6 +248,58 @@ public:
             const berlin::Sequence resultB = runMutationChain (base, seed, clicks);
 
             expect (resultA == resultB);
+        }
+
+        beginTest ("Default GenerationParams reproduce pre-change output byte-identically for the same seed");
+        {
+            // scale-aware-generation's primary regression guard (design.md):
+            // ScaleType::minor + rootPitchClass=0 + range[36,72] must be
+            // LITERALLY equivalent to the pre-change hardcoded Scale::minor(48)/[36,72].
+            constexpr juce::int64 seed = 777777;
+
+            const berlin::GenerationParams defaultParams;   // every field at its default
+
+            const berlin::Sequence golden = generatePreChangeGoldenSequence (seed);
+            const berlin::Sequence actual = berlin::buildSeededSequence (seed, defaultParams);
+
+            expect (actual == golden);
+        }
+
+        beginTest ("Same seed + same scale/root/range reproduces identically; changing them alters pitch only, not rhythm");
+        {
+            constexpr juce::int64 seed = 909090;
+
+            berlin::GenerationParams params;
+            params.scaleType      = berlin::ScaleType::dorian;
+            params.rootPitchClass = 2;    // D
+            params.rangeLow       = 40;
+            params.rangeHigh      = 64;
+
+            const berlin::Sequence a = berlin::buildSeededSequence (seed, params);
+            const berlin::Sequence b = berlin::buildSeededSequence (seed, params);
+            expect (a == b);
+
+            berlin::GenerationParams changed = params;
+            changed.scaleType      = berlin::ScaleType::phrygian;
+            changed.rootPitchClass = 9;   // A
+            changed.rangeLow       = 45;
+            changed.rangeHigh      = 69;
+
+            const berlin::Sequence c = berlin::buildSeededSequence (seed, changed);
+
+            expectEquals (c.size(), a.size());
+
+            bool anyNoteDiffers = false;
+
+            for (int i = 0; i < a.size(); ++i)
+            {
+                expect (a[i].active == c[i].active);   // rhythm (active mask) is unchanged by a pitch-only parameter change
+
+                if (a[i].active && a[i].note != c[i].note)
+                    anyNoteDiffers = true;
+            }
+
+            expect (anyNoteDiffers);   // pitch DID change - proves this isn't a trivially-identical comparison
         }
     }
 };

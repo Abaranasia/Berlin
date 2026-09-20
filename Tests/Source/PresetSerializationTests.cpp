@@ -29,6 +29,8 @@
 #include <juce_core/juce_core.h>
 #include <juce_data_structures/juce_data_structures.h>
 
+#include "core/Scale.h"
+#include "generation/GenerationParams.h"
 #include "preset/Preset.h"
 #include "preset/PresetManager.h"
 #include "synth/SynthPatch.h"
@@ -71,11 +73,19 @@ public:
             in.patch.lfoDepth           = 0.75f;
             in.patch.lfoDestination     = berlin::LfoDestination::cutoff;
             in.seed                     = 123456789LL;
+            in.scaleType                = berlin::ScaleType::phrygian;
+            in.rootPitchClass           = 4;    // E
+            in.rangeLow                 = 43;
+            in.rangeHigh                = 67;
 
             berlin::Preset out;
             expect (roundTripThroughXml (in, out));
 
             expect (out.name == in.name);
+            expect (out.scaleType == in.scaleType);
+            expect (out.rootPitchClass == in.rootPitchClass);
+            expect (out.rangeLow == in.rangeLow);
+            expect (out.rangeHigh == in.rangeHigh);
             expect (out.patch.waveform == in.patch.waveform);
             expect (out.patch.cutoffHz == in.patch.cutoffHz);
             expect (out.patch.resonance == in.patch.resonance);
@@ -286,6 +296,85 @@ public:
             const auto result = berlin::PresetManager::fromValueTree (tree, out);
             expect (result == berlin::PresetResult::ok);
             expect (out.patch.cutoffHz == berlin::kMaxCutoffHz);
+        }
+
+        // ---- scale-aware-generation: schema v1 -> v2 migration ----
+
+        beginTest ("a v1 preset (no scaleType/rootPitchClass/rangeLow/rangeHigh) loads ok, defaulting to minor/C/36-72");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.setProperty ("schemaVersion", juce::String (1), nullptr);
+            auto generationNode = tree.getChildWithName ("Generation");
+            generationNode.removeProperty ("scaleType", nullptr);
+            generationNode.removeProperty ("rootPitchClass", nullptr);
+            generationNode.removeProperty ("rangeLow", nullptr);
+            generationNode.removeProperty ("rangeHigh", nullptr);
+
+            berlin::Preset out;
+            const auto result = berlin::PresetManager::fromValueTree (tree, out);
+            expect (result == berlin::PresetResult::ok);
+            expect (out.scaleType == berlin::ScaleType::minor);
+            expectEquals (out.rootPitchClass, 0);
+            expectEquals (out.rangeLow, 36);
+            expectEquals (out.rangeHigh, 72);
+        }
+
+        beginTest ("a v2 preset missing one of the 4 new fields is parseFailed, out left untouched");
+        {
+            static const char* const newFields[] = { "scaleType", "rootPitchClass", "rangeLow", "rangeHigh" };
+
+            for (auto* field : newFields)
+            {
+                auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});   // already v2 (kSchemaVersion)
+                auto generationNode = tree.getChildWithName ("Generation");
+                generationNode.removeProperty (field, nullptr);
+
+                berlin::Preset out;
+                out.name = "Sentinel";
+                const auto result = berlin::PresetManager::fromValueTree (tree, out);
+                expect (result == berlin::PresetResult::parseFailed);
+                expect (out.name == "Sentinel");
+            }
+        }
+
+        beginTest ("unrecognized scaleType enum name is rejected, out left untouched");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.getChildWithName ("Generation").setProperty ("scaleType", "notARealScale", nullptr);
+
+            berlin::Preset out;
+            out.name = "Sentinel";
+            expect (berlin::PresetManager::fromValueTree (tree, out) == berlin::PresetResult::parseFailed);
+            expect (out.name == "Sentinel");
+        }
+
+        // ---- bounded-review correction: rootPitchClass/rangeLow/rangeHigh
+        // were parsed with no bounds check, unlike every other field (review
+        // finding R4-001, CRITICAL - corrupts the editor's Root combo box). ----
+
+        beginTest ("an out-of-range rangeLow/rangeHigh from a hand-edited preset is normalized on load, not stored verbatim");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            auto generationNode = tree.getChildWithName ("Generation");
+            generationNode.setProperty ("rangeLow",  juce::String (-999999), nullptr);
+            generationNode.setProperty ("rangeHigh", juce::String (999999),  nullptr);
+
+            berlin::Preset out;
+            const auto result = berlin::PresetManager::fromValueTree (tree, out);
+            expect (result == berlin::PresetResult::ok);
+            expect (out.rangeLow >= berlin::kMinPitch && out.rangeHigh <= berlin::kMaxPitch);
+            expect (out.rangeHigh - out.rangeLow >= berlin::kMinPitchRangeSpan);
+        }
+
+        beginTest ("an out-of-[0,11] rootPitchClass from a hand-edited preset wraps via floored modulo, matching Scale::fromPitchClass");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.getChildWithName ("Generation").setProperty ("rootPitchClass", juce::String (-1), nullptr);
+
+            berlin::Preset out;
+            const auto result = berlin::PresetManager::fromValueTree (tree, out);
+            expect (result == berlin::PresetResult::ok);
+            expectEquals (out.rootPitchClass, 11);   // -1 floored-mod 12 == 11 (B), never a raw -1
         }
     }
 };

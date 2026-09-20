@@ -101,6 +101,57 @@ public:
                 expect (scale.contains (note));
             }
         }
+
+        beginTest ("every generated note satisfies scale.contains() and range, for every catalog ScaleType");
+        {
+            // deterministic-generation spec: "Every generated note satisfies scale
+            // membership and range for any chosen scale/root/range" - exercised
+            // here across all 6 scale-aware-generation catalog ScaleTypes.
+            using berlin::ScaleType;
+
+            const ScaleType types[] = { ScaleType::minor, ScaleType::major, ScaleType::dorian,
+                                         ScaleType::phrygian, ScaleType::mixolydian, ScaleType::harmonicMinor };
+
+            for (auto type : types)
+            {
+                for (int pitchClass = 0; pitchClass < 12; pitchClass += 3)   // sample every 3rd pitch class
+                {
+                    const berlin::Scale scale = berlin::Scale::fromPitchClass (type, pitchClass);
+                    berlin::PitchGenerator generator (scale, 40, 64);
+                    berlin::DeterministicRandom random (1000 + pitchClass);
+
+                    for (int i = 0; i < 20; ++i)
+                    {
+                        const int note = generator.generateNextNote (random);
+                        expect (note >= 40 && note <= 64);
+                        expect (scale.contains (note));
+                    }
+                }
+            }
+        }
+
+        beginTest ("D Dorian, range [40, 64]: generated notes are D Dorian and in range, not the old hardcoded C minor/[36,72]");
+        {
+            const berlin::Scale dDorian = berlin::Scale::fromPitchClass (berlin::ScaleType::dorian, 2); // D
+            berlin::PitchGenerator generator (dDorian, 40, 64);
+            berlin::DeterministicRandom random (2026);
+
+            const berlin::Scale oldHardcodedScale = berlin::Scale::minor (48);
+
+            for (int i = 0; i < 30; ++i)
+            {
+                const int note = generator.generateNextNote (random);
+                expect (note >= 40 && note <= 64);
+                expect (dDorian.contains (note));
+            }
+
+            // Sanity: D Dorian is NOT the same pitch-class set as C minor, so this
+            // scenario is actually exercising different scale data, not a
+            // coincidentally-identical interval set. Note 51 (D#/Eb) is in the
+            // old hardcoded C minor (root 48) but NOT in D Dorian (root 50).
+            expect (oldHardcodedScale.contains (51));
+            expect (! dDorian.contains (51));
+        }
     }
 };
 
