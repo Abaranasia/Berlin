@@ -92,6 +92,17 @@ public:
     void setLfoDepth       (float newLfoDepth) noexcept;
     void setLfoDestination (LfoDestination newLfoDestination) noexcept;
 
+    // Message thread -> effects' atomic Parameters (tempo-delay-ui Phase 9).
+    // Thin one-line forwarders mirroring SynthEffects' setter signatures
+    // verbatim, mirroring the SynthVoice forwarders immediately above.
+    void setDelayTimeSeconds (float newDelayTimeSeconds) noexcept;
+    void setDelayFeedback    (float newDelayFeedback) noexcept;
+    void setDelayMix         (float newDelayMix) noexcept;
+    void setReverbRoomSize   (float newReverbRoomSize) noexcept;
+    void setReverbDamping    (float newReverbDamping) noexcept;
+    void setReverbWetLevel   (float newReverbWetLevel) noexcept;
+    void setReverbDryLevel   (float newReverbDryLevel) noexcept;
+
 private:
     SynthVoice voice;
     SynthEffects effects;

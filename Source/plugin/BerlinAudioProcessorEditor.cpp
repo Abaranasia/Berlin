@@ -9,6 +9,7 @@
 
 #include "BerlinAudioProcessorEditor.h"
 
+#include "core/TempoSync.h"
 #include "generation/SequenceBuilder.h"   // normalizePitchRange - interactive range-slider constraint
 
 namespace
@@ -28,6 +29,12 @@ namespace
     // berlin::ScaleType's declaration order / PresetManager::scaleNames().
     const char* const kScaleNames[] = { "Minor", "Major", "Dorian", "Phrygian", "Mixolydian", "Harmonic Minor" };
     const char* const kRootNames[]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
+    // tempo-delay-ui Phase 10: UI display names for berlin::SyncDivision.
+    // Order MUST match SyncDivision's declaration order (TempoSync.h) - the
+    // SAME "name string, not a raw ordinal" precedent as kScaleNames/
+    // waveformNames() (PresetManager.cpp's divisionNames(), Phase 11).
+    const char* const kDivisionNames[] = { "1/2", "1/4", "1/8.", "1/8", "1/8T", "1/16" };
 
     juce::File defaultExportFile()
     {
@@ -53,7 +60,96 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     synthToggle.onClick = [this] { owner.setSynthEnabled (synthToggle.getToggleState()); };
 
     addAndMakeVisible (fxToggle);
-    fxToggle.onClick = [this] { owner.setEffectsEnabled (fxToggle.getToggleState()); };
+    fxToggle.onClick = [this]
+    {
+        owner.setEffectsEnabled (fxToggle.getToggleState());
+        updateDelayReverbEnablement();   // D8: delay/reverb section greys out while FX is off
+    };
+
+    // ---- Tempo control (tempo-control spec, Phase 5) ----
+    addAndMakeVisible (tempoSectionLabel);
+    tempoSectionLabel.setText ("TEMPO", juce::dontSendNotification);
+
+    addAndMakeVisible (tempoLabel);
+    tempoLabel.setText ("BPM", juce::dontSendNotification);
+    tempoLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (tempoSlider);
+    tempoSlider.setRange (berlin::kMinBpm, berlin::kMaxBpm, 0.1);
+    tempoSlider.setValue (owner.getBpm(), juce::dontSendNotification);
+    tempoSlider.onValueChange = [this] { pushTempoFromWidgets(); };
+
+    // ---- Delay/reverb + tempo-sync (tempo-control, internal-synth-output
+    // specs, Phase 10) ----
+    addAndMakeVisible (delaySectionLabel);
+    delaySectionLabel.setText ("DELAY", juce::dontSendNotification);
+
+    addAndMakeVisible (delaySyncToggle);
+    delaySyncToggle.onClick = [this] { recomputeSyncedDelayTime(); };
+
+    addAndMakeVisible (delayDivisionLabel);
+    delayDivisionLabel.setText ("Division", juce::dontSendNotification);
+    delayDivisionLabel.setJustificationType (juce::Justification::centredLeft);
+
+    addAndMakeVisible (delayDivisionBox);
+    for (int i = 0; i < (int) (sizeof (kDivisionNames) / sizeof (kDivisionNames[0])); ++i)
+        delayDivisionBox.addItem (kDivisionNames[i], i + 1);
+    delayDivisionBox.setSelectedId (static_cast<int> (berlin::kDefaultPatch.delayDivision) + 1, juce::dontSendNotification);
+    delayDivisionBox.onChange = [this] { recomputeSyncedDelayTime(); };
+
+    auto configureSliderEarly = [this] (juce::Slider& slider, juce::Label& label, const juce::String& name,
+                                         double min, double max, double initial)
+    {
+        addAndMakeVisible (slider);
+        slider.setRange (min, max);
+        slider.setValue (initial, juce::dontSendNotification);
+
+        addAndMakeVisible (label);
+        label.setText (name, juce::dontSendNotification);
+        label.setJustificationType (juce::Justification::centredLeft);
+    };
+
+    configureSliderEarly (delayTimeSlider, delayTimeLabel, "Time",
+                           berlin::kMinDelayTimeSeconds, berlin::kMaxDelaySeconds, berlin::kDefaultPatch.delayTimeSeconds);
+    delayTimeSlider.onValueChange = [this]
+    {
+        if (! delaySyncToggle.getToggleState())
+            lastManualDelayTimeSeconds = delayTimeSlider.getValue();
+        pushPatchFromWidgets();
+    };
+
+    configureSliderEarly (delayFeedbackSlider, delayFeedbackLabel, "Feedback",
+                           berlin::kMinDelayFeedback, berlin::kMaxDelayFeedback, berlin::kDefaultPatch.delayFeedback);
+    delayFeedbackSlider.onValueChange = [this] { pushPatchFromWidgets(); };
+
+    configureSliderEarly (delayMixSlider, delayMixLabel, "Mix",
+                           berlin::kMinDelayMix, berlin::kMaxDelayMix, berlin::kDefaultPatch.delayMix);
+    delayMixSlider.onValueChange = [this] { pushPatchFromWidgets(); };
+
+    addAndMakeVisible (reverbSectionLabel);
+    reverbSectionLabel.setText ("REVERB", juce::dontSendNotification);
+
+    configureSliderEarly (reverbRoomSlider, reverbRoomLabel, "Room",
+                           berlin::kMinReverbRoomSize, berlin::kMaxReverbRoomSize, berlin::kDefaultPatch.reverbRoomSize);
+    reverbRoomSlider.onValueChange = [this] { pushPatchFromWidgets(); };
+
+    configureSliderEarly (reverbDampingSlider, reverbDampingLabel, "Damping",
+                           berlin::kMinReverbDamping, berlin::kMaxReverbDamping, berlin::kDefaultPatch.reverbDamping);
+    reverbDampingSlider.onValueChange = [this] { pushPatchFromWidgets(); };
+
+    configureSliderEarly (reverbWetSlider, reverbWetLabel, "Wet",
+                           berlin::kMinReverbWetLevel, berlin::kMaxReverbWetLevel, berlin::kDefaultPatch.reverbWetLevel);
+    reverbWetSlider.onValueChange = [this] { pushPatchFromWidgets(); };
+
+    configureSliderEarly (reverbDrySlider, reverbDryLabel, "Dry",
+                           berlin::kMinReverbDryLevel, berlin::kMaxReverbDryLevel, berlin::kDefaultPatch.reverbDryLevel);
+    reverbDrySlider.onValueChange = [this] { pushPatchFromWidgets(); };
+
+    // D8: the whole delay/reverb section greys out while fxToggle is off -
+    // populated once here, applied by updateDelayReverbEnablement().
+    delayReverbWidgets = { &delaySyncToggle, &delayDivisionBox, &delayTimeSlider, &delayFeedbackSlider, &delayMixSlider,
+                           &reverbRoomSlider, &reverbDampingSlider, &reverbWetSlider, &reverbDrySlider };
+    updateDelayReverbEnablement();
 
     // ---- Generation controls ----
     addAndMakeVisible (generationSectionLabel);
@@ -371,7 +467,10 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     // +68px = 2 new rows (scale/root, range lo/hi), each kControlHeight (28) +
     // kMargin/2 (6) spacing - scale-aware-generation, resolving design.md's
     // open editor-height question against this file's live layout constants.
-    setSize (800, 680 + 2 * (kControlHeight + kMargin / 2));
+    // +1 more row (kControlHeight + kMargin/2) for the new TEMPO section
+    // (tempo-delay-ui Phase 5). +4 more rows (delay row 1, delay row 2,
+    // reverb row 1, reverb row 2) for the DELAY/REVERB sections (Phase 10).
+    setSize (800, 680 + 7 * (kControlHeight + kMargin / 2));
 }
 
 BerlinAudioProcessorEditor::~BerlinAudioProcessorEditor()
@@ -388,6 +487,13 @@ void BerlinAudioProcessorEditor::changeListenerCallback (juce::ChangeBroadcaster
 
 void BerlinAudioProcessorEditor::refreshFromProcessor()
 {
+    // BPM MUST be applied before applyPatchToWidgets(): applyPatchToWidgets
+    // sets delayTimeSlider directly from the loaded patch's delayTimeSeconds
+    // (not recomputed from BPM), so ordering here does not race Sync mode -
+    // but tempoSlider itself must reflect owner's CURRENT BPM first so any
+    // later live Sync recompute (via the tempo slider's own onValueChange)
+    // starts from the right value.
+    tempoSlider.setValue (owner.getBpm(), juce::dontSendNotification);
     applyPatchToWidgets (owner.getPatch());
     seedEditor.setText (juce::String (owner.getSeed()), juce::dontSendNotification);
     applyGenerationParamsToWidgets (owner.getGenerationParams());
@@ -410,6 +516,48 @@ void BerlinAudioProcessorEditor::resized()
     auto toggleRow = area.removeFromTop (kControlHeight);
     synthToggle.setBounds (toggleRow.removeFromLeft (kButtonWidth));
     fxToggle   .setBounds (toggleRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    auto tempoRow = area.removeFromTop (kControlHeight);
+    tempoSectionLabel.setBounds (tempoRow.removeFromLeft (kLabelWidth));
+    tempoLabel       .setBounds (tempoRow.removeFromLeft (kLabelWidth));
+    tempoSlider      .setBounds (tempoRow.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    auto delayRow1 = area.removeFromTop (kControlHeight);
+    delaySectionLabel .setBounds (delayRow1.removeFromLeft (kLabelWidth));
+    delaySyncToggle   .setBounds (delayRow1.removeFromLeft (kLabelWidth));
+    delayRow1.removeFromLeft (6);
+    delayDivisionLabel.setBounds (delayRow1.removeFromLeft (kLabelWidth));
+    delayDivisionBox  .setBounds (delayRow1.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    auto delayRow2 = area.removeFromTop (kControlHeight);
+    delayTimeLabel      .setBounds (delayRow2.removeFromLeft (kLabelWidth));
+    delayTimeSlider     .setBounds (delayRow2.removeFromLeft (kButtonWidth));
+    delayRow2.removeFromLeft (6);
+    delayFeedbackLabel  .setBounds (delayRow2.removeFromLeft (kLabelWidth));
+    delayFeedbackSlider .setBounds (delayRow2.removeFromLeft (kButtonWidth));
+    delayRow2.removeFromLeft (6);
+    delayMixLabel       .setBounds (delayRow2.removeFromLeft (kLabelWidth));
+    delayMixSlider      .setBounds (delayRow2.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    auto reverbRow1 = area.removeFromTop (kControlHeight);
+    reverbSectionLabel.setBounds (reverbRow1.removeFromLeft (kLabelWidth));
+    reverbRoomLabel   .setBounds (reverbRow1.removeFromLeft (kLabelWidth));
+    reverbRoomSlider  .setBounds (reverbRow1.removeFromLeft (kButtonWidth));
+    reverbRow1.removeFromLeft (6);
+    reverbDampingLabel.setBounds (reverbRow1.removeFromLeft (kLabelWidth));
+    reverbDampingSlider.setBounds (reverbRow1.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    auto reverbRow2 = area.removeFromTop (kControlHeight);
+    reverbWetLabel .setBounds (reverbRow2.removeFromLeft (kLabelWidth));
+    reverbWetSlider.setBounds (reverbRow2.removeFromLeft (kButtonWidth));
+    reverbRow2.removeFromLeft (6);
+    reverbDryLabel .setBounds (reverbRow2.removeFromLeft (kLabelWidth));
+    reverbDrySlider.setBounds (reverbRow2.removeFromLeft (kButtonWidth));
     area.removeFromTop (kMargin / 2);
 
     generationSectionLabel.setBounds (area.removeFromTop (kControlHeight));
@@ -512,7 +660,8 @@ void BerlinAudioProcessorEditor::resized()
 //==============================================================================
 berlin::SynthPatch BerlinAudioProcessorEditor::currentPatchFromWidgets() const
 {
-    berlin::SynthPatch patch;   // 8 effects fields stay kDefaultPatch - never touched here
+    berlin::SynthPatch patch;   // outputLevel has no widget in this slice - stays kDefaultPatch, same
+                                // precedent as every other never-wired field before Phase 10.
 
     patch.waveform       = static_cast<berlin::Waveform> (waveformBox.getSelectedId() - 1);
     patch.cutoffHz       = (float) cutoffSlider.getValue();
@@ -525,6 +674,17 @@ berlin::SynthPatch BerlinAudioProcessorEditor::currentPatchFromWidgets() const
     patch.lfoRateHz      = (float) lfoRateSlider.getValue();
     patch.lfoDepth       = (float) lfoDepthSlider.getValue();
     patch.lfoDestination = static_cast<berlin::LfoDestination> (lfoDestinationBox.getSelectedId() - 1);
+
+    // ---- Delay/reverb + tempo-sync (Phase 10) ----
+    patch.delayTimeSeconds = (float) delayTimeSlider.getValue();
+    patch.delayFeedback    = (float) delayFeedbackSlider.getValue();
+    patch.delayMix         = (float) delayMixSlider.getValue();
+    patch.reverbRoomSize   = (float) reverbRoomSlider.getValue();
+    patch.reverbDamping    = (float) reverbDampingSlider.getValue();
+    patch.reverbWetLevel   = (float) reverbWetSlider.getValue();
+    patch.reverbDryLevel   = (float) reverbDrySlider.getValue();
+    patch.delaySynced      = delaySyncToggle.getToggleState();
+    patch.delayDivision    = static_cast<berlin::SyncDivision> (delayDivisionBox.getSelectedId() - 1);
 
     return patch;
 }
@@ -542,11 +702,67 @@ void BerlinAudioProcessorEditor::applyPatchToWidgets (const berlin::SynthPatch& 
     lfoRateSlider.setValue (patch.lfoRateHz, juce::dontSendNotification);
     lfoDepthSlider.setValue (patch.lfoDepth, juce::dontSendNotification);
     lfoDestinationBox.setSelectedId (static_cast<int> (patch.lfoDestination) + 1, juce::dontSendNotification);
+
+    // ---- Delay/reverb + tempo-sync (Phase 10): reflect owner's state into
+    // widgets WITHOUT pushing back (no recomputeSyncedDelayTime()/
+    // pushPatchFromWidgets() call here - this is a pure read-back, avoiding a
+    // refresh -> push -> refresh loop). ----
+    delayFeedbackSlider.setValue (patch.delayFeedback, juce::dontSendNotification);
+    delayMixSlider.setValue (patch.delayMix, juce::dontSendNotification);
+    reverbRoomSlider.setValue (patch.reverbRoomSize, juce::dontSendNotification);
+    reverbDampingSlider.setValue (patch.reverbDamping, juce::dontSendNotification);
+    reverbWetSlider.setValue (patch.reverbWetLevel, juce::dontSendNotification);
+    reverbDrySlider.setValue (patch.reverbDryLevel, juce::dontSendNotification);
+    delaySyncToggle.setToggleState (patch.delaySynced, juce::dontSendNotification);
+    delayDivisionBox.setSelectedId (static_cast<int> (patch.delayDivision) + 1, juce::dontSendNotification);
+    delayTimeSlider.setValue (patch.delayTimeSeconds, juce::dontSendNotification);
+
+    if (! patch.delaySynced)
+        lastManualDelayTimeSeconds = patch.delayTimeSeconds;   // seed Free-mode memory from the loaded value
+
+    delayTimeSlider.setEnabled (fxToggle.getToggleState() && ! patch.delaySynced);
 }
 
 void BerlinAudioProcessorEditor::pushPatchFromWidgets()
 {
     owner.setPatch (currentPatchFromWidgets());
+}
+
+void BerlinAudioProcessorEditor::pushTempoFromWidgets()
+{
+    owner.setBpm (tempoSlider.getValue());
+    recomputeSyncedDelayTime();   // Sync mode tracks the live BPM (Phase 10)
+}
+
+void BerlinAudioProcessorEditor::recomputeSyncedDelayTime()
+{
+    if (delaySyncToggle.getToggleState())
+    {
+        const auto division = static_cast<berlin::SyncDivision> (delayDivisionBox.getSelectedId() - 1);
+        const double seconds = berlin::delaySecondsFor (owner.getBpm(), division);
+        delayTimeSlider.setValue (seconds, juce::dontSendNotification);
+    }
+    else
+    {
+        // Free mode: restore the last manually-entered value (design.md's
+        // "retains last manual value across Sync-Free-Sync").
+        delayTimeSlider.setValue (lastManualDelayTimeSeconds, juce::dontSendNotification);
+    }
+
+    updateDelayReverbEnablement();
+    pushPatchFromWidgets();
+}
+
+void BerlinAudioProcessorEditor::updateDelayReverbEnablement()
+{
+    const bool fxOn = fxToggle.getToggleState();
+
+    for (auto* widget : delayReverbWidgets)
+        widget->setEnabled (fxOn);
+
+    // D8's extra rule, on top of the fxOn gate above: the time slider is also
+    // disabled while Sync mode drives it (manual entry blocked in Sync).
+    delayTimeSlider.setEnabled (fxOn && ! delaySyncToggle.getToggleState());
 }
 
 void BerlinAudioProcessorEditor::pushGenerationParamsFromWidgets()

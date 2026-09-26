@@ -27,7 +27,7 @@ BerlinAudioProcessor::BerlinAudioProcessor (juce::File presetDirectory)
       currentSeed (kDefaultSeed),
       currentSequence (buildSeededSequence (currentSeed, generationParams)),
       sequenceSeed (kDefaultSeed),
-      player (currentSequence, Transport (kBpm, kStepsPerBeat)),
+      player (currentSequence, Transport (kDefaultBpm, kStepsPerBeat)),
       midiTranslator (kMidiChannel),
       presetManager (std::move (presetDirectory))
 {
@@ -119,6 +119,7 @@ void BerlinAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     preset.rootPitchClass = generationParams.rootPitchClass;
     preset.rangeLow       = generationParams.rangeLow;
     preset.rangeHigh      = generationParams.rangeHigh;
+    preset.bpm            = currentBpm;   // schema v3 (tempo-delay-ui, design.md D7)
 
     if (auto xml = PresetManager::toValueTree (preset).createXml())
         copyXmlToBinary (*xml, destData);
@@ -149,6 +150,7 @@ void BerlinAudioProcessor::setStateInformation (const void* data, int sizeInByte
         {
             setPatch (preset.patch);
             setSeed (preset.seed);
+            setBpm (preset.bpm);   // schema v3 (tempo-delay-ui, design.md D7)
 
             generationParams.scaleType      = preset.scaleType;
             generationParams.rootPitchClass = preset.rootPitchClass;
@@ -209,6 +211,7 @@ PresetResult BerlinAudioProcessor::save (const juce::String& name)
     preset.rootPitchClass = generationParams.rootPitchClass;
     preset.rangeLow       = generationParams.rangeLow;
     preset.rangeHigh      = generationParams.rangeHigh;
+    preset.bpm            = currentBpm;   // schema v3 (tempo-delay-ui, design.md D7)
     return presetManager.save (preset);   // unconditional; editor owns the overwrite prompt (D2)
 }
 
@@ -222,6 +225,7 @@ PresetResult BerlinAudioProcessor::loadPreset (const juce::String& name)
 
     setPatch (preset.patch);
     setSeed (preset.seed);
+    setBpm (preset.bpm);   // schema v3 (tempo-delay-ui, design.md D7)
 
     // Apply the 4 fields INDIVIDUALLY (design.md invariant) - a whole-struct
     // GenerationParams assignment would clobber the deliberately-unpersisted
@@ -256,7 +260,7 @@ MidiFileWriteResult BerlinAudioProcessor::exportMidiTo (const juce::File& destin
         return MidiFileWriteResult::invalidTimeline;
 
     const MidiFileWriter writer (kMidiChannel, MidiEventTranslator::kNoteVelocity);
-    return writer.writeToFile (timeline, kBpm, destination);
+    return writer.writeToFile (timeline, currentBpm, destination);
 }
 
 //==============================================================================
@@ -279,6 +283,34 @@ void BerlinAudioProcessor::pushPatchToSynth()
     synth.setLfoRateHz      (currentPatch.lfoRateHz);
     synth.setLfoDepth       (currentPatch.lfoDepth);
     synth.setLfoDestination (currentPatch.lfoDestination);
+
+    // tempo-delay-ui Phase 10 (internal-synth-output's "Live-Adjustable Delay
+    // And Reverb Parameters" requirement): delaySynced/delayDivision are
+    // UI-only state (they only decide what delayTimeSeconds gets computed
+    // to, in the editor's recomputeSyncedDelayTime) - not separate synth
+    // engine parameters, so only the 7 actual DSP fields are forwarded here.
+    synth.setDelayTimeSeconds (currentPatch.delayTimeSeconds);
+    synth.setDelayFeedback    (currentPatch.delayFeedback);
+    synth.setDelayMix         (currentPatch.delayMix);
+    synth.setReverbRoomSize   (currentPatch.reverbRoomSize);
+    synth.setReverbDamping    (currentPatch.reverbDamping);
+    synth.setReverbWetLevel   (currentPatch.reverbWetLevel);
+    synth.setReverbDryLevel   (currentPatch.reverbDryLevel);
+}
+
+void BerlinAudioProcessor::setBpm (double newBpm)
+{
+    // NaN compares false against both std::clamp bounds, so a naive clamp
+    // passes it through unchanged - the one case its [lo, hi] guarantee
+    // doesn't cover (SynthPatch.h's clampParameter doc comment). A NaN
+    // reaching Transport::setBpm would corrupt its phase-preserving rebase
+    // math permanently (Transport's own `newBpm <= 0.0 || newBpm == bpm`
+    // early-return guard doesn't catch NaN either). Mirrors PresetManager.cpp's
+    // hand-written double-precision BPM guard (clampParameter itself is
+    // float-only) - this is the single source-of-truth setter that was still
+    // missing it (followup-fixes review, Fix 1).
+    currentBpm = (newBpm == newBpm) ? std::clamp (newBpm, kMinBpm, kMaxBpm) : kMinBpm;
+    player.setBpm (currentBpm);
 }
 
 void BerlinAudioProcessor::setAutoEvolveEnabled (bool shouldBeEnabled)

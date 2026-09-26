@@ -532,10 +532,22 @@
     <ClCompile Include="..\..\Source\BerlinAudioProcessorTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\TempoSyncTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\TransportTempoChangeTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\SynthEffectsTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp">
+      <Filter>BerlinTests\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\core\TempoSync.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp">
@@ -1953,6 +1965,9 @@
     <ClInclude Include="..\..\..\Source\core\Scale.h">
       <Filter>BerlinTests\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\core\TempoSync.h">
+      <Filter>BerlinTests\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Source\generation\DeterministicRandom.h">
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
@@ -1991,6 +2006,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h">
       <Filter>BerlinTests\playback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\midi\MidiChannel.h">
+      <Filter>BerlinTests\midi</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\midi\MidiMessageBytes.h">
       <Filter>BerlinTests\midi</Filter>

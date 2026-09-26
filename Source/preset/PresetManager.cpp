@@ -16,6 +16,7 @@ namespace
     constexpr const char* kRootType       = "BerlinPreset";
     constexpr const char* kSynthType      = "Synth";
     constexpr const char* kGenerationType = "Generation";
+    constexpr const char* kTransportType  = "Transport";   // schema v3 (tempo-delay-ui, design.md D7)
 
     const juce::StringArray& waveformNames()
     {
@@ -50,6 +51,42 @@ namespace
             return false;
         out = static_cast<berlin::ScaleType> (index);
         return true;
+    }
+
+    // tempo-delay-ui schema v3 (design.md D7): mirrors scaleNames()'s "name
+    // string, not a raw ordinal" convention. Order MUST match
+    // berlin::SyncDivision's declaration order (TempoSync.h's own doc
+    // comment: "NEVER reorder without a schema bump").
+    const juce::StringArray& divisionNames()
+    {
+        static const juce::StringArray names { "half", "quarter", "dottedEighth", "eighth", "eighthTriplet", "sixteenth" };
+        return names;
+    }
+
+    juce::String divisionToName (berlin::SyncDivision division)
+    {
+        return divisionNames()[static_cast<int> (division)];
+    }
+
+    bool divisionFromName (const juce::String& name, berlin::SyncDivision& out)
+    {
+        const int index = divisionNames().indexOf (name);
+        if (index < 0)
+            return false;
+        out = static_cast<berlin::SyncDivision> (index);
+        return true;
+    }
+
+    // Booleans are written as an explicit "true"/"false" text token (Decision
+    // 1's "explicitly formatted juce::String" rule) - never a native
+    // juce::var bool, and never silently accepted from any other text.
+    juce::String boolToName (bool value) { return value ? "true" : "false"; }
+
+    bool boolFromName (const juce::String& name, bool& out)
+    {
+        if (name == "true")  { out = true;  return true; }
+        if (name == "false") { out = false; return true; }
+        return false;
     }
 
     juce::String waveformToName (berlin::Waveform waveform)
@@ -122,6 +159,21 @@ juce::ValueTree PresetManager::toValueTree (const Preset& preset)
     synthNode.setProperty ("lfoRateHz",      juce::String (preset.patch.lfoRateHz, 9), nullptr);
     synthNode.setProperty ("lfoDepth",       juce::String (preset.patch.lfoDepth, 9), nullptr);
     synthNode.setProperty ("lfoDestination", lfoDestinationToName (preset.patch.lfoDestination), nullptr);
+
+    // tempo-delay-ui schema v3 (design.md D7): the 8 effects fields join the
+    // 11 live parameters above - none of them are pinned to kDefaultPatch
+    // anymore (preset-persistence's "Preset Scope Is Exactly The 11 Live
+    // Parameters Plus Seed" requirement, widened).
+    synthNode.setProperty ("delayTimeSeconds", juce::String (preset.patch.delayTimeSeconds, 9), nullptr);
+    synthNode.setProperty ("delayFeedback",    juce::String (preset.patch.delayFeedback, 9), nullptr);
+    synthNode.setProperty ("delayMix",         juce::String (preset.patch.delayMix, 9), nullptr);
+    synthNode.setProperty ("reverbRoomSize",   juce::String (preset.patch.reverbRoomSize, 9), nullptr);
+    synthNode.setProperty ("reverbDamping",    juce::String (preset.patch.reverbDamping, 9), nullptr);
+    synthNode.setProperty ("reverbWetLevel",   juce::String (preset.patch.reverbWetLevel, 9), nullptr);
+    synthNode.setProperty ("reverbDryLevel",   juce::String (preset.patch.reverbDryLevel, 9), nullptr);
+    synthNode.setProperty ("outputLevel",      juce::String (preset.patch.outputLevel, 9), nullptr);
+    synthNode.setProperty ("delaySynced",      boolToName (preset.patch.delaySynced), nullptr);
+    synthNode.setProperty ("delayDivision",    divisionToName (preset.patch.delayDivision), nullptr);
     root.appendChild (synthNode, nullptr);
 
     juce::ValueTree generationNode (kGenerationType);
@@ -131,6 +183,13 @@ juce::ValueTree PresetManager::toValueTree (const Preset& preset)
     generationNode.setProperty ("rangeLow",       juce::String (preset.rangeLow), nullptr);
     generationNode.setProperty ("rangeHigh",      juce::String (preset.rangeHigh), nullptr);
     root.appendChild (generationNode, nullptr);
+
+    // tempo-delay-ui schema v3 (design.md D7): BPM is a Preset-level field
+    // (Transport/BerlinAudioProcessor's, not SynthPatch's), so it gets its
+    // own sibling node rather than joining <Synth> or <Generation>.
+    juce::ValueTree transportNode (kTransportType);
+    transportNode.setProperty ("bpm", juce::String (preset.bpm, 9), nullptr);
+    root.appendChild (transportNode, nullptr);
 
     return root;
 }
@@ -155,6 +214,7 @@ PresetResult PresetManager::fromValueTree (const juce::ValueTree& tree, Preset& 
 
     const auto synthNode      = tree.getChildWithName (kSynthType);
     const auto generationNode = tree.getChildWithName (kGenerationType);
+    const auto transportNode  = tree.getChildWithName (kTransportType);   // schema v3 only
 
     if (! synthNode.isValid() || ! generationNode.isValid())
         return PresetResult::parseFailed;
@@ -171,6 +231,71 @@ PresetResult PresetManager::fromValueTree (const juce::ValueTree& tree, Preset& 
 
     if (! generationNode.hasProperty ("seed"))
         return PresetResult::parseFailed;
+
+    // tempo-delay-ui schema v3 (design.md D7): BPM + sync division/mode +
+    // all 8 effects fields are REQUIRED for version >= 3 (missing -> parseFailed,
+    // mirrors scale-aware-generation's v1->v2 all-or-nothing group check
+    // above); a v2-or-earlier file is missing them BY DEFINITION and defaults
+    // to kDefaultBpm/Free/quarter/kDefaultPatch's own effects values
+    // (preset-persistence's "Old-Format Presets Default Missing BPM, Sync
+    // Division, Sync Mode, and Effects Fields" requirement).
+    double       bpm            = kDefaultBpm;
+    bool         delaySynced    = false;
+    SyncDivision delayDivision  = SyncDivision::quarter;   // unused while Free
+    float        delayTimeSeconds = kDefaultPatch.delayTimeSeconds;
+    float        delayFeedback    = kDefaultPatch.delayFeedback;
+    float        delayMix         = kDefaultPatch.delayMix;
+    float        reverbRoomSize   = kDefaultPatch.reverbRoomSize;
+    float        reverbDamping    = kDefaultPatch.reverbDamping;
+    float        reverbWetLevel   = kDefaultPatch.reverbWetLevel;
+    float        reverbDryLevel   = kDefaultPatch.reverbDryLevel;
+    float        outputLevel      = kDefaultPatch.outputLevel;
+
+    if (version >= 3)
+    {
+        static const char* const requiredV3SynthAttributes[] =
+        {
+            "delayTimeSeconds", "delayFeedback", "delayMix", "reverbRoomSize", "reverbDamping",
+            "reverbWetLevel", "reverbDryLevel", "outputLevel", "delaySynced", "delayDivision"
+        };
+
+        for (auto* attribute : requiredV3SynthAttributes)
+            if (! synthNode.hasProperty (attribute))
+                return PresetResult::parseFailed;
+
+        if (! transportNode.isValid() || ! transportNode.hasProperty ("bpm"))
+            return PresetResult::parseFailed;
+
+        if (! divisionFromName (synthNode.getProperty ("delayDivision").toString(), delayDivision))
+            return PresetResult::parseFailed;
+
+        if (! boolFromName (synthNode.getProperty ("delaySynced").toString(), delaySynced))
+            return PresetResult::parseFailed;
+
+        // bpm stays double-precision throughout (matches Transport/
+        // BerlinAudioProcessor's own double bpm) - clampParameter is float-only,
+        // so this mirrors its NaN-then-clamp contract by hand rather than
+        // narrowing through float and losing precision.
+        const double rawBpm = transportNode.getProperty ("bpm").toString().getDoubleValue();
+        bpm = (rawBpm == rawBpm) ? std::clamp (rawBpm, kMinBpm, kMaxBpm) : kMinBpm;
+
+        delayTimeSeconds = clampParameter (synthNode.getProperty ("delayTimeSeconds").toString().getFloatValue(),
+                                            kMinDelayTimeSeconds, kMaxDelaySeconds);
+        delayFeedback    = clampParameter (synthNode.getProperty ("delayFeedback").toString().getFloatValue(),
+                                            kMinDelayFeedback, kMaxDelayFeedback);
+        delayMix         = clampParameter (synthNode.getProperty ("delayMix").toString().getFloatValue(),
+                                            kMinDelayMix, kMaxDelayMix);
+        reverbRoomSize   = clampParameter (synthNode.getProperty ("reverbRoomSize").toString().getFloatValue(),
+                                            kMinReverbRoomSize, kMaxReverbRoomSize);
+        reverbDamping    = clampParameter (synthNode.getProperty ("reverbDamping").toString().getFloatValue(),
+                                            kMinReverbDamping, kMaxReverbDamping);
+        reverbWetLevel   = clampParameter (synthNode.getProperty ("reverbWetLevel").toString().getFloatValue(),
+                                            kMinReverbWetLevel, kMaxReverbWetLevel);
+        reverbDryLevel   = clampParameter (synthNode.getProperty ("reverbDryLevel").toString().getFloatValue(),
+                                            kMinReverbDryLevel, kMaxReverbDryLevel);
+        outputLevel      = clampParameter (synthNode.getProperty ("outputLevel").toString().getFloatValue(),
+                                            kMinOutputLevel, kMaxOutputLevel);
+    }
 
     Waveform waveform {};
     if (! waveformFromName (synthNode.getProperty ("waveform").toString(), waveform))
@@ -237,6 +362,19 @@ PresetResult PresetManager::fromValueTree (const juce::ValueTree& tree, Preset& 
     result.patch.lfoRateHz  = clampParameter (synthNode.getProperty ("lfoRateHz").toString().getFloatValue(),  kMinLfoRateHz,      kMaxLfoRateHz);
     result.patch.lfoDepth   = clampParameter (synthNode.getProperty ("lfoDepth").toString().getFloatValue(),   kMinLfoDepth,       kMaxLfoDepth);
     result.seed = generationNode.getProperty ("seed").toString().getLargeIntValue();
+
+    // tempo-delay-ui schema v3 (design.md D7).
+    result.bpm                    = bpm;
+    result.patch.delaySynced      = delaySynced;
+    result.patch.delayDivision    = delayDivision;
+    result.patch.delayTimeSeconds = delayTimeSeconds;
+    result.patch.delayFeedback    = delayFeedback;
+    result.patch.delayMix         = delayMix;
+    result.patch.reverbRoomSize   = reverbRoomSize;
+    result.patch.reverbDamping    = reverbDamping;
+    result.patch.reverbWetLevel   = reverbWetLevel;
+    result.patch.reverbDryLevel   = reverbDryLevel;
+    result.patch.outputLevel      = outputLevel;
 
     out = result;
     return PresetResult::ok;

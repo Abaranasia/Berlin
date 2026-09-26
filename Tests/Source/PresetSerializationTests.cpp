@@ -57,7 +57,7 @@ public:
 
     void runTest() override
     {
-        beginTest ("round trip preserves all 11 fields, seed, and pins the 8 effects fields to kDefaultPatch");
+        beginTest ("round trip preserves all 11 fields, seed, and the (here, still-default) 8 effects fields");
         {
             berlin::Preset in;
             in.name                     = "Acid Bass";
@@ -99,7 +99,9 @@ public:
             expect (out.patch.lfoDestination == in.patch.lfoDestination);
             expect (out.seed == in.seed);
 
-            // The 8 non-live effects fields are never written/read - always kDefaultPatch.
+            // `in` never touched these 8 fields, so they're still kDefaultPatch's own
+            // values - the schema-v3 round trip below is what actually proves they're
+            // now real live-persisted fields, not a structural pin.
             expect (out.patch.delayTimeSeconds == berlin::kDefaultPatch.delayTimeSeconds);
             expect (out.patch.delayFeedback    == berlin::kDefaultPatch.delayFeedback);
             expect (out.patch.delayMix         == berlin::kDefaultPatch.delayMix);
@@ -375,6 +377,149 @@ public:
             const auto result = berlin::PresetManager::fromValueTree (tree, out);
             expect (result == berlin::PresetResult::ok);
             expectEquals (out.rootPitchClass, 11);   // -1 floored-mod 12 == 11 (B), never a raw -1
+        }
+
+        // ---- tempo-delay-ui Phase 11: schema v2 -> v3 migration (BPM + sync
+        // division/mode + all 8 effects fields). RED first: Preset::bpm and
+        // PresetManager's v3 fields do not exist yet. ----
+
+        beginTest ("v3 round trips BPM, sync division/mode, and all 8 effects fields");
+        {
+            berlin::Preset in;
+            in.bpm = 95.0;
+            in.patch.delayTimeSeconds = 1.25f;
+            in.patch.delayFeedback    = 0.6f;
+            in.patch.delayMix         = 0.7f;
+            in.patch.reverbRoomSize   = 0.8f;
+            in.patch.reverbDamping    = 0.2f;
+            in.patch.reverbWetLevel   = 0.4f;
+            in.patch.reverbDryLevel   = 0.9f;
+            in.patch.outputLevel      = 0.65f;
+            in.patch.delaySynced      = true;
+            in.patch.delayDivision    = berlin::SyncDivision::dottedEighth;
+
+            berlin::Preset out;
+            expect (roundTripThroughXml (in, out));
+
+            expectEquals (out.bpm, in.bpm);
+            expectEquals (out.patch.delayTimeSeconds, in.patch.delayTimeSeconds);
+            expectEquals (out.patch.delayFeedback, in.patch.delayFeedback);
+            expectEquals (out.patch.delayMix, in.patch.delayMix);
+            expectEquals (out.patch.reverbRoomSize, in.patch.reverbRoomSize);
+            expectEquals (out.patch.reverbDamping, in.patch.reverbDamping);
+            expectEquals (out.patch.reverbWetLevel, in.patch.reverbWetLevel);
+            expectEquals (out.patch.reverbDryLevel, in.patch.reverbDryLevel);
+            expectEquals (out.patch.outputLevel, in.patch.outputLevel);
+            expect (out.patch.delaySynced == in.patch.delaySynced);
+            expect (out.patch.delayDivision == in.patch.delayDivision);
+        }
+
+        beginTest ("a v2 preset (no BPM/sync/effects fields) loads ok, defaulting to 120/Free/quarter/kDefaultPatch effects");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.setProperty ("schemaVersion", juce::String (2), nullptr);
+            tree.removeChild (tree.getChildWithName ("Transport"), nullptr);
+
+            auto synthNode = tree.getChildWithName ("Synth");
+            static const char* const v3Fields[] = { "delayTimeSeconds", "delayFeedback", "delayMix",
+                                                     "reverbRoomSize", "reverbDamping", "reverbWetLevel",
+                                                     "reverbDryLevel", "outputLevel", "delaySynced", "delayDivision" };
+            for (auto* field : v3Fields)
+                synthNode.removeProperty (field, nullptr);
+
+            berlin::Preset out;
+            const auto result = berlin::PresetManager::fromValueTree (tree, out);
+            expect (result == berlin::PresetResult::ok);
+            expectEquals (out.bpm, berlin::kDefaultBpm);
+            expect (! out.patch.delaySynced);
+            expect (out.patch.delayDivision == berlin::SyncDivision::quarter);
+            expectEquals (out.patch.delayTimeSeconds, berlin::kDefaultPatch.delayTimeSeconds);
+            expectEquals (out.patch.delayFeedback, berlin::kDefaultPatch.delayFeedback);
+            expectEquals (out.patch.delayMix, berlin::kDefaultPatch.delayMix);
+            expectEquals (out.patch.reverbRoomSize, berlin::kDefaultPatch.reverbRoomSize);
+            expectEquals (out.patch.reverbDamping, berlin::kDefaultPatch.reverbDamping);
+            expectEquals (out.patch.reverbWetLevel, berlin::kDefaultPatch.reverbWetLevel);
+            expectEquals (out.patch.reverbDryLevel, berlin::kDefaultPatch.reverbDryLevel);
+            expectEquals (out.patch.outputLevel, berlin::kDefaultPatch.outputLevel);
+        }
+
+        beginTest ("a v3 preset missing one of the new Synth attributes is parseFailed, out left untouched");
+        {
+            static const char* const v3SynthFields[] = { "delayTimeSeconds", "delayFeedback", "delayMix",
+                                                          "reverbRoomSize", "reverbDamping", "reverbWetLevel",
+                                                          "reverbDryLevel", "outputLevel", "delaySynced", "delayDivision" };
+
+            for (auto* field : v3SynthFields)
+            {
+                auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});   // already v3 (kSchemaVersion)
+                tree.getChildWithName ("Synth").removeProperty (field, nullptr);
+
+                berlin::Preset out;
+                out.name = "Sentinel";
+                const auto result = berlin::PresetManager::fromValueTree (tree, out);
+                expect (result == berlin::PresetResult::parseFailed, juce::String (field));
+                expect (out.name == "Sentinel");
+            }
+        }
+
+        beginTest ("a v3 preset missing the <Transport> section or its bpm attribute is parseFailed, out left untouched");
+        {
+            auto treeMissingSection = berlin::PresetManager::toValueTree (berlin::Preset{});
+            treeMissingSection.removeChild (treeMissingSection.getChildWithName ("Transport"), nullptr);
+
+            berlin::Preset outMissingSection;
+            outMissingSection.name = "Sentinel";
+            expect (berlin::PresetManager::fromValueTree (treeMissingSection, outMissingSection) == berlin::PresetResult::parseFailed);
+            expect (outMissingSection.name == "Sentinel");
+
+            auto treeMissingAttr = berlin::PresetManager::toValueTree (berlin::Preset{});
+            treeMissingAttr.getChildWithName ("Transport").removeProperty ("bpm", nullptr);
+
+            berlin::Preset outMissingAttr;
+            outMissingAttr.name = "Sentinel";
+            expect (berlin::PresetManager::fromValueTree (treeMissingAttr, outMissingAttr) == berlin::PresetResult::parseFailed);
+            expect (outMissingAttr.name == "Sentinel");
+        }
+
+        beginTest ("unrecognized delayDivision name is rejected, out left untouched");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.getChildWithName ("Synth").setProperty ("delayDivision", "notADivision", nullptr);
+
+            berlin::Preset out;
+            out.name = "Sentinel";
+            expect (berlin::PresetManager::fromValueTree (tree, out) == berlin::PresetResult::parseFailed);
+            expect (out.name == "Sentinel");
+        }
+
+        beginTest ("an unrecognized delaySynced value is rejected, out left untouched");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.getChildWithName ("Synth").setProperty ("delaySynced", "maybe", nullptr);
+
+            berlin::Preset out;
+            out.name = "Sentinel";
+            expect (berlin::PresetManager::fromValueTree (tree, out) == berlin::PresetResult::parseFailed);
+            expect (out.name == "Sentinel");
+        }
+
+        beginTest ("an out-of-range BPM or effects field from a hand-edited preset is clamped to its documented bound, loads ok");
+        {
+            berlin::Preset in;
+            in.bpm = 9999.0;
+            in.patch.delayTimeSeconds = 999.0f;
+            in.patch.delayFeedback    = 999.0f;
+            in.patch.outputLevel      = -999.0f;
+
+            const auto tree = berlin::PresetManager::toValueTree (in);
+
+            berlin::Preset out;
+            const auto result = berlin::PresetManager::fromValueTree (tree, out);
+            expect (result == berlin::PresetResult::ok);
+            expectEquals (out.bpm, berlin::kMaxBpm);
+            expectEquals (out.patch.delayTimeSeconds, berlin::kMaxDelaySeconds);
+            expectEquals (out.patch.delayFeedback, berlin::kMaxDelayFeedback);
+            expectEquals (out.patch.outputLevel, berlin::kMinOutputLevel);
         }
     }
 };

@@ -138,4 +138,12 @@ void SynthEngine::setLfoRateHz (float newLfoRateHz) noexcept               { voi
 void SynthEngine::setLfoDepth (float newLfoDepth) noexcept                 { voice.setLfoDepth (newLfoDepth); }
 void SynthEngine::setLfoDestination (LfoDestination newLfoDestination) noexcept { voice.setLfoDestination (newLfoDestination); }
 
+void SynthEngine::setDelayTimeSeconds (float newDelayTimeSeconds) noexcept { effects.setDelayTimeSeconds (newDelayTimeSeconds); }
+void SynthEngine::setDelayFeedback (float newDelayFeedback) noexcept       { effects.setDelayFeedback (newDelayFeedback); }
+void SynthEngine::setDelayMix (float newDelayMix) noexcept                 { effects.setDelayMix (newDelayMix); }
+void SynthEngine::setReverbRoomSize (float newReverbRoomSize) noexcept     { effects.setReverbRoomSize (newReverbRoomSize); }
+void SynthEngine::setReverbDamping (float newReverbDamping) noexcept       { effects.setReverbDamping (newReverbDamping); }
+void SynthEngine::setReverbWetLevel (float newReverbWetLevel) noexcept     { effects.setReverbWetLevel (newReverbWetLevel); }
+void SynthEngine::setReverbDryLevel (float newReverbDryLevel) noexcept     { effects.setReverbDryLevel (newReverbDryLevel); }
+
 } // namespace berlin

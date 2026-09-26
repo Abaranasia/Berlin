@@ -15,6 +15,7 @@
 */
 
 #include <cmath>
+#include <limits>
 #include <map>
 #include <vector>
 
@@ -450,6 +451,193 @@ public:
             berlin::BerlinAudioProcessor processor;
             expect (! processor.hasEditor());
             expect (processor.createEditor() == nullptr);
+        }
+
+        // ---- Tempo control (tempo-control, realtime-audio-wiring specs, Phase 4). RED
+        // first: BerlinAudioProcessor::setBpm/getBpm do not exist yet.
+
+        beginTest ("setBpm() clamps to [40, 240]; getBpm() reflects currentBpm");
+        {
+            berlin::BerlinAudioProcessor processor;
+            expectEquals (processor.getBpm(), 120.0);   // default, before any setBpm
+
+            processor.setBpm (500.0);
+            expectEquals (processor.getBpm(), 240.0);
+
+            processor.setBpm (10.0);
+            expectEquals (processor.getBpm(), 40.0);
+
+            processor.setBpm (150.0);
+            expectEquals (processor.getBpm(), 150.0);
+        }
+
+        beginTest ("setBpm() with NaN does not propagate NaN into currentBpm or the player/transport (Fix 1, followup-fixes review)");
+        {
+            // std::clamp(NaN, lo, hi) returns NaN unchanged (both `v<lo` and
+            // `hi<v` compare false for NaN) - the one case its [lo, hi]
+            // guarantee doesn't cover. A NaN reaching Transport::setBpm would
+            // corrupt its phase-preserving rebase math permanently (its own
+            // `newBpm <= 0.0 || newBpm == bpm` guard doesn't catch NaN
+            // either). Same hazard already fixed for SynthPatch.h's
+            // clampParameter and PresetManager.cpp's hand-written BPM guard;
+            // BerlinAudioProcessor::setBpm was the one place still missing it.
+            berlin::BerlinAudioProcessor processor;
+            processor.setBpm (std::numeric_limits<double>::quiet_NaN());
+
+            const double bpm = processor.getBpm();
+            expect (std::isfinite (bpm), "getBpm() returned non-finite after a NaN setBpm()");
+            expect (bpm >= berlin::kMinBpm && bpm <= berlin::kMaxBpm);
+
+            // Prove Transport's own downstream math stays finite too, not
+            // just the cached currentBpm member.
+            processor.prepareToPlay (44100.0, 512);
+            juce::AudioBuffer<float> buffer (2, 512);
+            juce::MidiBuffer midi;
+            processor.processBlock (buffer, midi);
+
+            for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+                for (int s = 0; s < buffer.getNumSamples(); ++s)
+                    expect (std::isfinite (buffer.getSample (ch, s)));
+        }
+
+        beginTest ("setBpm() reaches the player: a higher BPM produces more step boundaries in the same window");
+        {
+            berlin::BerlinAudioProcessor fast;
+            fast.setBpm (240.0);
+            fast.prepareToPlay (44100.0, 1);
+
+            berlin::BerlinAudioProcessor slow;
+            slow.setBpm (40.0);
+            slow.prepareToPlay (44100.0, 1);
+
+            constexpr int numSamples = 44100;   // one second
+            juce::AudioBuffer<float> fastBuffer (2, numSamples), slowBuffer (2, numSamples);
+            juce::MidiBuffer fastMidi, slowMidi;
+
+            fast.processBlock (fastBuffer, fastMidi);
+            slow.processBlock (slowBuffer, slowMidi);
+
+            int fastNoteOns = 0, slowNoteOns = 0;
+            for (const auto metadata : fastMidi)
+                if (metadata.getMessage().isNoteOn())
+                    ++fastNoteOns;
+            for (const auto metadata : slowMidi)
+                if (metadata.getMessage().isNoteOn())
+                    ++slowNoteOns;
+
+            expect (fastNoteOns > slowNoteOns,
+                    "240 BPM produced " + juce::String (fastNoteOns) + " note-ons, 40 BPM produced "
+                        + juce::String (slowNoteOns) + " - setBpm did not reach the player");
+        }
+
+        beginTest ("exportMidiTo() writes a tempo meta event matching the live BPM, not a hardcoded 120");
+        {
+            const juce::File tempFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                             .getNonexistentChildFile ("BerlinTempoExportTest", ".mid", false);
+
+            struct ScopedFileDeleter
+            {
+                explicit ScopedFileDeleter (juce::File f) : file (std::move (f)) {}
+                ~ScopedFileDeleter() { file.deleteFile(); }
+                juce::File file;
+            } deleter (tempFile);
+
+            berlin::BerlinAudioProcessor processor;
+            processor.setBpm (95.0);
+
+            expect (processor.exportMidiTo (tempFile) == berlin::MidiFileWriteResult::ok);
+
+            juce::FileInputStream inputStream (tempFile);
+            expect (inputStream.openedOk());
+
+            juce::MidiFile midiFile;
+            expect (midiFile.readFrom (inputStream));
+
+            bool foundTempoEvent = false;
+
+            for (int track = 0; track < midiFile.getNumTracks() && ! foundTempoEvent; ++track)
+            {
+                const auto* sequence = midiFile.getTrack (track);
+
+                for (int i = 0; i < sequence->getNumEvents(); ++i)
+                {
+                    const auto& message = sequence->getEventPointer (i)->message;
+
+                    if (message.isTempoMetaEvent())
+                    {
+                        const double bpmFromFile = 60.0 / message.getTempoSecondsPerQuarterNote();
+                        expectWithinAbsoluteError (bpmFromFile, 95.0, 0.01);
+                        foundTempoEvent = true;
+                        break;
+                    }
+                }
+            }
+
+            expect (foundTempoEvent, "no tempo meta event found in the exported MIDI file");
+        }
+
+        // ---- Delay/reverb effects fields (internal-synth-output, tempo-delay-ui
+        // Phase 10). RED first: pushPatchToSynth() does not yet forward the 7
+        // effects fields to the synth, so this must fail before that's added.
+
+        beginTest ("setPatch() with delay/reverb fields reaches the synth engine (pushPatchToSynth forwards them)");
+        {
+            berlin::BerlinAudioProcessor changed;
+            changed.setEffectsEnabled (true);
+            changed.prepareToPlay (44100.0, 512);
+
+            berlin::SynthPatch patch = changed.getPatch();
+            patch.delayMix      = 0.9f;
+            patch.delayFeedback = 0.8f;
+            changed.setPatch (patch);
+
+            berlin::BerlinAudioProcessor unchanged;   // kDefaultPatch's delayMix=0.35f, delayFeedback=0.3f
+            unchanged.setEffectsEnabled (true);
+            unchanged.prepareToPlay (44100.0, 512);
+
+            constexpr int numSamples = 4096;
+            juce::AudioBuffer<float> changedBuffer (2, numSamples), unchangedBuffer (2, numSamples);
+            juce::MidiBuffer changedMidi, unchangedMidi;
+            changed.processBlock (changedBuffer, changedMidi);
+            unchanged.processBlock (unchangedBuffer, unchangedMidi);
+
+            bool anyDifferent = false;
+            for (int i = 0; i < numSamples; ++i)
+                if (changedBuffer.getSample (0, i) != unchangedBuffer.getSample (0, i))
+                    anyDifferent = true;
+
+            expect (anyDifferent, "delay/reverb patch fields did not reach the synth engine");
+        }
+
+        // ---- Preset schema v3 (Phase 11): BPM persistence round-trip at the
+        // processor level (plugin-state-recall inherits via toValueTree/
+        // fromValueTree reuse - this confirms it, no separate delta needed). ----
+
+        beginTest ("getStateInformation/setStateInformation round-trips BPM");
+        {
+            berlin::BerlinAudioProcessor source;
+            source.setBpm (95.0);
+
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+
+            berlin::BerlinAudioProcessor destination;
+            destination.setStateInformation (state.getData(), (int) state.getSize());
+
+            expectEquals (destination.getBpm(), 95.0);
+        }
+
+        beginTest ("Preset save/load round-trip preserves BPM via a temp directory");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor saver (temp.dir);
+            saver.setBpm (150.0);
+
+            expect (saver.save ("BpmPreset") == berlin::PresetResult::ok);
+
+            berlin::BerlinAudioProcessor loader (temp.dir);
+            expect (loader.loadPreset ("BpmPreset") == berlin::PresetResult::ok);
+            expectEquals (loader.getBpm(), 150.0);
         }
     }
 };

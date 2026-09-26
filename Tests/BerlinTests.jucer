@@ -59,6 +59,12 @@
             file="Source/AutoEvolveScheduleTests.cpp"/>
       <FILE id="btBapC" name="BerlinAudioProcessorTests.cpp" compile="1" resource="0"
             file="Source/BerlinAudioProcessorTests.cpp"/>
+      <FILE id="btTmsC" name="TempoSyncTests.cpp" compile="1" resource="0"
+            file="Source/TempoSyncTests.cpp"/>
+      <FILE id="btTtcC" name="TransportTempoChangeTests.cpp" compile="1" resource="0"
+            file="Source/TransportTempoChangeTests.cpp"/>
+      <FILE id="btSfxC" name="SynthEffectsTests.cpp" compile="1" resource="0"
+            file="Source/SynthEffectsTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -66,6 +72,8 @@
       <FILE id="tcSeqC" name="Sequence.cpp" compile="1" resource="0" file="../Source/core/Sequence.cpp"/>
       <FILE id="tcSclH" name="Scale.h" compile="0" resource="0" file="../Source/core/Scale.h"/>
       <FILE id="tcSclC" name="Scale.cpp" compile="1" resource="0" file="../Source/core/Scale.cpp"/>
+      <FILE id="tcTmsH" name="TempoSync.h" compile="0" resource="0" file="../Source/core/TempoSync.h"/>
+      <FILE id="tcTmsC" name="TempoSync.cpp" compile="1" resource="0" file="../Source/core/TempoSync.cpp"/>
     </GROUP>
     <GROUP id="{1B3D5F7A-4C6E-4A9B-8D1F-3E5A7C9B1D3F}" name="generation">
       <FILE id="tgDrnH" name="DeterministicRandom.h" compile="0" resource="0"

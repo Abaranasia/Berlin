@@ -30,6 +30,8 @@
 
 #pragma once
 
+#include <vector>
+
 // The FULL juce_audio_processors module (not juce_audio_processors_headless)
 // is required here: juce::AudioProcessorEditor's complete class definition
 // (with its juce::Component base) lives in juce_audio_processors, which
@@ -68,8 +70,23 @@ private:
     berlin::SynthPatch currentPatchFromWidgets() const;
     void                applyPatchToWidgets (const berlin::SynthPatch& patch);
     void                pushPatchFromWidgets();          // currentPatchFromWidgets() -> owner.setPatch()
+    void                pushTempoFromWidgets();          // tempoSlider.getValue() -> owner.setBpm()
     void                pushGenerationParamsFromWidgets(); // stages mode/pulses/rotation/probability/lockSeed/scale/root/range
     void                applyGenerationParamsToWidgets (const berlin::GenerationParams& params); // writes back ONLY the 4 persisted fields
+
+    // ---- Delay/reverb + tempo-sync wiring (tempo-control, internal-synth-output
+    // specs, Phase 10) ----
+    // Sync mode: delayTimeSlider tracks delaySecondsFor(owner.getBpm(),
+    // division) and is disabled (manual entry blocked). Free mode: manual
+    // entry re-enabled, restored to lastManualDelayTimeSeconds (design.md's
+    // "retains last manual value across Sync-Free-Sync"). Called from the
+    // sync toggle, the division box, and the tempo slider (so Sync mode
+    // stays live-tracking a running BPM change).
+    void recomputeSyncedDelayTime();
+
+    // D8: applies fxToggle's state (AND, for delayTimeSlider only, the
+    // inverse of Sync mode) to every widget in delayReverbWidgets.
+    void updateDelayReverbEnablement();
 
     void         savePreset();
     void         writePresetFile (const juce::String& name);
@@ -85,6 +102,43 @@ private:
     juce::ToggleButton synthToggle { "Synth" };
     juce::ToggleButton fxToggle { "FX" };
     std::unique_ptr<juce::FileChooser> exportChooser;
+
+    // ---- Tempo control (tempo-control spec, Phase 5) ----
+    juce::Label  tempoSectionLabel;
+    juce::Label  tempoLabel;
+    juce::Slider tempoSlider;
+
+    // ---- Delay/reverb + tempo-sync (tempo-control, internal-synth-output
+    // specs, Phase 10) ----
+    juce::Label        delaySectionLabel;
+    juce::ToggleButton delaySyncToggle { "Sync" };
+    juce::Label        delayDivisionLabel;
+    juce::ComboBox      delayDivisionBox;
+    juce::Label        delayTimeLabel;
+    juce::Slider       delayTimeSlider;
+    juce::Label        delayFeedbackLabel;
+    juce::Slider       delayFeedbackSlider;
+    juce::Label        delayMixLabel;
+    juce::Slider       delayMixSlider;
+
+    juce::Label  reverbSectionLabel;
+    juce::Label  reverbRoomLabel;
+    juce::Slider reverbRoomSlider;
+    juce::Label  reverbDampingLabel;
+    juce::Slider reverbDampingSlider;
+    juce::Label  reverbWetLabel;
+    juce::Slider reverbWetSlider;
+    juce::Label  reverbDryLabel;
+    juce::Slider reverbDrySlider;
+
+    // D8: the whole delay/reverb section is disabled (greyed out) while
+    // fxToggle is off - populated once in the ctor, iterated by fxToggle's
+    // onClick and by the ctor's initial setEnabled call.
+    std::vector<juce::Component*> delayReverbWidgets;
+
+    // Manual-entry memory across Sync -> Free -> Sync (design.md's stated
+    // Free-mode retention rule) - updated only while NOT synced.
+    double lastManualDelayTimeSeconds = berlin::kDefaultPatch.delayTimeSeconds;
 
     // ---- Generation controls ----
     juce::Label        generationSectionLabel;

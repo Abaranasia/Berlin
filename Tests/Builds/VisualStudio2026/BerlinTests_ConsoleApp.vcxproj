@@ -176,8 +176,12 @@
     <ClCompile Include="..\..\Source\SequenceBuilderTests.cpp"/>
     <ClCompile Include="..\..\Source\AutoEvolveScheduleTests.cpp"/>
     <ClCompile Include="..\..\Source\BerlinAudioProcessorTests.cpp"/>
+    <ClCompile Include="..\..\Source\TempoSyncTests.cpp"/>
+    <ClCompile Include="..\..\Source\TransportTempoChangeTests.cpp"/>
+    <ClCompile Include="..\..\Source\SynthEffectsTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
+    <ClCompile Include="..\..\..\Source\core\TempoSync.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\PitchGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\RhythmGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\SkipMaskGenerator.cpp"/>
@@ -1475,6 +1479,7 @@
     <ClInclude Include="..\..\..\Source\core\Step.h"/>
     <ClInclude Include="..\..\..\Source\core\Sequence.h"/>
     <ClInclude Include="..\..\..\Source\core\Scale.h"/>
+    <ClInclude Include="..\..\..\Source\core\TempoSync.h"/>
     <ClInclude Include="..\..\..\Source\generation\DeterministicRandom.h"/>
     <ClInclude Include="..\..\..\Source\generation\PitchGenerator.h"/>
     <ClInclude Include="..\..\..\Source\generation\RhythmGenerator.h"/>
@@ -1488,6 +1493,7 @@
     <ClInclude Include="..\..\..\Source\playback\StepEventBuffer.h"/>
     <ClInclude Include="..\..\..\Source\playback\Transport.h"/>
     <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h"/>
+    <ClInclude Include="..\..\..\Source\midi\MidiChannel.h"/>
     <ClInclude Include="..\..\..\Source\midi\MidiMessageBytes.h"/>
     <ClInclude Include="..\..\..\Source\midi\MidiEventTranslator.h"/>
     <ClInclude Include="..\..\..\Source\export\MidiExportTimeline.h"/>

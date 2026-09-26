@@ -130,6 +130,16 @@ public:
     juce::int64 getSeed() const { return currentSeed; }
     void setSynthEnabled (bool shouldBeEnabled) { synth.setEnabled (shouldBeEnabled); }
     void setEffectsEnabled (bool shouldBeEnabled) { synth.setEffectsEnabled (shouldBeEnabled); }
+
+    // currentBpm is the SINGLE SOURCE OF TRUTH for tempo (design.md's
+    // Ownership note): the editor is a view, Transport is an audio-thread-
+    // only consumer, MIDI export reads currentBpm - none of them originate a
+    // BPM value. setBpm clamps to [berlin::kMinBpm, berlin::kMaxBpm]
+    // (SynthPatch.h, Phase 7's canonical home) and forwards to player.setBpm
+    // (message thread; adopted by the audio thread at the top of its next
+    // process() call, design.md Decision 4).
+    void   setBpm (double newBpm);
+    double getBpm() const { return currentBpm; }
     void setAutoEvolveEnabled (bool shouldBeEnabled);
     void setAutoEvolveRate (int loops) { autoEvolveRate = loops; }
     int getMutationCount() const { return mutationCount; }
@@ -142,13 +152,18 @@ private:
     void timerCallback() override;
     void pushPatchToSynth();
 
-    static constexpr double kBpm            = 120.0;
+    // kDefaultBpm/kMinBpm/kMaxBpm now live in SynthPatch.h (design.md D7,
+    // Phase 7's canonical home) - referenced unqualified below since this
+    // class is nested in `namespace berlin`. Previously local static
+    // constexpr members of this class (Phase 4 interim measure); removed in
+    // favor of the single shared definition, deduping the two copies.
     static constexpr int    kStepsPerBeat   = 4;
     static constexpr int    kExportRepeats  = 4;
     static constexpr juce::int64 kDefaultSeed = 12345;
 
     GenerationParams generationParams;
     SynthPatch       currentPatch;
+    double           currentBpm { kDefaultBpm };   // single source of truth (design.md Ownership note)
 
     juce::int64 currentSeed;
     Sequence    currentSequence;   // MUST precede `player`; audio-thread-exclusive once published

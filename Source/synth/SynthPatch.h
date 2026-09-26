@@ -17,12 +17,33 @@
    lands in Phase 4 - the patch shape is fixed for the whole feature so all
    fields exist from the start, unwired fields simply unused until then.
 
+   tempo-delay-ui Phase 7 (design.md D5/D7): kMinBpm/kMaxBpm/kDefaultBpm and
+   the delay/reverb bound constants now live here - the single canonical
+   home - rather than as file-local constants scattered across
+   BerlinAudioProcessor.h/SynthEffects.cpp, both of which previously defined
+   local copies of some of these values as an interim measure before this
+   phase landed (Phase 4's BerlinAudioProcessor::kMinBpm/kMaxBpm/kDefaultBpm
+   are removed in favor of these). kMaxDelaySeconds moved from
+   SynthEffects.cpp's anonymous namespace and was raised 2.0f -> 3.0f
+   (design.md D5): at the kMinBpm floor the longest exposed sync division
+   (half note) needs exactly 3.0s, so every division is reachable at every
+   legal BPM and the clamp becomes a purely DEFENSIVE bound (Free-mode
+   manual entry, untrusted preset XML), never routine Sync-mode behavior.
+   kMaxDelayFeedback is held strictly below 1.0 so the delay's feedback loop
+   is provably stable (a geometric series, not a runaway one) - see
+   SynthEffectsTests.cpp's feedback-stability suite. delaySynced/
+   delayDivision (below) ride inside SynthPatch alongside the other 8
+   effects fields (design.md D7) rather than as a separate struct, so the
+   whole live-adjustable sound stays one value.
+
   ==============================================================================
 */
 
 #pragma once
 
 #include <algorithm>
+
+#include "core/TempoSync.h"
 
 namespace berlin
 {
@@ -42,6 +63,23 @@ inline constexpr float kMinSustain = 0.0f,          kMaxSustain = 1.0f;
 inline constexpr float kMinReleaseSeconds = 0.005f, kMaxReleaseSeconds = 8.0f;
 inline constexpr float kMinLfoRateHz = 0.05f,       kMaxLfoRateHz = 20.0f;
 inline constexpr float kMinLfoDepth = 0.0f,         kMaxLfoDepth = 1.0f;
+
+// tempo-control spec (design.md D7, Phase 7): the single canonical BPM range
+// - BerlinAudioProcessor::setBpm clamps to these, tempoSlider's range mirrors
+// them (BerlinAudioProcessorEditor).
+inline constexpr double kMinBpm = 40.0, kMaxBpm = 240.0, kDefaultBpm = 120.0;
+
+// internal-synth-output spec (design.md D5/D6, Phase 7): delay/reverb bounds.
+// kMaxDelaySeconds RAISED 2.0f -> 3.0f (was SynthEffects.cpp's anonymous-
+// namespace kMaxDelaySeconds) - see the file header comment above.
+inline constexpr float kMinDelayTimeSeconds = 0.0f, kMaxDelaySeconds = 3.0f;
+inline constexpr float kMinDelayFeedback = 0.0f,    kMaxDelayFeedback = 0.95f;   // < 1.0: provably-stable feedback loop
+inline constexpr float kMinDelayMix = 0.0f,         kMaxDelayMix = 1.0f;
+inline constexpr float kMinReverbRoomSize = 0.0f,   kMaxReverbRoomSize = 1.0f;
+inline constexpr float kMinReverbDamping = 0.0f,    kMaxReverbDamping = 1.0f;
+inline constexpr float kMinReverbWetLevel = 0.0f,   kMaxReverbWetLevel = 1.0f;
+inline constexpr float kMinReverbDryLevel = 0.0f,   kMaxReverbDryLevel = 1.0f;
+inline constexpr float kMinOutputLevel = 0.0f,      kMaxOutputLevel = 1.0f;   // preset-persistence bound only (Phase 11) - no live setter exists (design.md's Interfaces block)
 
 // NaN compares false against both bounds, so a naive std::clamp passes it
 // through unchanged - the one case its [lo, hi] guarantee doesn't cover.
@@ -85,6 +123,14 @@ struct SynthPatch
     float reverbDryLevel = 1.0f;
 
     float outputLevel = 0.8f;
+
+    // tempo-control spec (design.md D7, Phase 7): Free by default (matches
+    // today's manual-delay-time behavior with no persisted BPM sync). When
+    // true, delayTimeSeconds tracks delaySecondsFor(liveBpm, delayDivision)
+    // instead of a manually-set value (BerlinAudioProcessorEditor's
+    // recomputeSyncedDelayTime, Phase 10).
+    bool         delaySynced   = false;
+    SyncDivision delayDivision = SyncDivision::quarter;   // unused while delaySynced is false
 };
 
 inline constexpr SynthPatch kDefaultPatch {};
