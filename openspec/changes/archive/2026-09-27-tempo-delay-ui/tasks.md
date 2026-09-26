@@ -62,7 +62,7 @@ Note: schema v3 belongs entirely to PR B; PR A ships live-but-unpersisted BPM (r
 ## Phase 5: BPM UI Widget — PR A (tempo-control spec)
 
 - [x] 5.1 GREEN — `BerlinAudioProcessorEditor.h/.cpp`: TEMPO row via existing `configureSlider`/`placeLabelled`; `pushTempoFromWidgets()`; extend `refreshFromProcessor`; grow `setSize`.
-- [ ] 5.2 Manual verification — slider drag updates BPM live, no click/glitch (no automated GUI test per design's testing strategy — manual review gate only). NOT PERFORMED this session (no interactive GUI session available to the apply agent); flagged for a human reviewer before merge.
+- [x] 5.2 Manual verification — slider drag updates BPM live, no click/glitch (no automated GUI test per design's testing strategy — manual review gate only). VERIFIED 2026-09-27 by the user running the built app: passed, no glitches.
 
 ## Phase 6: PR A Integration Gate
 
@@ -94,7 +94,7 @@ Note: schema v3 belongs entirely to PR B; PR A ships live-but-unpersisted BPM (r
 - [x] 10.2 GREEN — `recomputeSyncedDelayTime()`: Sync disables manual entry and tracks division-derived seconds (from live BPM); Free re-enables manual entry, retains last manual value across Sync→Free→Sync via `lastManualDelayTimeSeconds`.
 - [x] 10.3 GREEN — D8: `fxToggle.onClick` calls `updateDelayReverbEnablement()`, which sets every `delayReverbWidgets` entry's enabled state (plus `delayTimeSlider`'s own extra Sync-mode gate).
 - [x] 10.4 GREEN — extended `currentPatchFromWidgets`/`applyPatchToWidgets`/`refreshFromProcessor`; grew `setSize` by 4 rows. DEVIATION (flagged per skill rule): also extended `BerlinAudioProcessor::pushPatchToSynth` with the 7 effect pushes here rather than under 11.3 as tasks.md lists it — necessary now because Phase 10's sliders write into `currentPatch` via `setPatch()`, and without the forwarding those writes would never reach the running `SynthEngine` (RED-proved by `BerlinAudioProcessorTests.cpp`'s "setPatch() with delay/reverb fields reaches the synth engine").
-- [ ] 10.5 Manual verification — Sync/Free toggle scenario per spec; FX section greys out when off (no automated GUI test per design's testing strategy). NOT PERFORMED this session (no interactive GUI session available), same caveat as task 5.2 — flagged for a human reviewer before merge.
+- [x] 10.5 Manual verification — Sync/Free toggle scenario per spec; FX section greys out when off (no automated GUI test per design's testing strategy). VERIFIED 2026-09-27 by the user running the built app: passed, no glitches.
 
 ## Phase 11: Preset Schema v3 — PR B (preset-persistence, plugin-state-recall specs)
 
@@ -107,8 +107,8 @@ Note: schema v3 belongs entirely to PR B; PR A ships live-but-unpersisted BPM (r
 ## Phase 12: PR B Integration Gate
 
 - [x] 12.1 Run `BerlinTests.exe --category=Berlin` full suite green — 309 tests, all passed, exit code 0.
-- [ ] 12.2 Manual review gate: audible delay/reverb, no click on tempo/delay-time change, audio-path diff has no allocation/lock/logging. NOT PERFORMED (no interactive audio session available) — allocation/lock absence confirmed by static inspection, but the audible/no-click claim needs a human listening pass before merge, same caveat as 5.2/10.5.
-- [ ] 12.3 Verify rollback claim: a v3 preset is rejected (not corrupting) by a reverted v2 build and silently dropped from `listPresetNames()`. NOT PERFORMED this session (would require checking out the pre-Phase-7 commit and building a second binary) — the mechanism is unchanged from the already-verified v1→v2 rollback path (`fromValueTree` returns `unsupportedVersion` for `version > kSchemaVersion`; `listPresetNames()` silently excludes it), so the claim is believed sound but not independently re-verified against a real reverted build.
+- [x] 12.2 Manual review gate: audible delay/reverb, no click on tempo/delay-time change, audio-path diff has no allocation/lock/logging. Allocation/lock absence confirmed by static inspection; audible/no-click claim VERIFIED 2026-09-27 by the user running the built app: passed, no glitches.
+- [x] 12.3 Verify rollback claim: a v3 preset is rejected (not corrupting) by a reverted v2 build and silently dropped from `listPresetNames()`. VERIFIED 2026-09-27 by an actual build: checked out parent commit `8e2cf6b` (kSchemaVersion=2) into a worktree, built it, fed it a genuine v3 preset generated from the current build — `load()` returned `unsupportedVersion`, the output `Preset` was left untouched (no corruption, no crash), and `listPresetNames()` on a directory containing only the v3 file returned 0 names.
 - [x] 12.4 Confirm PR B diff size before opening PR — see this batch's final report for the measured `git diff --stat` total; the user's `size:exception` single-PR decision (Engram obs #302) already covers the whole change regardless of this number.
 
 ## Phase 13: Archive-Prep Notes (non-code, flag for sdd-archive)
