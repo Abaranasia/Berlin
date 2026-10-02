@@ -21,6 +21,12 @@
       <FILE id="plPmnC" name="BerlinPluginMain.cpp" compile="1" resource="0"
             file="../Source/plugin/BerlinPluginMain.cpp"/>
     </GROUP>
+    <GROUP id="{9E1C3A5D-7F2B-4D6E-8A0C-3F5B7D9E1C32}" name="bridge">
+      <FILE id="pbUbrH" name="UiBridge.h" compile="0" resource="0"
+            file="../Source/bridge/UiBridge.h"/>
+      <FILE id="pbUbrC" name="UiBridge.cpp" compile="1" resource="0"
+            file="../Source/bridge/UiBridge.cpp"/>
+    </GROUP>
     <GROUP id="{4C7B2E3A-8D1F-4B6A-9E2C-1A3F5D7E9B0C}" name="core">
       <FILE id="coStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
       <FILE id="coSeqH" name="Sequence.h" compile="0" resource="0" file="../Source/core/Sequence.h"/>

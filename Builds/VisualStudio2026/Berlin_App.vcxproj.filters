@@ -29,6 +29,9 @@
     <Filter Include="Berlin\plugin">
       <UniqueIdentifier>{892AFE47-600F-5EEB-E1B3-6EB2DBB943D0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\bridge">
+      <UniqueIdentifier>{6F6F7473-5F4D-7C4A-FC22-F1F74F657ADC}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -942,6 +945,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\plugin\BerlinAudioProcessorEditor.cpp">
       <Filter>Berlin\plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\bridge\UiBridge.cpp">
+      <Filter>Berlin\bridge</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -4292,6 +4298,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\plugin\BerlinAudioProcessorEditor.h">
       <Filter>Berlin\plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\bridge\UiBridge.h">
+      <Filter>Berlin\bridge</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>

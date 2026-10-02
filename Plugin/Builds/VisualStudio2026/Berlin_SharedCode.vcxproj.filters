@@ -5,6 +5,9 @@
     <Filter Include="Berlin\plugin">
       <UniqueIdentifier>{892AFE47-600F-5EEB-E1B3-6EB2DBB943D0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\bridge">
+      <UniqueIdentifier>{6F6F7473-5F4D-7C4A-FC22-F1F74F657ADC}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin\core">
       <UniqueIdentifier>{59A0A563-A163-2CA4-DBB4-9C401FCB3BD2}</UniqueIdentifier>
     </Filter>
@@ -813,6 +816,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\plugin\BerlinPluginMain.cpp">
       <Filter>Berlin\plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\bridge\UiBridge.cpp">
+      <Filter>Berlin\bridge</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>Berlin\core</Filter>
@@ -3767,6 +3773,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\plugin\BerlinAudioProcessorEditor.h">
       <Filter>Berlin\plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\bridge\UiBridge.h">
+      <Filter>Berlin\bridge</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\core\Step.h">
       <Filter>Berlin\core</Filter>

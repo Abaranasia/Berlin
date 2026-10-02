@@ -80,6 +80,10 @@
       <FILE id="plBaeH" name="BerlinAudioProcessorEditor.h" compile="0" resource="0" file="Source/plugin/BerlinAudioProcessorEditor.h"/>
       <FILE id="plBaeC" name="BerlinAudioProcessorEditor.cpp" compile="1" resource="0" file="Source/plugin/BerlinAudioProcessorEditor.cpp"/>
     </GROUP>
+    <GROUP id="{9E1C3A5D-7F2B-4D6E-8A0C-3F5B7D9E1C32}" name="bridge">
+      <FILE id="brUbrH" name="UiBridge.h" compile="0" resource="0" file="Source/bridge/UiBridge.h"/>
+      <FILE id="brUbrC" name="UiBridge.cpp" compile="1" resource="0" file="Source/bridge/UiBridge.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

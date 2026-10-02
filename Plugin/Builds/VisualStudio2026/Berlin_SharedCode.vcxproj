@@ -147,6 +147,7 @@
     <ClCompile Include="..\..\..\Source\plugin\BerlinAudioProcessor.cpp"/>
     <ClCompile Include="..\..\..\Source\plugin\BerlinAudioProcessorEditor.cpp"/>
     <ClCompile Include="..\..\..\Source\plugin\BerlinPluginMain.cpp"/>
+    <ClCompile Include="..\..\..\Source\bridge\UiBridge.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\core\TempoSync.cpp"/>
@@ -2877,6 +2878,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\plugin\BerlinAudioProcessor.h"/>
     <ClInclude Include="..\..\..\Source\plugin\BerlinAudioProcessorEditor.h"/>
+    <ClInclude Include="..\..\..\Source\bridge\UiBridge.h"/>
     <ClInclude Include="..\..\..\Source\core\Step.h"/>
     <ClInclude Include="..\..\..\Source\core\Sequence.h"/>
     <ClInclude Include="..\..\..\Source\core\Scale.h"/>
