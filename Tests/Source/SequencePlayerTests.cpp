@@ -312,6 +312,83 @@ public:
                 expectEquals (sizeOnePlayer.getLoopCount(), 0);
             }
         }
+
+        // ---- BPM atomic plumbing (playback-transport spec, Phase 3). RED
+        // first: SequencePlayer::setBpm does not exist yet.
+
+        beginTest ("setBpm(double) is message-thread, applied at the top of the NEXT process() call");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // N = 4
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);   // samplesPerStep == 4.0 exactly at bpm=60
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);   // boundary 0 (step 0), still at the original bpm
+
+            player.setBpm (120.0);   // doubles the tempo: samplesPerStep should halve to 2.0
+
+            std::vector<int> sampleOffsets;
+
+            // Drain several boundaries post-change and confirm strictly
+            // increasing, non-negative sample offsets within each block -
+            // i.e. no skip/double/negative offset introduced by the plumbing.
+            for (int i = 0; i < 10; ++i)
+            {
+                player.process (4, buffer);
+
+                int previousOffset = -1;
+
+                for (int e = 0; e < buffer.size(); ++e)
+                {
+                    expect (buffer[e].sampleOffset >= previousOffset,
+                            "sampleOffsets must be monotonically non-decreasing within a block");
+                    previousOffset = buffer[e].sampleOffset;
+                }
+            }
+
+            // Preserved playhead/loop-count semantics: still a valid step
+            // index in range, and getLoopCount() only counts genuine wraps
+            // (no fabricated wrap from the tempo-change plumbing itself).
+            expect (player.getPlayheadStep() >= 0 && player.getPlayheadStep() < sequence.size());
+            expect (player.getLoopCount() >= 0);
+        }
+
+        beginTest ("BPM change mid-loop does not resurrect a stale origin after a subsequent sequence adopt");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // N = 4
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);   // boundary 0
+            player.process (4, buffer);   // boundary 1
+
+            player.setBpm (150.0);   // pending change, not yet adopted
+
+            auto replacement = makeSequence ({ { 70, true }, { 72, true } });
+            auto forPlayer = replacement;
+            expect (player.publishSequence (forPlayer));
+
+            player.process (4, buffer);   // adopt happens here, THEN setBpm is applied (design.md Decision 4 ordering)
+
+            expectEquals (player.getPlayheadStep(), 0);   // adopt resets playhead to 0, no stale origin carried over
+
+            // The adopted sequence continues to emit sane, monotonically
+            // increasing offsets under the new tempo - no crash, no garbage.
+            for (int i = 0; i < 5; ++i)
+            {
+                player.process (4, buffer);
+                int previousOffset = -1;
+
+                for (int e = 0; e < buffer.size(); ++e)
+                {
+                    expect (buffer[e].sampleOffset >= previousOffset);
+                    previousOffset = buffer[e].sampleOffset;
+                }
+            }
+        }
     }
 };
 

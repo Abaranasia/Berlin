@@ -880,6 +880,9 @@
     <ClCompile Include="..\..\Source\core\Scale.cpp">
       <Filter>Berlin\core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\core\TempoSync.cpp">
+      <Filter>Berlin\core</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\generation\PitchGenerator.cpp">
       <Filter>Berlin\generation</Filter>
     </ClCompile>
@@ -4203,6 +4206,9 @@
     <ClInclude Include="..\..\Source\core\Scale.h">
       <Filter>Berlin\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\core\TempoSync.h">
+      <Filter>Berlin\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\generation\DeterministicRandom.h">
       <Filter>Berlin\generation</Filter>
     </ClInclude>
@@ -4241,6 +4247,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\playback\SequencePlayer.h">
       <Filter>Berlin\playback</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\midi\MidiChannel.h">
+      <Filter>Berlin\midi</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\midi\MidiMessageBytes.h">
       <Filter>Berlin\midi</Filter>

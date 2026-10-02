@@ -82,6 +82,16 @@ public:
     // alloc/free/lock), and restarts the pattern from step 0.
     bool publishSequence (Sequence& incoming) noexcept;
 
+    // MESSAGE THREAD ONLY. Relaxed store into pendingBpm; adopted at the top
+    // of the NEXT process() call, AFTER the pending-sequence adopt block and
+    // BEFORE countBoundaries (design.md Decision 4) - a bpm change between
+    // countBoundaries() and getBoundary()/advance() would desync the loop,
+    // so the mutation is confined to this single point. The atomic lives
+    // here, not on Transport (design.md Decision 1): Transport is taken BY
+    // VALUE by this class's constructor, so an atomic member there would
+    // delete its copy/move ctors.
+    void setBpm (double newBpm) noexcept;
+
     void process (int numSamples, StepEventBuffer& out) noexcept;   // AUDIO THREAD, RT-safe
 
     // Clears `out`, then pushes at most one StepEvent { 0, pendingStep, pendingNote, false }
@@ -107,6 +117,7 @@ private:
     int pendingStep { 0 };
     std::atomic<int> playhead { 0 };
     std::atomic<int> loopCount { 0 };
+    std::atomic<double> pendingBpm;   // initialised in the constructor body from transport.getBpm()
 };
 
 } // namespace berlin

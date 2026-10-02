@@ -2,25 +2,49 @@
 
 ## Purpose
 
-A JUCE-free, sample-accurate step clock. Converts a fixed BPM and step resolution into samples-per-step from the audio device's sample rate, and reports step boundaries crossed within each audio callback using drift-free absolute-position arithmetic. `Transport` is sequence-length-agnostic: it counts absolute step boundaries only and has no notion of a loop length or step position — that belongs to `SequencePlayer` (see `step-event-scheduling`). No runtime BPM control surface exists in this change.
+A JUCE-free, sample-accurate step clock. Converts a BPM and step resolution into samples-per-step from the audio device's sample rate, and reports step boundaries crossed within each audio callback using drift-free absolute-position arithmetic. `Transport` is sequence-length-agnostic: it counts absolute step boundaries only and has no notion of a loop length or step position — that belongs to `SequencePlayer` (see `step-event-scheduling`). Runtime BPM mutation is exposed via `setBpm()` with origin-rebasing to preserve already-reported boundaries.
 
 ## Requirements
 
-### Requirement: Fixed BPM and Step Resolution
+### Requirement: Runtime BPM Mutation With Origin-Rebased Boundary Math
 
-The system MUST configure `Transport` with a `bpm` fixed at construction/config time (default constant 120) and `stepsPerBeat` fixed at 4 (one step = a 16th note). The system MUST NOT expose any runtime API to change `bpm` after construction.
+The system MUST expose a runtime `setBpm(double)` mutator on `Transport`, callable from the message thread, that recomputes `samplesPerStep` from the currently cached sample rate. Every call MUST rebase the boundary origin (the `position`/`nextStepCounter` pair or equivalent) at the moment of change, so boundaries already reported keep their original reported sample positions, and future boundaries are computed relative to the new origin under the new rate - never by substituting the new rate into the existing absolute `k * samplesPerStep` formula unchanged, which would retime already-elapsed steps. `bpm` remains fixed at its constructed/default value (120) until `setBpm` is called. The mutator MUST perform only cheap arithmetic - no heap allocation, no lock, no logging.
 
 #### Scenario: Default BPM constant
 
 - GIVEN `Transport` is constructed with the default configuration
-- WHEN its BPM is inspected
+- WHEN its BPM is inspected before any `setBpm` call
 - THEN it equals 120
 
-#### Scenario: No runtime BPM mutation API
+#### Scenario: setBpm recomputes samplesPerStep from the cached sample rate
 
-- GIVEN the `Transport` type definition
-- WHEN inspecting its public members
-- THEN no setter or method exists that changes `bpm` after construction
+- GIVEN a prepared `Transport` at a known sample rate
+- WHEN `setBpm(newBpm)` is called
+- THEN `samplesPerStep` equals `sampleRate * 60 / (newBpm * stepsPerBeat)`
+
+#### Scenario: BPM change does not retime already-reported boundaries
+
+- GIVEN a running `Transport` that has already reported several step boundaries at the old BPM
+- WHEN `setBpm` changes the rate mid-stream
+- THEN every boundary already reported keeps its original reported sample position - none are recomputed or shifted
+
+#### Scenario: BPM change causes no skipped or doubled step across the change
+
+- GIVEN a running `Transport` mid-sequence
+- WHEN `setBpm` is called and playback continues across the change
+- THEN exactly one step boundary is reported per step interval spanning the change - none is skipped, none is reported twice
+
+#### Scenario: Rapid repeated BPM changes remain drift-free
+
+- GIVEN several `setBpm` calls in quick succession while running
+- WHEN boundaries are reported across many subsequent blocks
+- THEN cumulative timing error stays bounded to +/-1 sample, matching the existing drift-free guarantee
+
+#### Scenario: setBpm introduces no allocation or lock
+
+- GIVEN `setBpm`'s implementation
+- WHEN it is inspected during code review
+- THEN it contains no heap allocation, no lock acquisition, and no logging call
 
 ### Requirement: Samples-Per-Step Derivation
 

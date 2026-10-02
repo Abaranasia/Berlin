@@ -15,6 +15,7 @@ namespace berlin
 SequencePlayer::SequencePlayer (Sequence sequenceToPlay, Transport transportToUse)
     : sequence (std::move (sequenceToPlay)), transport (std::move (transportToUse))
 {
+    pendingBpm.store (transport.getBpm(), std::memory_order_relaxed);
 }
 
 void SequencePlayer::prepare (double sampleRate) noexcept
@@ -55,6 +56,11 @@ bool SequencePlayer::publishSequence (Sequence& incoming) noexcept
     return true;
 }
 
+void SequencePlayer::setBpm (double newBpm) noexcept
+{
+    pendingBpm.store (newBpm, std::memory_order_relaxed);
+}
+
 void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
 {
     out.clear();
@@ -71,6 +77,8 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
         playhead.store (0, std::memory_order_relaxed);
         sequencePending.store (false, std::memory_order_release);
     }
+
+    transport.setBpm (pendingBpm.load (std::memory_order_relaxed));   // design.md Decision 4: after adopt, before countBoundaries
 
     if (sequence.size() > 0)
     {

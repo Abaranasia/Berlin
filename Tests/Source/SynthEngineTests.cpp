@@ -28,6 +28,7 @@
 #include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
 
+#include "synth/SynthEffects.h"
 #include "synth/SynthEngine.h"
 #include "synth/SynthPatch.h"
 #include "synth/SynthVoice.h"
@@ -388,6 +389,84 @@ public:
             compareForwarder ("setLfoDestination",
                 [] (berlin::SynthEngine& e) { e.setLfoDestination (berlin::LfoDestination::cutoff); },
                 [] (berlin::SynthVoice& v)  { v.setLfoDestination (berlin::LfoDestination::cutoff); });
+        }
+
+        beginTest ("each SynthEngine effects-forwarder produces identical rendered output to calling "
+                   "SynthEffects' setter directly (tempo-delay-ui Phase 9)");
+        {
+            auto compareFxForwarder = [&] (const char* label,
+                                            std::function<void (berlin::SynthEngine&)> applyToEngine,
+                                            std::function<void (berlin::SynthEffects&)> applyToEffects)
+            {
+                berlin::SynthEngine engine;
+                engine.prepare (makeSpec (sampleRate, 512));
+                engine.setEffectsEnabled (true);
+                applyToEngine (engine);
+
+                berlin::StepEventBuffer events;
+                events.push ({ 0, 0, 60, true });
+
+                juce::AudioBuffer<float> engineOut (2, 512);
+                engineOut.clear();
+                engine.render (events, engineOut, 0, 512);
+
+                // Reference: an independent voice + an independent SynthEffects, given
+                // the identical setter call, processing the voice's own dry render.
+                berlin::SynthVoice voice;
+                voice.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+                voice.noteOn (static_cast<float> (juce::MidiMessage::getMidiNoteInHertz (60)));
+
+                std::vector<float> left (512, 0.0f), right (512, 0.0f);
+                voice.render (left.data(), right.data(), 512);
+
+                berlin::SynthEffects effects;
+                effects.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+                applyToEffects (effects);
+
+                juce::AudioBuffer<float> reference (2, 512);
+                for (int i = 0; i < 512; ++i)
+                {
+                    reference.setSample (0, i, left[(size_t) i]);
+                    reference.setSample (1, i, right[(size_t) i]);
+                }
+
+                juce::dsp::AudioBlock<float> referenceBlock (reference);
+                effects.process (referenceBlock);
+
+                for (int i = 0; i < 512; ++i)
+                {
+                    expectEquals (engineOut.getSample (0, i), reference.getSample (0, i), juce::String (label));
+                    expectEquals (engineOut.getSample (1, i), reference.getSample (1, i), juce::String (label));
+                }
+            };
+
+            compareFxForwarder ("setDelayTimeSeconds",
+                [] (berlin::SynthEngine& e)  { e.setDelayTimeSeconds (0.5f); },
+                [] (berlin::SynthEffects& fx) { fx.setDelayTimeSeconds (0.5f); });
+
+            compareFxForwarder ("setDelayFeedback",
+                [] (berlin::SynthEngine& e)  { e.setDelayFeedback (0.6f); },
+                [] (berlin::SynthEffects& fx) { fx.setDelayFeedback (0.6f); });
+
+            compareFxForwarder ("setDelayMix",
+                [] (berlin::SynthEngine& e)  { e.setDelayMix (0.8f); },
+                [] (berlin::SynthEffects& fx) { fx.setDelayMix (0.8f); });
+
+            compareFxForwarder ("setReverbRoomSize",
+                [] (berlin::SynthEngine& e)  { e.setReverbRoomSize (0.9f); },
+                [] (berlin::SynthEffects& fx) { fx.setReverbRoomSize (0.9f); });
+
+            compareFxForwarder ("setReverbDamping",
+                [] (berlin::SynthEngine& e)  { e.setReverbDamping (0.9f); },
+                [] (berlin::SynthEffects& fx) { fx.setReverbDamping (0.9f); });
+
+            compareFxForwarder ("setReverbWetLevel",
+                [] (berlin::SynthEngine& e)  { e.setReverbWetLevel (0.7f); },
+                [] (berlin::SynthEffects& fx) { fx.setReverbWetLevel (0.7f); });
+
+            compareFxForwarder ("setReverbDryLevel",
+                [] (berlin::SynthEngine& e)  { e.setReverbDryLevel (0.4f); },
+                [] (berlin::SynthEffects& fx) { fx.setReverbDryLevel (0.4f); });
         }
     }
 };

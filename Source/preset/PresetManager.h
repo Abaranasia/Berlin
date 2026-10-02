@@ -14,16 +14,20 @@
    see design.md's Verified Findings table).
 
    Schema (Decision 3): root element "BerlinPreset" carries a schemaVersion
-   attribute and a "name" attribute; two child sections, "Synth" (the 11 live
-   parameters) and "Generation" (the seed, plus - since schema v2,
-   scale-aware-generation - scaleType/rootPitchClass/rangeLow/rangeHigh). A
+   attribute and a "name" attribute; child sections "Synth" (the 11 live
+   parameters, plus - since schema v3, tempo-delay-ui - the 8 effects fields
+   and delaySynced/delayDivision), "Generation" (the seed, plus - since
+   schema v2, scale-aware-generation - scaleType/rootPitchClass/rangeLow/
+   rangeHigh), and "Transport" (schema v3: bpm - a Preset-level field, not a
+   SynthPatch one, hence its own sibling node rather than joining "Synth"). A
    version newer than kSchemaVersion is rejected (unsupportedVersion, unknown
    future semantics unguessable); a version older than kSchemaVersion is
    accepted with any field the older schema didn't have filled from a
-   documented default - kDefaultPatch for Synth fields (policy only -
-   unreachable at v1 today), and minor/C/36-72 for a v1 file's absent
-   scaleType/rootPitchClass/rangeLow/rangeHigh (the first real exercise of
-   this migration path, scale-aware-generation design.md).
+   documented default - kDefaultPatch for Synth fields (the 8 effects fields'
+   first real exercise of this migration path, tempo-delay-ui design.md), and
+   minor/C/36-72 for a v1 file's absent scaleType/rootPitchClass/rangeLow/
+   rangeHigh, and kDefaultBpm/Free/quarter for a pre-v3 file's absent
+   bpm/delaySynced/delayDivision.
 
    Malformed input (Decision 4): structural defects (not the right root
    element, missing/unparseable schemaVersion, a missing required section or
@@ -53,7 +57,7 @@ namespace berlin
 class PresetManager
 {
 public:
-    static constexpr int kSchemaVersion = 2;
+    static constexpr int kSchemaVersion = 3;
 
     explicit PresetManager (juce::File presetDirectoryToUse = defaultPresetDirectory());
 
