@@ -92,6 +92,24 @@ public:
     // delete its copy/move ctors.
     void setBpm (double newBpm) noexcept;
 
+    // MESSAGE THREAD ONLY. Relaxed store into playRequested (ui-engine-api
+    // design.md D1/D2); mirrors setBpm's handoff precedent above. Adopted at
+    // the top of the NEXT process() call, after the pendingBpm adopt and
+    // before countBoundaries, ONLY ON A TRANSITION: a stop is adopted iff
+    // !playRequested && transport.isRunning() (emits a note-off for any
+    // sounding note through the normal event path, THEN clears pendingNote);
+    // a start is adopted iff playRequested && !transport.isRunning(). This
+    // is why a direct stop()/start() call (no setPlaying request) is still
+    // safe: it also stores playRequested (D2), so the SAME call already
+    // matches transport's new running state and process() sees no
+    // transition to (re)adopt.
+    void setPlaying (bool shouldPlay) noexcept;
+
+    // ANY THREAD, relaxed load. Returns the REQUESTED state (D3), not the
+    // audio-thread-adopted one, so a UI reads the correct value even when no
+    // audio callback is currently running.
+    bool isPlayRequested() const noexcept;
+
     void process (int numSamples, StepEventBuffer& out) noexcept;   // AUDIO THREAD, RT-safe
 
     // Clears `out`, then pushes at most one StepEvent { 0, pendingStep, pendingNote, false }
@@ -118,6 +136,7 @@ private:
     std::atomic<int> playhead { 0 };
     std::atomic<int> loopCount { 0 };
     std::atomic<double> pendingBpm;   // initialised in the constructor body from transport.getBpm()
+    std::atomic<bool> playRequested;  // initialised in the constructor body from transport.isRunning() (D2)
 };
 
 } // namespace berlin

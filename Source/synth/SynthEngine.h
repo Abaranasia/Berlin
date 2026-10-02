@@ -59,6 +59,12 @@
 namespace berlin
 {
 
+// ui-engine-api design.md D5: duration of the master-level linear smoother
+// (SynthEngine::prepare's masterGain.reset) - single named source of truth so
+// SynthEngineTests.cpp's independent oracle derives its sample count from the
+// SAME value rather than duplicating the bare 0.05 (followup-fixes review).
+inline constexpr double kMasterLevelRampSeconds = 0.05;
+
 class SynthEngine
 {
 public:
@@ -76,6 +82,15 @@ public:
     // Message thread -> atomic.
     void setEnabled (bool shouldBeEnabled) noexcept;
     void setEffectsEnabled (bool shouldBeEnabled) noexcept;
+    bool isEnabled() const noexcept;
+    bool isEffectsEnabled() const noexcept;
+
+    // ui-engine-api design.md D5: master output level, clamped to
+    // [kMinOutputLevel, kMaxOutputLevel], applied at the terminal mix via a
+    // 50 ms linear smoother so changes never click or drop out. Message
+    // thread -> atomic store; audio-thread read + smoothing in render().
+    void  setMasterLevel (float newLevel) noexcept;
+    float getMasterLevel() const noexcept;
 
     // Message thread -> voice's atomic Parameters (parameter-controls Phase 9).
     // Thin one-line forwarders mirroring SynthVoice's setter signatures verbatim,
@@ -115,6 +130,10 @@ private:
     bool wasEffectsEnabled = false;   // audio-thread-only edge latch (Decision 6, FX half)
 
     int currentNote = -1;     // note last turned on; note-off is matched against this (Decision 7)
+
+    // ui-engine-api design.md D5.
+    std::atomic<float> masterLevel { kDefaultPatch.outputLevel };
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> masterGain;
 };
 
 } // namespace berlin

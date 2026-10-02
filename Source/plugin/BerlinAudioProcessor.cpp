@@ -148,9 +148,18 @@ void BerlinAudioProcessor::setStateInformation (const void* data, int sizeInByte
         Preset preset;
         if (PresetManager::fromValueTree (juce::ValueTree::fromXml (*xml), preset) == PresetResult::ok)
         {
+            // setBpm() BEFORE setPatch() (ui-engine-api followup-fixes review,
+            // Fix 1): setPatch()'s own applySyncedDelayTime() call must see the
+            // RESTORED bpm already in currentBpm, so a synced delay time is
+            // computed ONCE, at the correct bpm, for the restored patch - not
+            // computed first at the OLD bpm (then immediately overwritten).
+            // setBpm()'s own applySyncedDelayTime() call runs first against the
+            // soon-to-be-replaced OLD patch; that transient push is harmless,
+            // since setPatch() below fully replaces currentPatch and re-pushes
+            // every field anyway.
+            setBpm (preset.bpm);   // schema v3 (tempo-delay-ui, design.md D7)
             setPatch (preset.patch);
             setSeed (preset.seed);
-            setBpm (preset.bpm);   // schema v3 (tempo-delay-ui, design.md D7)
 
             generationParams.scaleType      = preset.scaleType;
             generationParams.rootPitchClass = preset.rootPitchClass;
@@ -166,6 +175,16 @@ void BerlinAudioProcessor::setStateInformation (const void* data, int sizeInByte
 //==============================================================================
 bool BerlinAudioProcessor::regenerate (bool drawNewSeed)
 {
+    // ui-engine-api design.md D14: busy is checked at the ROOT, before any
+    // state (seed included) is touched. Previously a busy regenerate(true)
+    // would still draw and keep a new currentSeed before discovering the
+    // publish was rejected, leaving the seed out of sync with the sequence
+    // actually playing (same latent flaw in the old editor's Randomize
+    // button). publishSequence's own busy check below stays as a defensive
+    // second guard.
+    if (player.isPublishPending())
+        return false;
+
     if (drawNewSeed && ! generationParams.lockSeed)
         currentSeed = juce::Random::getSystemRandom().nextInt64();
 
@@ -223,9 +242,12 @@ PresetResult BerlinAudioProcessor::loadPreset (const juce::String& name)
     if (result != PresetResult::ok)
         return result;   // synth and sequence left untouched
 
+    // setBpm() BEFORE setPatch() (ui-engine-api followup-fixes review, Fix 1):
+    // see setStateInformation()'s identical-ordering comment above for the
+    // full rationale (synced delay time computed once, at the restored bpm).
+    setBpm (preset.bpm);   // schema v3 (tempo-delay-ui, design.md D7)
     setPatch (preset.patch);
     setSeed (preset.seed);
-    setBpm (preset.bpm);   // schema v3 (tempo-delay-ui, design.md D7)
 
     // Apply the 4 fields INDIVIDUALLY (design.md invariant) - a whole-struct
     // GenerationParams assignment would clobber the deliberately-unpersisted
@@ -267,6 +289,7 @@ MidiFileWriteResult BerlinAudioProcessor::exportMidiTo (const juce::File& destin
 void BerlinAudioProcessor::setPatch (const SynthPatch& patch)
 {
     currentPatch = patch;
+    applySyncedDelayTime();   // ui-engine-api design.md D7: before pushPatchToSynth(), so the pushed value is current
     pushPatchToSynth();
 }
 
@@ -296,6 +319,11 @@ void BerlinAudioProcessor::pushPatchToSynth()
     synth.setReverbDamping    (currentPatch.reverbDamping);
     synth.setReverbWetLevel   (currentPatch.reverbWetLevel);
     synth.setReverbDryLevel   (currentPatch.reverbDryLevel);
+
+    // ui-engine-api design.md D6: makes outputLevel live for setPatch,
+    // loadPreset, setStateInformation, and prepareToPlay (all funnel through
+    // pushPatchToSynth()).
+    synth.setMasterLevel (currentPatch.outputLevel);
 }
 
 void BerlinAudioProcessor::setBpm (double newBpm)
@@ -311,6 +339,28 @@ void BerlinAudioProcessor::setBpm (double newBpm)
     // missing it (followup-fixes review, Fix 1).
     currentBpm = (newBpm == newBpm) ? std::clamp (newBpm, kMinBpm, kMaxBpm) : kMinBpm;
     player.setBpm (currentBpm);
+
+    // ui-engine-api design.md D7: recompute synced delay time at the NEW bpm,
+    // then push it straight to the synth (Free mode: applySyncedDelayTime()
+    // is a no-op, so this line is a harmless re-forward of the existing value).
+    applySyncedDelayTime();
+    synth.setDelayTimeSeconds (currentPatch.delayTimeSeconds);
+}
+
+void BerlinAudioProcessor::applySyncedDelayTime()
+{
+    if (! currentPatch.delaySynced)
+        return;
+
+    currentPatch.delayTimeSeconds = clampParameter (
+        static_cast<float> (delaySecondsFor (currentBpm, currentPatch.delayDivision)),
+        kMinDelayTimeSeconds, kMaxDelaySeconds);
+}
+
+void BerlinAudioProcessor::setMasterLevel (float newLevel)
+{
+    currentPatch.outputLevel = clampParameter (newLevel, kMinOutputLevel, kMaxOutputLevel);
+    synth.setMasterLevel (currentPatch.outputLevel);
 }
 
 void BerlinAudioProcessor::setAutoEvolveEnabled (bool shouldBeEnabled)

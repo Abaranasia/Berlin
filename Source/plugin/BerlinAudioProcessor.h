@@ -55,6 +55,7 @@
 #include <juce_events/juce_events.h>
 
 #include "core/Sequence.h"
+#include "core/TempoSync.h"
 #include "generation/AutoEvolveSchedule.h"
 #include "generation/GenerationParams.h"
 #include "midi/MidiChannel.h"
@@ -130,6 +131,24 @@ public:
     juce::int64 getSeed() const { return currentSeed; }
     void setSynthEnabled (bool shouldBeEnabled) { synth.setEnabled (shouldBeEnabled); }
     void setEffectsEnabled (bool shouldBeEnabled) { synth.setEffectsEnabled (shouldBeEnabled); }
+    bool isSynthEnabled() const { return synth.isEnabled(); }
+    bool areEffectsEnabled() const { return synth.isEffectsEnabled(); }
+
+    // ui-engine-api design.md: play/stop request (D1-D4, mirrors pendingBpm),
+    // adopted by SequencePlayer on the audio thread; isPlaying() returns the
+    // REQUESTED state (D3), correct even when no audio callback is running.
+    void setPlaying (bool shouldPlay) { player.setPlaying (shouldPlay); }
+    bool isPlaying() const { return player.isPlayRequested(); }
+    int  getPlayheadStep() const { return player.getPlayheadStep(); }
+    int  getLoopCount() const { return player.getLoopCount(); }
+
+    // ui-engine-api design.md D6: master output level - one setter updates
+    // BOTH currentPatch.outputLevel and the SynthEngine atomic (single
+    // source of truth, mirrors the currentBpm pattern). getMasterLevel()
+    // reads back currentPatch.outputLevel, so it agrees with getPatch()
+    // without an extra round trip through the synth.
+    void  setMasterLevel (float newLevel);
+    float getMasterLevel() const { return currentPatch.outputLevel; }
 
     // currentBpm is the SINGLE SOURCE OF TRUTH for tempo (design.md's
     // Ownership note): the editor is a view, Transport is an audio-thread-
@@ -141,7 +160,9 @@ public:
     void   setBpm (double newBpm);
     double getBpm() const { return currentBpm; }
     void setAutoEvolveEnabled (bool shouldBeEnabled);
+    bool isAutoEvolveEnabled() const { return autoEvolveEnabled; }
     void setAutoEvolveRate (int loops) { autoEvolveRate = loops; }
+    int  getAutoEvolveRate() const { return autoEvolveRate; }
     int getMutationCount() const { return mutationCount; }
     const Sequence& getCurrentSequence() const { return currentSequence; }
 
@@ -151,6 +172,13 @@ public:
 private:
     void timerCallback() override;
     void pushPatchToSynth();
+
+    // ui-engine-api design.md D7: when currentPatch.delaySynced is true, sets
+    // currentPatch.delayTimeSeconds from delaySecondsFor(currentBpm,
+    // delayDivision), clamped. Called from setPatch() (before
+    // pushPatchToSynth()) and from setBpm() (then synth.setDelayTimeSeconds).
+    // Free mode (delaySynced == false) is a no-op.
+    void applySyncedDelayTime();
 
     // kDefaultBpm/kMinBpm/kMaxBpm now live in SynthPatch.h (design.md D7,
     // Phase 7's canonical home) - referenced unqualified below since this

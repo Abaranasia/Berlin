@@ -200,6 +200,99 @@ public:
 
             expectEquals (noteOns, noteOffs);
         }
+
+        // ---- ui-engine-api Phase 1 (D1-D4): transition-only play/stop
+        // adoption via setPlaying()/isPlayRequested(). RED first: neither
+        // member exists yet, so this suite must fail to compile until 1.6/1.7
+        // add them.
+
+        beginTest ("setPlaying(false) adopted mid-step 5 emits exactly one note-off at offset 0, playhead frozen");
+        {
+            // 8 steps, all active, one note per step (sr=4, bpm=60, spb=1 -> samplesPerStep==4.0).
+            auto sequence = makeSequence ({ { 60, true }, { 61, true }, { 62, true }, { 63, true },
+                                             { 64, true }, { 65, true }, { 66, true }, { 67, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+
+            for (int i = 0; i < 11; ++i)       // 11 x 2-sample blocks: samples [0,22) -> step 5's
+                player.process (2, buffer);    // note-on emitted at boundary 20; position now 22 (2 samples into step 5)
+
+            expectEquals (player.getPlayheadStep(), 5);
+
+            player.setPlaying (false);
+
+            player.process (2, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 5, 65, false });
+
+            expectEquals (player.getPlayheadStep(), 5);   // frozen: no boundary adopted this block
+        }
+
+        beginTest ("isPlayRequested() reflects the requested state immediately, zero process() calls made");
+        {
+            berlin::Sequence sequence (1);
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+
+            expect (! player.isPlayRequested());   // ctor-initialised from transport.isRunning() == false
+
+            player.setPlaying (true);
+            expect (player.isPlayRequested());       // reflects the request with zero process() calls made
+        }
+
+        beginTest ("a direct stop() (no setPlaying request) still leaves pendingNote set; the following process() emits nothing");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);   // boundary 0: step 0 note-on 60, now sounding
+
+            player.stop();   // direct stop: transport stops synchronously; pendingNote untouched by this call
+
+            player.process (4, buffer);   // no transition for the adopt logic to detect (transport already stopped)
+            expectEquals (buffer.size(), 0);
+
+            // The pending note-off is still recoverable via the existing flush seam.
+            expect (player.flushPendingNoteOff (buffer));
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, false });
+        }
+
+        beginTest ("restart resumes at the next step boundary: setPlaying(true) after the stop emits exactly one event, step 6's note-on, no step 5 or step 0");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 61, true }, { 62, true }, { 63, true },
+                                             { 64, true }, { 65, true }, { 66, true }, { 67, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+
+            for (int i = 0; i < 11; ++i)       // samples [0,22): step 5's note-on emitted at boundary 20
+                player.process (2, buffer);
+
+            player.setPlaying (false);
+            player.process (2, buffer);        // adopts the stop: one note-off for step 5, playhead frozen at 5
+
+            player.setPlaying (true);
+            player.process (4, buffer);        // adopts the restart: resumes at step 6's original grid position
+
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 2, 6, 66, true });   // offset 2 == remainder of step 5
+
+            for (int i = 0; i < buffer.size(); ++i)
+            {
+                expect (buffer[i].stepIndex != 5);
+                expect (buffer[i].stepIndex != 0);
+            }
+
+            expectEquals (player.getPlayheadStep(), 6);
+        }
     }
 };
 

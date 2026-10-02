@@ -639,6 +639,250 @@ public:
             expect (loader.loadPreset ("BpmPreset") == berlin::PresetResult::ok);
             expectEquals (loader.getBpm(), 150.0);
         }
+
+        // ---- ui-engine-api Phase 4 (new API, D6/D7/D14). RED first: none of
+        // setPlaying/isPlaying/getPlayheadStep/getLoopCount/isSynthEnabled/
+        // areEffectsEnabled/setMasterLevel/getMasterLevel/isAutoEvolveEnabled/
+        // getAutoEvolveRate exist on BerlinAudioProcessor yet, so this suite
+        // must fail to compile until Phase 4's production code adds them.
+
+        beginTest ("setPlaying(false) adopts on the next processBlock: emits a note-off with no later note-on; isPlaying() reports the requested state before any processBlock");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 512);
+
+            juce::AudioBuffer<float> buffer (2, 512);
+            juce::MidiBuffer firstBlockMidi;
+            processor.processBlock (buffer, firstBlockMidi);   // step 0's note-on is guaranteed active -> now sounding
+
+            processor.setPlaying (false);
+            expect (! processor.isPlaying());   // requested state visible before the next processBlock runs
+
+            juce::MidiBuffer stopBlockMidi;
+            processor.processBlock (buffer, stopBlockMidi);
+
+            bool sawNoteOff = false, sawNoteOn = false;
+            for (const auto metadata : stopBlockMidi)
+            {
+                const auto message = metadata.getMessage();
+                if (message.isNoteOn())  sawNoteOn = true;
+                if (message.isNoteOff()) sawNoteOff = true;
+            }
+            expect (sawNoteOff);
+            expect (! sawNoteOn);
+
+            // Playback stays stopped: a further block produces no additional events.
+            juce::MidiBuffer thirdBlockMidi;
+            processor.processBlock (buffer, thirdBlockMidi);
+            expectEquals (thirdBlockMidi.getNumEvents(), 0);
+        }
+
+        beginTest ("setMasterLevel(0) keeps MIDI output identical to a run at the default level (audio-only effect)");
+        {
+            berlin::BerlinAudioProcessor zeroLevel;
+            zeroLevel.setMasterLevel (0.0f);
+            zeroLevel.prepareToPlay (44100.0, 512);
+
+            berlin::BerlinAudioProcessor defaultLevel;
+            defaultLevel.prepareToPlay (44100.0, 512);
+
+            juce::AudioBuffer<float> zeroBuffer (2, 512), defaultBuffer (2, 512);
+            juce::MidiBuffer zeroMidi, defaultMidi;
+            zeroLevel.processBlock (zeroBuffer, zeroMidi);
+            defaultLevel.processBlock (defaultBuffer, defaultMidi);
+
+            expectEquals (zeroMidi.getNumEvents(), defaultMidi.getNumEvents());
+
+            auto zeroIt = zeroMidi.begin();
+            auto defaultIt = defaultMidi.begin();
+            for (; zeroIt != zeroMidi.end() && defaultIt != defaultMidi.end(); ++zeroIt, ++defaultIt)
+            {
+                expectEquals ((*zeroIt).samplePosition, (*defaultIt).samplePosition);
+                expect ((*zeroIt).getMessage().isNoteOnOrOff() == (*defaultIt).getMessage().isNoteOnOrOff());
+                expectEquals ((*zeroIt).getMessage().getNoteNumber(), (*defaultIt).getMessage().getNoteNumber());
+            }
+
+            bool allNearZero = true;
+            for (int ch = 0; ch < 2; ++ch)
+                for (int s = 0; s < 512; ++s)
+                    if (std::abs (zeroBuffer.getSample (ch, s)) > 1.0e-6f)
+                        allNearZero = false;
+            expect (allNearZero, "master level 0 did not silence the audio output");
+        }
+
+        beginTest ("setPatch/loadPreset/setStateInformation apply outputLevel live (getMasterLevel reflects the new patch, no extra call)");
+        {
+            berlin::BerlinAudioProcessor viaSetPatch;
+            berlin::SynthPatch patch = viaSetPatch.getPatch();
+            patch.outputLevel = 0.3f;
+            viaSetPatch.setPatch (patch);
+            expectEquals (viaSetPatch.getMasterLevel(), 0.3f);
+
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor saver (temp.dir);
+            berlin::SynthPatch savedPatch = saver.getPatch();
+            savedPatch.outputLevel = 0.42f;
+            saver.setPatch (savedPatch);
+            expect (saver.save ("LevelPreset") == berlin::PresetResult::ok);
+
+            berlin::BerlinAudioProcessor loader (temp.dir);
+            expect (loader.loadPreset ("LevelPreset") == berlin::PresetResult::ok);
+            expectEquals (loader.getMasterLevel(), 0.42f);
+
+            berlin::BerlinAudioProcessor stateSource;
+            berlin::SynthPatch statePatch = stateSource.getPatch();
+            statePatch.outputLevel = 0.15f;
+            stateSource.setPatch (statePatch);
+
+            juce::MemoryBlock state;
+            stateSource.getStateInformation (state);
+
+            berlin::BerlinAudioProcessor stateDestination;
+            stateDestination.setStateInformation (state.getData(), (int) state.getSize());
+            expectEquals (stateDestination.getMasterLevel(), 0.15f);
+        }
+
+        beginTest ("synced delay time is derived on setPatch/setBpm when delaySynced; Free mode untouched; a pre-derived patch is a no-op");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.setBpm (120.0);
+
+            berlin::SynthPatch patch = processor.getPatch();
+            patch.delaySynced      = true;
+            patch.delayDivision    = berlin::SyncDivision::quarter;
+            patch.delayTimeSeconds = 999.0f;   // deliberately stale, must be overwritten
+            processor.setPatch (patch);
+            expectWithinAbsoluteError (processor.getPatch().delayTimeSeconds, 0.5f, 1.0e-6f);   // quarter @ 120bpm
+
+            processor.setBpm (150.0);   // recomputes again while already synced
+            expectWithinAbsoluteError (processor.getPatch().delayTimeSeconds, 0.4f, 1.0e-6f);   // quarter @ 150bpm
+
+            berlin::SynthPatch freePatch = processor.getPatch();
+            freePatch.delaySynced      = false;
+            freePatch.delayTimeSeconds = 0.777f;
+            processor.setPatch (freePatch);
+            processor.setBpm (90.0);   // Free mode: untouched by setBpm
+            expectEquals (processor.getPatch().delayTimeSeconds, 0.777f);
+
+            processor.setBpm (120.0);
+            berlin::SynthPatch preDerived = processor.getPatch();
+            preDerived.delaySynced      = true;
+            preDerived.delayDivision    = berlin::SyncDivision::quarter;
+            preDerived.delayTimeSeconds = 0.5f;   // already correct for 120bpm/quarter
+            processor.setPatch (preDerived);
+            expectEquals (processor.getPatch().delayTimeSeconds, 0.5f);   // no-op: unchanged
+        }
+
+        beginTest ("loadPreset applies synced delay time derivation at the FINAL restored bpm, not a transient pre-load one");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor saver (temp.dir);
+            saver.setBpm (120.0);
+            berlin::SynthPatch savedPatch = saver.getPatch();
+            savedPatch.delaySynced   = true;
+            savedPatch.delayDivision = berlin::SyncDivision::quarter;
+            saver.setPatch (savedPatch);
+            saver.setBpm (150.0);   // saved state: bpm 150, delayTimeSeconds already derived to 0.4
+
+            expect (saver.save ("SyncedPreset") == berlin::PresetResult::ok);
+
+            berlin::BerlinAudioProcessor loader (temp.dir);
+            loader.setBpm (200.0);   // deliberately different pre-load bpm
+            expect (loader.loadPreset ("SyncedPreset") == berlin::PresetResult::ok);
+
+            expectWithinAbsoluteError (loader.getBpm(), 150.0, 1.0e-9);
+            expectWithinAbsoluteError (loader.getPatch().delayTimeSeconds, 0.4f, 1.0e-6f);
+        }
+
+        beginTest ("setStateInformation applies synced delay time derivation at the FINAL restored bpm, not a transient pre-restore one");
+        {
+            berlin::BerlinAudioProcessor source;
+            source.setBpm (120.0);
+            berlin::SynthPatch savedPatch = source.getPatch();
+            savedPatch.delaySynced   = true;
+            savedPatch.delayDivision = berlin::SyncDivision::quarter;
+            source.setPatch (savedPatch);
+            source.setBpm (150.0);   // saved state: bpm 150, delayTimeSeconds already derived to 0.4
+
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+
+            berlin::BerlinAudioProcessor destination;
+            destination.setBpm (200.0);   // deliberately different pre-restore bpm
+            destination.setStateInformation (state.getData(), (int) state.getSize());
+
+            expectWithinAbsoluteError (destination.getBpm(), 150.0, 1.0e-9);
+            expectWithinAbsoluteError (destination.getPatch().delayTimeSeconds, 0.4f, 1.0e-6f);
+
+            // NOTE (followup-fixes review, Fix 1): this asserts the FINAL restored
+            // state only. The actual review finding - setPatch() previously running
+            // BEFORE setBpm() inside setStateInformation()/loadPreset(), so
+            // applySyncedDelayTime() first computed (and pushed to SynthEngine) a
+            // delay time at the OLD bpm paired with the NEW patch's division before
+            // being immediately corrected - produces a transient wrong value pushed
+            // to SynthEngine's delay effect, not an observable difference in
+            // currentPatch/getPatch() here. SynthEngine/SynthEffects expose no
+            // getter for the live delay-time value (setters only), so that
+            // transient push is not independently observable without adding
+            // production API solely for this test; this suite therefore pins the
+            // correct END STATE instead, which stays correct before and after the
+            // setBpm()/setPatch() reordering fix.
+        }
+
+        beginTest ("D14: busy regenerate(true) must not draw a new seed before the busy check; leaves seed/sequence/mutationCount unchanged; busy mutate() likewise");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.setSeed (999);
+            expect (processor.regenerate (false));   // first publish succeeds, now pending/unadopted
+
+            const auto seedBefore = processor.getSeed();
+            const auto sequenceBefore = processor.getCurrentSequence();
+            const auto mutationCountBefore = processor.getMutationCount();
+
+            expect (! processor.regenerate (true));   // busy: must NOT draw a new seed before returning false
+            expect (processor.getSeed() == seedBefore);
+            expect (processor.getCurrentSequence() == sequenceBefore);
+            expectEquals (processor.getMutationCount(), mutationCountBefore);
+
+            expect (! processor.mutate());
+            expect (processor.getSeed() == seedBefore);
+            expect (processor.getCurrentSequence() == sequenceBefore);
+            expectEquals (processor.getMutationCount(), mutationCountBefore);
+        }
+
+        beginTest ("new getters/setters round-trip: isPlaying, getPlayheadStep, getLoopCount, isSynthEnabled, areEffectsEnabled, isAutoEvolveEnabled, getAutoEvolveRate, getMasterLevel/setMasterLevel");
+        {
+            berlin::BerlinAudioProcessor processor;
+
+            expect (processor.isPlaying());   // the ctor starts the player
+
+            processor.setPlaying (false);
+            expect (! processor.isPlaying());
+
+            expectEquals (processor.getPlayheadStep(), 0);
+            expectEquals (processor.getLoopCount(), 0);
+
+            expect (processor.isSynthEnabled());
+            expect (! processor.areEffectsEnabled());
+
+            processor.setSynthEnabled (false);
+            expect (! processor.isSynthEnabled());
+            processor.setEffectsEnabled (true);
+            expect (processor.areEffectsEnabled());
+
+            expect (! processor.isAutoEvolveEnabled());
+            processor.setAutoEvolveEnabled (true);
+            expect (processor.isAutoEvolveEnabled());
+            processor.setAutoEvolveEnabled (false);   // stop the Timer before the processor is destroyed
+
+            processor.setAutoEvolveRate (8);
+            expectEquals (processor.getAutoEvolveRate(), 8);
+
+            expectEquals (processor.getMasterLevel(), 0.8f);   // default
+            processor.setMasterLevel (0.3f);
+            expectEquals (processor.getMasterLevel(), 0.3f);
+            expectEquals (processor.getPatch().outputLevel, 0.3f);
+        }
     }
 };
 

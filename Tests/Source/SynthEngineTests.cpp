@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <vector>
 
 #include <juce_core/juce_core.h>
@@ -195,6 +196,7 @@ public:
         beginTest ("effectsEnabled=false (default) produces bit-identical dry output vs. the voice's own render");
         {
             berlin::SynthEngine engine;
+            engine.setMasterLevel (1.0f);   // isolate voice/effects passthrough from the ui-engine-api master level (D5)
             engine.prepare (makeSpec (sampleRate, 512));   // effectsEnabled defaults to false
 
             berlin::SynthVoice voice;
@@ -321,6 +323,7 @@ public:
                                           std::function<void (berlin::SynthVoice&)> applyToVoice)
             {
                 berlin::SynthEngine engine;
+                engine.setMasterLevel (1.0f);   // isolate the forwarder under test from the ui-engine-api master level (D5)
                 engine.prepare (makeSpec (sampleRate, 512));
                 applyToEngine (engine);
 
@@ -399,6 +402,7 @@ public:
                                             std::function<void (berlin::SynthEffects&)> applyToEffects)
             {
                 berlin::SynthEngine engine;
+                engine.setMasterLevel (1.0f);   // isolate the forwarder under test from the ui-engine-api master level (D5)
                 engine.prepare (makeSpec (sampleRate, 512));
                 engine.setEffectsEnabled (true);
                 applyToEngine (engine);
@@ -467,6 +471,139 @@ public:
             compareFxForwarder ("setReverbDryLevel",
                 [] (berlin::SynthEngine& e)  { e.setReverbDryLevel (0.4f); },
                 [] (berlin::SynthEffects& fx) { fx.setReverbDryLevel (0.4f); });
+        }
+
+        // ---- ui-engine-api Phase 2 (D5): smoothed master output level +
+        // toggle getters. RED first: setMasterLevel/getMasterLevel/isEnabled/
+        // isEffectsEnabled do not exist yet, so this suite must fail to
+        // compile until 2.6/2.7 add them.
+
+        beginTest ("default master level is 0.8 on SynthPatch and a fresh SynthEngine");
+        {
+            expectEquals (berlin::SynthPatch{}.outputLevel, 0.8f);
+
+            berlin::SynthEngine engine;
+            expectEquals (engine.getMasterLevel(), 0.8f);
+        }
+
+        beginTest ("master level 0.5 set before prepare() renders exactly 0.5x of a reference engine at full level");
+        {
+            berlin::SynthEngine half;
+            half.setMasterLevel (0.5f);
+            half.prepare (makeSpec (sampleRate, 512));
+
+            berlin::SynthEngine reference;
+            reference.setMasterLevel (1.0f);
+            reference.prepare (makeSpec (sampleRate, 512));
+
+            berlin::StepEventBuffer events;
+            events.push ({ 0, 0, 60, true });
+
+            juce::AudioBuffer<float> halfOut (2, 256);
+            halfOut.clear();
+            half.render (events, halfOut, 0, 256);
+
+            juce::AudioBuffer<float> referenceOut (2, 256);
+            referenceOut.clear();
+            reference.render (events, referenceOut, 0, 256);
+
+            bool anyNonZero = false;
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                for (int i = 0; i < 256; ++i)
+                {
+                    if (referenceOut.getSample (ch, i) != 0.0f)
+                        anyNonZero = true;
+                    expectEquals (halfOut.getSample (ch, i), referenceOut.getSample (ch, i) * 0.5f);
+                }
+            }
+            expect (anyNonZero);   // sanity: the reference actually produced sound
+        }
+
+        beginTest ("master level 1->0 ramps linearly over 50ms (2205-step linear smoother), reaching exact zero gain");
+        {
+            constexpr int rampSamples = static_cast<int> (sampleRate * berlin::kMasterLevelRampSeconds);   // 50ms @ 44100Hz
+            constexpr int totalSamples = rampSamples + 200;
+
+            berlin::SynthEngine reference;
+            reference.setMasterLevel (1.0f);
+            reference.prepare (makeSpec (sampleRate, totalSamples));
+
+            berlin::StepEventBuffer events;
+            events.push ({ 0, 0, 60, true });   // sustained note throughout
+
+            juce::AudioBuffer<float> referenceOut (2, totalSamples);
+            referenceOut.clear();
+            reference.render (events, referenceOut, 0, totalSamples);
+
+            berlin::SynthEngine engine;
+            engine.setMasterLevel (1.0f);
+            engine.prepare (makeSpec (sampleRate, totalSamples));
+            engine.setMasterLevel (0.0f);   // ramp starts at the NEXT render() call
+
+            juce::AudioBuffer<float> engineOut (2, totalSamples);
+            engineOut.clear();
+            engine.render (events, engineOut, 0, totalSamples);
+
+            // Independent oracle: the exact same SmoothedValue algorithm (reset
+            // 50ms @ 44.1kHz, 1.0 -> 0.0), driven sample-by-sample, rather than a
+            // hand-derived approximate formula - avoids coupling this test to
+            // JUCE's internal step-counting off-by-one semantics.
+            juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> expectedGain;
+            expectedGain.reset (sampleRate, berlin::kMasterLevelRampSeconds);
+            expectedGain.setCurrentAndTargetValue (1.0f);
+            expectedGain.setTargetValue (0.0f);
+
+            bool sawExactZero = false;
+            bool ratioStartsNearOne = false;
+
+            for (int i = 0; i < totalSamples; ++i)
+            {
+                const float gain = expectedGain.getNextValue();
+                const float expected = referenceOut.getSample (0, i) * gain;
+                expectWithinAbsoluteError (engineOut.getSample (0, i), expected, 1.0e-6f);
+
+                if (gain == 0.0f)
+                    sawExactZero = true;
+                if (i == 0 && gain > 0.999f)
+                    ratioStartsNearOne = true;
+            }
+
+            expect (ratioStartsNearOne, "gain did not start near 1.0 at sample 0");
+            expect (sawExactZero, "ramp never reached an exact zero gain within rampSamples + 200 samples");
+
+            // The ramp must be exhausted well before the end of the window (a
+            // 50ms ramp inside a ramp-plus-200-sample window), not merely at
+            // the very last sample.
+            expectEquals (expectedGain.getNextValue(), 0.0f);
+        }
+
+        beginTest ("setMasterLevel clamps out-of-range finite values and NaN");
+        {
+            berlin::SynthEngine engine;
+            engine.prepare (makeSpec (sampleRate, 512));
+
+            engine.setMasterLevel (2.5f);
+            expectEquals (engine.getMasterLevel(), 1.0f);
+
+            engine.setMasterLevel (-1.0f);
+            expectEquals (engine.getMasterLevel(), 0.0f);
+
+            engine.setMasterLevel (std::numeric_limits<float>::quiet_NaN());
+            expectEquals (engine.getMasterLevel(), 0.0f);
+        }
+
+        beginTest ("isEnabled()/isEffectsEnabled() getters reflect setEnabled()/setEffectsEnabled()");
+        {
+            berlin::SynthEngine engine;
+            expect (engine.isEnabled());
+            expect (! engine.isEffectsEnabled());
+
+            engine.setEnabled (false);
+            expect (! engine.isEnabled());
+
+            engine.setEffectsEnabled (true);
+            expect (engine.isEffectsEnabled());
         }
     }
 };
