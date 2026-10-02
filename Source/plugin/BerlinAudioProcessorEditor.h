@@ -88,6 +88,12 @@ private:
     // inverse of Sync mode) to every widget in delayReverbWidgets.
     void updateDelayReverbEnablement();
 
+    // delay-time-recommendation spec (Slice 3/5): refreshes
+    // delayRecommendationLabel from berlin::formatDelayRecommendations
+    // (owner.getBpm()). Called after every event that can change the
+    // displayed BPM - never on a Timer (spec Req 3).
+    void updateDelayRecommendations();
+
     void         savePreset();
     void         writePresetFile (const juce::String& name);
     void         loadSelectedPreset();
@@ -120,6 +126,11 @@ private:
     juce::Slider       delayFeedbackSlider;
     juce::Label        delayMixLabel;
     juce::Slider       delayMixSlider;
+
+    // delay-time-recommendation spec (Slice 3/5): read-only display of every
+    // division's delay time at the current BPM. NOT in delayReverbWidgets -
+    // stays visible regardless of fxToggle/Sync-Free state (spec Req 4).
+    juce::Label        delayRecommendationLabel;
 
     juce::Label  reverbSectionLabel;
     juce::Label  reverbRoomLabel;

@@ -117,6 +117,84 @@ public:
                 expect (berlin::delaySecondsFor (berlin::kMinBpm, division) < static_cast<double> (berlin::kMaxDelaySeconds));
             }
         }
+
+        // ---- delay-time-recommendation spec (Slice 3/5, Req 1-2): display
+        // helpers layered on top of delaySecondsFor - JUCE-free, unit-testable. ----
+
+        beginTest ("delayMillisecondsFor matches std::lround(delaySecondsFor(bpm, division) * 1000) at every division");
+        {
+            const double bpms[] { 160.0, 120.0, 240.0, 40.0 };
+
+            for (const double bpm : bpms)
+            {
+                for (int i = 0; i < berlin::kNumSyncDivisions; ++i)
+                {
+                    const auto division = static_cast<berlin::SyncDivision> (i);
+                    const int expected = static_cast<int> (std::lround (berlin::delaySecondsFor (bpm, division) * 1000.0));
+                    expectEquals (berlin::delayMillisecondsFor (bpm, division), expected);
+                }
+            }
+        }
+
+        beginTest ("delayMillisecondsFor exact values at 160 BPM (spec Req 2)");
+        {
+            const int expectedMs[] { 750, 375, 281, 188, 125, 94 };
+
+            for (int i = 0; i < berlin::kNumSyncDivisions; ++i)
+                expectEquals (berlin::delayMillisecondsFor (160.0, static_cast<berlin::SyncDivision> (i)), expectedMs[i]);
+        }
+
+        beginTest ("delayMillisecondsFor exact values at 120 BPM (spec Req 2)");
+        {
+            const int expectedMs[] { 1000, 500, 375, 250, 167, 125 };
+
+            for (int i = 0; i < berlin::kNumSyncDivisions; ++i)
+                expectEquals (berlin::delayMillisecondsFor (120.0, static_cast<berlin::SyncDivision> (i)), expectedMs[i]);
+        }
+
+        beginTest ("delayMillisecondsFor exact values at 240 BPM, the upper BPM bound (spec Req 2)");
+        {
+            const int expectedMs[] { 500, 250, 188, 125, 83, 63 };
+
+            for (int i = 0; i < berlin::kNumSyncDivisions; ++i)
+                expectEquals (berlin::delayMillisecondsFor (240.0, static_cast<berlin::SyncDivision> (i)), expectedMs[i]);
+        }
+
+        beginTest ("delayMillisecondsFor(40, half) stays expressed in milliseconds at or above 1000 ms");
+        {
+            expectEquals (berlin::delayMillisecondsFor (40.0, berlin::SyncDivision::half), 3000);
+        }
+
+        beginTest ("delayMillisecondsFor returns 0 for every division when bpm <= 0 (non-positive BPM guard)");
+        {
+            for (int i = 0; i < berlin::kNumSyncDivisions; ++i)
+            {
+                const auto division = static_cast<berlin::SyncDivision> (i);
+                expectEquals (berlin::delayMillisecondsFor (0.0, division), 0);
+                expectEquals (berlin::delayMillisecondsFor (-10.0, division), 0);
+            }
+        }
+
+        beginTest ("divisionLabelFor returns the 6 labels in enum order");
+        {
+            const char* const expectedLabels[] { "1/2", "1/4", "1/8.", "1/8", "1/8T", "1/16" };
+
+            for (int i = 0; i < berlin::kNumSyncDivisions; ++i)
+                expectEquals (juce::String (berlin::divisionLabelFor (static_cast<berlin::SyncDivision> (i))),
+                              juce::String (expectedLabels[i]));
+        }
+
+        beginTest ("formatDelayRecommendations(160) matches the exact spec string, enum order, \" | \" separator");
+        {
+            expectEquals (juce::String (berlin::formatDelayRecommendations (160.0)),
+                          juce::String ("1/2 750 ms | 1/4 375 ms | 1/8. 281 ms | 1/8 188 ms | 1/8T 125 ms | 1/16 94 ms"));
+        }
+
+        beginTest ("formatDelayRecommendations(40) keeps the >=1000ms division in milliseconds, no seconds unit");
+        {
+            expectEquals (juce::String (berlin::formatDelayRecommendations (40.0)),
+                          juce::String ("1/2 3000 ms | 1/4 1500 ms | 1/8. 1125 ms | 1/8 750 ms | 1/8T 500 ms | 1/16 375 ms"));
+        }
     }
 };
 

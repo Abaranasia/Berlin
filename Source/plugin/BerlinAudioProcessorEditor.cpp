@@ -30,12 +30,6 @@ namespace
     const char* const kScaleNames[] = { "Minor", "Major", "Dorian", "Phrygian", "Mixolydian", "Harmonic Minor" };
     const char* const kRootNames[]  = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 
-    // tempo-delay-ui Phase 10: UI display names for berlin::SyncDivision.
-    // Order MUST match SyncDivision's declaration order (TempoSync.h) - the
-    // SAME "name string, not a raw ordinal" precedent as kScaleNames/
-    // waveformNames() (PresetManager.cpp's divisionNames(), Phase 11).
-    const char* const kDivisionNames[] = { "1/2", "1/4", "1/8.", "1/8", "1/8T", "1/16" };
-
     juce::File defaultExportFile()
     {
         return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
@@ -92,8 +86,8 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     delayDivisionLabel.setJustificationType (juce::Justification::centredLeft);
 
     addAndMakeVisible (delayDivisionBox);
-    for (int i = 0; i < (int) (sizeof (kDivisionNames) / sizeof (kDivisionNames[0])); ++i)
-        delayDivisionBox.addItem (kDivisionNames[i], i + 1);
+    for (int i = 0; i < berlin::kNumSyncDivisions; ++i)
+        delayDivisionBox.addItem (berlin::divisionLabelFor (static_cast<berlin::SyncDivision> (i)), i + 1);
     delayDivisionBox.setSelectedId (static_cast<int> (berlin::kDefaultPatch.delayDivision) + 1, juce::dontSendNotification);
     delayDivisionBox.onChange = [this] { recomputeSyncedDelayTime(); };
 
@@ -125,6 +119,11 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     configureSliderEarly (delayMixSlider, delayMixLabel, "Mix",
                            berlin::kMinDelayMix, berlin::kMaxDelayMix, berlin::kDefaultPatch.delayMix);
     delayMixSlider.onValueChange = [this] { pushPatchFromWidgets(); };
+
+    // delay-time-recommendation spec (Slice 3/5): always visible, no
+    // "correct/recommended" styling (spec Req 1) - populated by
+    // updateDelayRecommendations(), not added to delayReverbWidgets (D6).
+    addAndMakeVisible (delayRecommendationLabel);
 
     addAndMakeVisible (reverbSectionLabel);
     reverbSectionLabel.setText ("REVERB", juce::dontSendNotification);
@@ -470,7 +469,9 @@ BerlinAudioProcessorEditor::BerlinAudioProcessorEditor (BerlinAudioProcessor& pr
     // +1 more row (kControlHeight + kMargin/2) for the new TEMPO section
     // (tempo-delay-ui Phase 5). +4 more rows (delay row 1, delay row 2,
     // reverb row 1, reverb row 2) for the DELAY/REVERB sections (Phase 10).
-    setSize (800, 680 + 7 * (kControlHeight + kMargin / 2));
+    // +1 more row for the delay-time-recommendation display (Slice 3/5,
+    // delayRow3), inserted after delay row 2.
+    setSize (800, 680 + 8 * (kControlHeight + kMargin / 2));
 }
 
 BerlinAudioProcessorEditor::~BerlinAudioProcessorEditor()
@@ -497,6 +498,11 @@ void BerlinAudioProcessorEditor::refreshFromProcessor()
     applyPatchToWidgets (owner.getPatch());
     seedEditor.setText (juce::String (owner.getSeed()), juce::dontSendNotification);
     applyGenerationParamsToWidgets (owner.getGenerationParams());
+
+    // delay-time-recommendation spec Req 3: re-syncs the recommendation
+    // display after a BPM restore (preset load / setStateInformation), since
+    // tempoSlider was just set above with dontSendNotification.
+    updateDelayRecommendations();
 }
 
 //==============================================================================
@@ -541,6 +547,12 @@ void BerlinAudioProcessorEditor::resized()
     delayRow2.removeFromLeft (6);
     delayMixLabel       .setBounds (delayRow2.removeFromLeft (kLabelWidth));
     delayMixSlider      .setBounds (delayRow2.removeFromLeft (kButtonWidth));
+    area.removeFromTop (kMargin / 2);
+
+    // delay-time-recommendation spec (Slice 3/5): full-width, always visible.
+    auto delayRow3 = area.removeFromTop (kControlHeight);
+    delayRow3.removeFromLeft (kLabelWidth);
+    delayRecommendationLabel.setBounds (delayRow3);
     area.removeFromTop (kMargin / 2);
 
     auto reverbRow1 = area.removeFromTop (kControlHeight);
@@ -732,6 +744,7 @@ void BerlinAudioProcessorEditor::pushTempoFromWidgets()
 {
     owner.setBpm (tempoSlider.getValue());
     recomputeSyncedDelayTime();   // Sync mode tracks the live BPM (Phase 10)
+    updateDelayRecommendations(); // delay-time-recommendation spec Req 3: live BPM-change refresh
 }
 
 void BerlinAudioProcessorEditor::recomputeSyncedDelayTime()
@@ -763,6 +776,11 @@ void BerlinAudioProcessorEditor::updateDelayReverbEnablement()
     // D8's extra rule, on top of the fxOn gate above: the time slider is also
     // disabled while Sync mode drives it (manual entry blocked in Sync).
     delayTimeSlider.setEnabled (fxOn && ! delaySyncToggle.getToggleState());
+}
+
+void BerlinAudioProcessorEditor::updateDelayRecommendations()
+{
+    delayRecommendationLabel.setText (berlin::formatDelayRecommendations (owner.getBpm()), juce::dontSendNotification);
 }
 
 void BerlinAudioProcessorEditor::pushGenerationParamsFromWidgets()

@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace berlin
 {
 
@@ -48,5 +50,36 @@ constexpr double factorFor (SyncDivision division) noexcept
 
 // seconds = (60 / bpm) * factorFor(division). bpm <= 0 -> 0 (no division by zero).
 double delaySecondsFor (double bpm, SyncDivision division) noexcept;
+
+// ---- delay-time-recommendation spec (Slice 3/5): display helpers layered on
+// top of delaySecondsFor - JUCE-free, unit-testable (design.md D1-D4). ----
+
+// UI display label for each division. Order MUST match SyncDivision's
+// declaration order (same precedent as factorFor's switch above) - NOT the
+// same table as PresetManager::divisionNames() (persistence keys stay
+// separate from UI labels).
+constexpr const char* divisionLabelFor (SyncDivision division) noexcept
+{
+    switch (division)
+    {
+        case SyncDivision::half:          return "1/2";
+        case SyncDivision::quarter:       return "1/4";
+        case SyncDivision::dottedEighth:  return "1/8.";
+        case SyncDivision::eighth:        return "1/8";
+        case SyncDivision::eighthTriplet: return "1/8T";
+        case SyncDivision::sixteenth:     return "1/16";
+    }
+
+    return "";   // unreachable for a valid enumerator; keeps the function total
+}
+
+// Whole-millisecond rounding of delaySecondsFor (half away from zero, design.md
+// D1). bpm <= 0 -> 0, inherited from delaySecondsFor's own guard.
+int delayMillisecondsFor (double bpm, SyncDivision division) noexcept;
+
+// Formats all kNumSyncDivisions divisions' delay times at the given BPM as
+// "<label> <ms> ms" joined by " | ", in enum order (design.md D3-D4). Not
+// noexcept: builds a std::string via std::to_string/operator+.
+std::string formatDelayRecommendations (double bpm);
 
 } // namespace berlin
