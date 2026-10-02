@@ -18,6 +18,12 @@ void SynthEngine::prepare (const juce::dsp::ProcessSpec& spec)
     voice.prepare (spec, kDefaultPatch);
     effects.prepare (spec, kDefaultPatch);
 
+    // ui-engine-api design.md D5: 50 ms linear ramp, seeded from the current
+    // atomic so prepare()/re-prepare() never introduces a spurious ramp from
+    // some stale default.
+    masterGain.reset (spec.sampleRate, kMasterLevelRampSeconds);
+    masterGain.setCurrentAndTargetValue (masterLevel.load (std::memory_order_relaxed));
+
     reset();
 }
 
@@ -41,6 +47,11 @@ void SynthEngine::render (const StepEventBuffer& events,
             wasEnabled = false;
         }
 
+        // ui-engine-api design.md D5: the disabled path renders nothing, so
+        // it must still snap the smoother to the current target - otherwise
+        // a level change made while disabled would start a stale ramp from
+        // an outdated `currentValue` the next time the synth is re-enabled.
+        masterGain.setCurrentAndTargetValue (masterLevel.load (std::memory_order_relaxed));
         return;
     }
 
@@ -101,6 +112,14 @@ void SynthEngine::render (const StepEventBuffer& events,
         wasEffectsEnabled = false;
     }
 
+    // ui-engine-api design.md D5: master level applied AFTER FX, BEFORE the
+    // terminal addFrom below - only `scratch` is scaled, so MIDI output
+    // (translated from `events` upstream, never from this buffer) is
+    // unaffected. juce::dsp::SmoothedValue::applyGain is allocation-, lock-
+    // and log-free (verified noexcept in JUCE 9).
+    masterGain.setTargetValue (masterLevel.load (std::memory_order_relaxed));
+    masterGain.applyGain (scratch, numSamples);
+
     const int numDestinationChannels = juce::jmin (destination.getNumChannels(), scratch.getNumChannels());
     for (int ch = 0; ch < numDestinationChannels; ++ch)
         destination.addFrom (ch, startSample, scratch, ch, 0, numSamples);
@@ -124,6 +143,26 @@ void SynthEngine::setEnabled (bool shouldBeEnabled) noexcept
 void SynthEngine::setEffectsEnabled (bool shouldBeEnabled) noexcept
 {
     effectsEnabled.store (shouldBeEnabled, std::memory_order_relaxed);
+}
+
+bool SynthEngine::isEnabled() const noexcept
+{
+    return enabled.load (std::memory_order_relaxed);
+}
+
+bool SynthEngine::isEffectsEnabled() const noexcept
+{
+    return effectsEnabled.load (std::memory_order_relaxed);
+}
+
+void SynthEngine::setMasterLevel (float newLevel) noexcept
+{
+    masterLevel.store (clampParameter (newLevel, kMinOutputLevel, kMaxOutputLevel), std::memory_order_relaxed);
+}
+
+float SynthEngine::getMasterLevel() const noexcept
+{
+    return masterLevel.load (std::memory_order_relaxed);
 }
 
 void SynthEngine::setWaveform (Waveform newWaveform) noexcept              { voice.setWaveform (newWaveform); }

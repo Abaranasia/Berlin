@@ -79,7 +79,7 @@ inline constexpr float kMinReverbRoomSize = 0.0f,   kMaxReverbRoomSize = 1.0f;
 inline constexpr float kMinReverbDamping = 0.0f,    kMaxReverbDamping = 1.0f;
 inline constexpr float kMinReverbWetLevel = 0.0f,   kMaxReverbWetLevel = 1.0f;
 inline constexpr float kMinReverbDryLevel = 0.0f,   kMaxReverbDryLevel = 1.0f;
-inline constexpr float kMinOutputLevel = 0.0f,      kMaxOutputLevel = 1.0f;   // preset-persistence bound only (Phase 11) - no live setter exists (design.md's Interfaces block)
+inline constexpr float kMinOutputLevel = 0.0f,      kMaxOutputLevel = 1.0f;   // ui-engine-api design.md D5/D6: now a LIVE bound too - SynthEngine::setMasterLevel clamps to this range (was preset-persistence-only, Phase 11, before a live setter existed)
 
 // NaN compares false against both bounds, so a naive std::clamp passes it
 // through unchanged - the one case its [lo, hi] guarantee doesn't cover.

@@ -16,6 +16,7 @@ SequencePlayer::SequencePlayer (Sequence sequenceToPlay, Transport transportToUs
     : sequence (std::move (sequenceToPlay)), transport (std::move (transportToUse))
 {
     pendingBpm.store (transport.getBpm(), std::memory_order_relaxed);
+    playRequested.store (transport.isRunning(), std::memory_order_relaxed);   // D2
 }
 
 void SequencePlayer::prepare (double sampleRate) noexcept
@@ -31,11 +32,23 @@ void SequencePlayer::prepare (double sampleRate) noexcept
 void SequencePlayer::start() noexcept
 {
     transport.start();
+    playRequested.store (true, std::memory_order_relaxed);   // D2: keeps the request in sync with a direct call
 }
 
 void SequencePlayer::stop() noexcept
 {
     transport.stop();
+    playRequested.store (false, std::memory_order_relaxed);   // D2: keeps the request in sync with a direct call
+}
+
+void SequencePlayer::setPlaying (bool shouldPlay) noexcept
+{
+    playRequested.store (shouldPlay, std::memory_order_relaxed);
+}
+
+bool SequencePlayer::isPlayRequested() const noexcept
+{
+    return playRequested.load (std::memory_order_relaxed);   // D3: requested state, not the adopted one
 }
 
 void SequencePlayer::reset() noexcept
@@ -79,6 +92,27 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
     }
 
     transport.setBpm (pendingBpm.load (std::memory_order_relaxed));   // design.md Decision 4: after adopt, before countBoundaries
+
+    // ui-engine-api design.md D1: adopt the play/stop request ONLY ON A
+    // TRANSITION. A direct start()/stop() call already matches playRequested
+    // to transport's new running state (D2), so neither branch below fires
+    // for it - this block only reacts to setPlaying() having been called
+    // without a matching direct start()/stop().
+    const bool wantsToPlay = playRequested.load (std::memory_order_relaxed);
+
+    if (! wantsToPlay && transport.isRunning())
+    {
+        transport.stop();
+
+        if (pendingNote >= 0)
+            out.push ({ 0, pendingStep, pendingNote, false });   // adopted-stop note-off, offset 0
+
+        pendingNote = -1;
+    }
+    else if (wantsToPlay && ! transport.isRunning())
+    {
+        transport.start();   // D4: resumes - position/nextStepCounter/origin are untouched by stop()/start()
+    }
 
     if (sequence.size() > 0)
     {

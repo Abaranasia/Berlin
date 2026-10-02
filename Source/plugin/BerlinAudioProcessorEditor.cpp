@@ -672,8 +672,11 @@ void BerlinAudioProcessorEditor::resized()
 //==============================================================================
 berlin::SynthPatch BerlinAudioProcessorEditor::currentPatchFromWidgets() const
 {
-    berlin::SynthPatch patch;   // outputLevel has no widget in this slice - stays kDefaultPatch, same
-                                // precedent as every other never-wired field before Phase 10.
+    berlin::SynthPatch patch;   // outputLevel has no widget in this slice; approved ui-engine-api exception
+                                // (design.md pin 14 relaxed) keeps owner.getPatch().outputLevel below instead
+                                // of the default, so touching any knob no longer resets a loaded preset's
+                                // live-adjustable level back to 0.8.
+    patch.outputLevel = owner.getPatch().outputLevel;
 
     patch.waveform       = static_cast<berlin::Waveform> (waveformBox.getSelectedId() - 1);
     patch.cutoffHz       = (float) cutoffSlider.getValue();
