@@ -67,12 +67,12 @@ Chain strategy: size-exception
 
 ## Phase 6: Manual Verification (human-only — flag clearly, not automatable)
 
-- [ ] 6.1 **MANUAL**: Open the plugin editor (not just standalone) — confirm the new row is visible and not clipped at the bottom of the window.
-- [ ] 6.2 **MANUAL, flag for follow-up**: Check the pre-existing standalone `MainComponent` fixed `setSize(800,680)` (`MainComponent.cpp:9`) against the editor's new request (952px after this slice's +34px) — bottom rows (including this new one) may already be clipped in the standalone app; this is a pre-existing out-of-scope condition, not introduced by this slice, but worth confirming/flagging at review time.
-- [ ] 6.3 **MANUAL**: Drag the tempo slider — confirm the recommendation row updates live with no additional action.
-- [ ] 6.4 **MANUAL**: Load a preset (or restore state) that changes BPM — confirm the row updates to the new BPM's values even though `tempoSlider` is set with `dontSendNotification` (spec Req 3's preset/state-restore scenario).
-- [ ] 6.5 **MANUAL**: Toggle internal FX off — confirm the row stays visible and correct (spec Req 4).
-- [ ] 6.6 **MANUAL**: Toggle delay Sync/Free to Free — confirm the row stays visible and correct, independent of the manually-set delay time (spec Req 4).
-- [ ] 6.7 **MANUAL**: Visually confirm no division is marked/highlighted as "correct" or "recommended" (spec Req 1).
+- [x] 6.1 **MANUAL**: Open the plugin editor (not just standalone) — confirm the new row is visible and not clipped at the bottom of the window. _(Verified 2026-10-02 by the user in the standalone app (Berlin.exe x64 Debug); not separately checked inside a plugin host.)_
+- [x] 6.2 **MANUAL, flag for follow-up**: Check the pre-existing standalone `MainComponent` fixed `setSize(800,680)` (`MainComponent.cpp:9`) against the editor's new request (952px after this slice's +34px) — bottom rows (including this new one) may already be clipped in the standalone app; this is a pre-existing out-of-scope condition, not introduced by this slice, but worth confirming/flagging at review time. _(Verified 2026-10-02: user confirmed clipping at the default standalone size, recoverable by enlarging the window; flagged as a follow-up fix, also raised by the review resilience/reliability lenses.)_
+- [x] 6.3 **MANUAL**: Drag the tempo slider — confirm the recommendation row updates live with no additional action. _(Verified 2026-10-02 by the user.)_
+- [x] 6.4 **MANUAL**: Load a preset (or restore state) that changes BPM — confirm the row updates to the new BPM's values even though `tempoSlider` is set with `dontSendNotification` (spec Req 3's preset/state-restore scenario). _(Verified 2026-10-02 by the user.)_
+- [x] 6.5 **MANUAL**: Toggle internal FX off — confirm the row stays visible and correct (spec Req 4). _(Verified 2026-10-02 by the user.)_
+- [x] 6.6 **MANUAL**: Toggle delay Sync/Free to Free — confirm the row stays visible and correct, independent of the manually-set delay time (spec Req 4). _(Verified 2026-10-02 by the user.)_
+- [x] 6.7 **MANUAL**: Visually confirm no division is marked/highlighted as "correct" or "recommended" (spec Req 1). _(Verified 2026-10-02 by the user.)_
 
 Note: Threat matrix is N/A for this change (no routing/shell/subprocess/VCS/process-integration boundary) — no RED tests owed beyond Phase 1's unit cases already listed.
