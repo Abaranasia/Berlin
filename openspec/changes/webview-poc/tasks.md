@@ -138,10 +138,10 @@ No automated test is possible for GUI code (BerlinTests stays gui-free). Behavio
 ## Phase 11: PR2 review gate and commit
 
 - [x] 11.1 Check size: PR2 authored lines within the 800 budget (~370 forecast); confirm total across PRs ~910. **Result: ~885 authored lines (~375 tests, ~330 PR1 review follow-ups), over budget. User accepted `size:exception` for PR2 on 2026-10-03, rejecting a split.**
-- [ ] 11.2 Run bounded review on the staged PR2 target; obtain an approved lineage.
-- [ ] 11.3 Run `gentle-ai review bind-sdd --change webview-poc` with the approved lineage BEFORE `git commit`. Then validate the pre-commit gate.
-- [ ] 11.4 Commit (conventional, no AI attribution, e.g. `feat: add WebView2 editor and PoC react ui behind BERLIN_WEB_UI`). Verify git state yourself.
-- [ ] 11.5 Push and open PR2 targeting the PR1 branch, with Chain Context + dependency diagram (PR2 marked). Validate pre-push/pre-pr gates.
+- [x] 11.2 Run bounded review on the staged PR2 target; obtain an approved lineage. **Approved: lineage review-90deccba3fb1ae28 (high tier, 4R, 34 files), no blockers; Vitest 51, BerlinTests 1223 test cases.**
+- [x] 11.3 Run `gentle-ai review bind-sdd --change webview-poc` with the approved lineage BEFORE `git commit`. Then validate the pre-commit gate. **Bound (revision sha256:5c6727f7...); pre-commit allow.**
+- [x] 11.4 Commit (conventional, no AI attribution, e.g. `feat: add WebView2 editor and PoC react ui behind BERLIN_WEB_UI`). Verify git state yourself. **Commit 55cec13, verified.**
+- [x] 11.5 Push and open PR2 targeting the PR1 branch, with Chain Context + dependency diagram (PR2 marked). Validate pre-push/pre-pr gates. **Pushed to origin/feat/ui-webview-poc-pr2 (verified); pre-push and pre-pr gates allow against origin/feat/ui-webview-poc. PR opened by the user (not verified here: gh is not installed).**
 
 ## Phase 12: Manual go/no-go (HUMAN-ONLY, not automatable; flag-on build)
 
@@ -154,7 +154,7 @@ Who: the user. The first NuGet restore (WebView2 package, needs network) is done
 - [x] 12.5 **MANUAL** Keyboard focus: input works inside the web view; host shortcuts are not stolen when focus is outside it.
 - [x] 12.6 **MANUAL** Close and reopen the editor repeatedly: engine state intact, no leak/crash.
 - [ ] 12.7 **MANUAL** Missing-runtime fallback: simulate WebView2 runtime absence (or an unsupported options path); native fallback label shows, host stable. **Not run: Windows 11 ships the WebView2 runtime, so its absence cannot be simulated here. The fallback path is covered by code review and the resized() fix; deferred to a machine without the runtime.**
-- [ ] 12.8 **MANUAL** Flag-off builds unchanged: legacy editor identical in standalone and Sonar; flag-off build succeeds on a machine/PATH without pnpm; BerlinTests and Vitest pass. **Automated parts PASS (apply 2026-10-03: flag-off Debug+Release builds of both solutions at baseline warnings with pnpm absent from PATH; BerlinTests 368, Vitest 51). Manual legacy-editor check pending: needs a flag-off rebuild, which overwrites the flag-on test binaries.**
+- [x] 12.8 **MANUAL** Flag-off builds unchanged: legacy editor identical in standalone and Sonar; flag-off build succeeds on a machine/PATH without pnpm; BerlinTests and Vitest pass. **Automated parts PASS (apply 2026-10-03: flag-off Debug+Release builds of both solutions at baseline warnings with pnpm absent from PATH; BerlinTests 368, Vitest 51). Manual check PASS (2026-10-03): after a flag-off Debug rebuild of both solutions (stub assets, BERLIN_EMBEDDED_ASSETS_FULL 0), the user confirmed the legacy editor works in standalone and Sonar.**
 - [x] 12.9 Record the go/no-go decision in the PR2 description and in Engram; if no-go, stop Slices 2-5.
 
 **Go/no-go result (2026-10-03): GO.** The user ran 12.1-12.6 on flag-on Debug builds (standalone and Cakewalk Sonar) and all passed: the UI renders, BPM -/+ drives the engine, the playhead follows playback, two instances work, DPI, focus and close/reopen are fine. The first run showed a blank window: the WebView stayed at 0x0 because `setSize()` ran `resized()` before the browser existed. Fixed in `WebEditor.cpp` by calling `resized()` after creating the browser and the fallback label, and confirmed via a DevTools probe (innerWidth/innerHeight 800x680, "+" changed BPM 120 to 121).
