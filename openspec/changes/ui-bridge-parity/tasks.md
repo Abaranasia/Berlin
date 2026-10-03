@@ -184,12 +184,12 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 
 ## Phase 12: PR2a verification, review gate, commit (PR2a, branch `feat/ui-bridge-parity-pr2`)
 
-- [ ] 12.1 Flag-off builds of both app solutions and `BerlinTests` unchanged (PR2 touches no C++); flag-on standalone build embeds the new UI and loads (smoke). **Partial: BerlinTests rebuilt and 379/379 green (PR2 touches no C++; embed-lib.mjs changed); flag-off app solutions and flag-on standalone smoke not run.**
-- [ ] 12.2 Size check: PR2 authored lines within 800 (~760 forecast). If above, stop and split at Phase 9/10 per the forecast. **Measured 1177 added lines (552 prod, 625 tests) > 800: STOP, split required (see apply-progress).** **After the split, PR2a measures 626 authored lines (prod 366, tests 260); typecheck, 125 tests and build green; `ui/dist` has no mock chunk.**
-- [ ] 12.3 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage.
-- [ ] 12.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
-- [ ] 12.5 USER commits (e.g. `feat: add typed bridge protocol, store and mock bridge`) and pushes; verify git state yourself.
-- [ ] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2a body: Chain Context, diagram (PR2a marked).
+- [x] 12.1 Flag-off builds of both app solutions and `BerlinTests` unchanged (PR2 touches no C++); flag-on standalone build embeds the new UI and loads (smoke). **Partial: BerlinTests rebuilt and 379/379 green (PR2 touches no C++; embed-lib.mjs changed); flag-off app solutions and flag-on standalone smoke not run.** **Done:** no C++ in PR2a/PR2b; BerlinTests 379/379 at 6a08097 (verify); flag-on embed covered by the be8629a flag-on build and Phase 23.
+- [x] 12.2 Size check: PR2 authored lines within 800 (~760 forecast). If above, stop and split at Phase 9/10 per the forecast. **Measured 1177 added lines (552 prod, 625 tests) > 800: STOP, split required (see apply-progress).** **After the split, PR2a measures 626 authored lines (prod 366, tests 260); typecheck, 125 tests and build green; `ui/dist` has no mock chunk.** **Done:** measured 1177, split into PR2a (92a0f7f) and PR2b (3b7b06d).
+- [x] 12.3 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage. **Done:** PR2a review-f87dcc7341bba45a, PR2b review-690e05e482f3264e (high tier, approved).
+- [x] 12.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Done:** both lineages bound to ui-bridge-parity before commit; pre-commit allow.
+- [x] 12.5 USER commits (e.g. `feat: add typed bridge protocol, store and mock bridge`) and pushes; verify git state yourself. **Done:** user committed and pushed 92a0f7f and 3b7b06d; git state verified.
+- [ ] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2a body: Chain Context, diagram (PR2a marked). **Open:** not run for PR2a/PR2b; pending the maintainer decision on stacked-lineage gates (see 22.6).
 
 ## Phase 12b: PR2b restore, verification, review gate, commit (PR2b, branch `feat/ui-bridge-parity-pr2-b` off PR2a)
 
@@ -246,12 +246,12 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 
 ## Phase 18: PR3 verification, review gate, commit (PR3)
 
-- [ ] 18.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR3 panels. **Batch 1 touched no C++ (ui/ and openspec only), so BerlinTests and the app solutions are unaffected; not rebuilt. The flag-on standalone smoke is NOT run (needs the user build); left open for the final gate.**
+- [x] 18.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR3 panels. **Batch 1 touched no C++ (ui/ and openspec only), so BerlinTests and the app solutions are unaffected; not rebuilt. The flag-on standalone smoke is NOT run (needs the user build); left open for the final gate.** **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
 - [x] 18.2 Size check: PR3 within 800 (~760 forecast); if above, split at Phase 15/16. **Measured (batch 1, size:exception): 1621 added authored lines in ui/ (prod 521, tests 1100 incl. the 79-line harness).**
-- [ ] 18.3 `gentle-ai review start`; lenses; finalize; approved lineage.
-- [ ] 18.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
-- [ ] 18.5 USER commits (e.g. `feat: add transport, generation, pitch, evolution and export controls`) and pushes; verify git state yourself.
-- [ ] 18.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b`. (Phase 18 is a batch-1 checkpoint only: PR3 and PR4 are one PR; the review, commit and final gate run once, after Phase 22.)
+- [x] 18.3 `gentle-ai review start`; lenses; finalize; approved lineage. **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
+- [x] 18.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
+- [x] 18.5 USER commits (e.g. `feat: add transport, generation, pitch, evolution and export controls`) and pushes; verify git state yourself. **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
+- [x] 18.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b`. (Phase 18 is a batch-1 checkpoint only: PR3 and PR4 are one PR; the review, commit and final gate run once, after Phase 22.) **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
 
 ## Phase 19: Skew and delay recommendation helpers (formerly PR4; same branch `feat/ui-bridge-parity-pr3`, merged into PR3)
 
@@ -279,12 +279,12 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 
 ## Phase 22: PR4 verification, review gate, commit (PR4)
 
-- [ ] 22.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR4 panels. **Flag-on Debug x64 builds of App and Plugin done (EmbeddedAssets BERLIN_EMBEDDED_ASSETS_FULL 1); tracked project files reverted to HEAD. The smoke of the panels is the user manual Phase 23. Left open: flag-off app builds and BerlinTests not re-run (no C++ changed).**
+- [x] 22.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR4 panels. **Flag-on Debug x64 builds of App and Plugin done (EmbeddedAssets BERLIN_EMBEDDED_ASSETS_FULL 1); tracked project files reverted to HEAD. The smoke of the panels is the user manual Phase 23. Left open: flag-off app builds and BerlinTests not re-run (no C++ changed).** **Done:** flag-on Debug x64 App and VST3 built at be8629a; flag-off rebuild with pnpm off PATH (23.20); BerlinTests 379/379.
 - [x] 22.2 Size check: PR4 within 800 (~740 forecast); if above, split at Phase 20/21. **Measured (whole final PR vs 3b7b06d, size:exception): 2513 added authored lines in ui/ (prod 765, tests 1748 incl. harness); batch 2 alone ~892 (prod 244, tests 648).**
-- [ ] 22.3 `gentle-ai review start`; lenses; finalize; approved lineage.
-- [ ] 22.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
-- [ ] 22.5 USER commits (e.g. `feat: add synth, delay, reverb and preset controls`) and pushes; verify git state yourself.
-- [ ] 22.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b` (merged PR3/PR4: the base is PR2b, not PR3). Final PR body: Chain Context, diagram (PR3 marked), `size:exception` note.
+- [x] 22.3 `gentle-ai review start`; lenses; finalize; approved lineage. **Done:** final PR review-f89e70d4742c5bd1 (high), follow-up review-a4251d62e397f4af (medium), approved.
+- [x] 22.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Done:** both lineages bound before commit; pre-commit allow.
+- [x] 22.5 USER commits (e.g. `feat: add synth, delay, reverb and preset controls`) and pushes; verify git state yourself. **Done:** committed 8d83912 and be8629a (user-authorized), user pushed; remote verified at be8629a.
+- [ ] 22.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b` (merged PR3/PR4: the base is PR2b, not PR3). Final PR body: Chain Context, diagram (PR3 marked), `size:exception` note. **Open:** pre-push allow for review-a4251d62e397f4af only; review-f89e70d4742c5bd1 pre-push invalidated (not one commit from reviewed base) and both pre-pr scope-changed against origin/feat/ui-bridge-parity-pr2-b. Trees unchanged; needs maintainer decision.
 
 ## Phase 22b: Final-review parity follow-ups (lineage review-f89e70d4742c5bd1, approved; applied after HEAD 8d83912, uncommitted)
 
