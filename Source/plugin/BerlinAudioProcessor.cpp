@@ -426,7 +426,7 @@ bool BerlinAudioProcessor::flushPendingNoteOff (juce::MidiBuffer& out) noexcept
 juce::AudioProcessorEditor* berlin::BerlinAudioProcessor::createEditor() { return nullptr; }
 bool berlin::BerlinAudioProcessor::hasEditor() const { return false; }
 #else
-#include "plugin/BerlinAudioProcessorEditor.h"
-juce::AudioProcessorEditor* berlin::BerlinAudioProcessor::createEditor() { return new berlin::BerlinAudioProcessorEditor (*this); }
+#include "ui/EditorFactory.h"
+juce::AudioProcessorEditor* berlin::BerlinAudioProcessor::createEditor() { return berlin::createBerlinEditor (*this).release(); }
 bool berlin::BerlinAudioProcessor::hasEditor() const { return true; }
 #endif

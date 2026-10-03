@@ -98,7 +98,7 @@
       <OutputFile>$(IntDir)\BerlinPlugin.bsc</OutputFile>
     </Bscmake>
     <PreBuildEvent>
-      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer
+      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer || exit /b 1
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -147,7 +147,7 @@
       <OutputFile>$(IntDir)\BerlinPlugin.bsc</OutputFile>
     </Bscmake>
     <PreBuildEvent>
-      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer
+      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer || exit /b 1
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -176,6 +176,8 @@
     <ClCompile Include="..\..\..\Source\synth\Lfo.cpp"/>
     <ClCompile Include="..\..\..\Source\synth\SynthEffects.cpp"/>
     <ClCompile Include="..\..\..\Source\preset\PresetManager.cpp"/>
+    <ClCompile Include="..\..\..\Source\ui\EditorFactory.cpp"/>
+    <ClCompile Include="..\..\..\Source\ui\WebEditor.cpp"/>
     <ClCompile Include="..\..\..\Source\ui\WebAssets.cpp"/>
     <ClCompile Include="..\..\..\Source\ui\WebEditorSupport.cpp"/>
     <ClCompile Include="..\..\..\Source\ui\generated\EmbeddedAssets.cpp"/>
@@ -2919,6 +2921,8 @@
     <ClInclude Include="..\..\..\Source\synth\SynthEffects.h"/>
     <ClInclude Include="..\..\..\Source\preset\Preset.h"/>
     <ClInclude Include="..\..\..\Source\preset\PresetManager.h"/>
+    <ClInclude Include="..\..\..\Source\ui\EditorFactory.h"/>
+    <ClInclude Include="..\..\..\Source\ui\WebEditor.h"/>
     <ClInclude Include="..\..\..\Source\ui\WebAssets.h"/>
     <ClInclude Include="..\..\..\Source\ui\WebEditorSupport.h"/>
     <ClInclude Include="..\..\..\Source\ui\generated\EmbeddedAssets.h"/>

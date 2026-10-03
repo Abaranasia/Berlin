@@ -5,6 +5,10 @@ namespace berlin
 
 namespace
 {
+    constexpr int kMinTcpPort = 1;
+    constexpr int kMaxTcpPort = 65535;
+    constexpr int kMaxPortDigits = 5;
+
     juce::var errorResult (const juce::String& token)
     {
         auto* result = new juce::DynamicObject();
@@ -57,7 +61,11 @@ std::optional<juce::String> devServerOrigin (const juce::String& env)
             continue;
 
         const auto port = env.substring (p.length());
-        if (port.isNotEmpty() && port.containsOnly ("0123456789") && port.length() <= 5)
+        if (port.isEmpty() || ! port.containsOnly ("0123456789") || port.length() > kMaxPortDigits)
+            continue;
+
+        const auto value = port.getIntValue();
+        if (value >= kMinTcpPort && value <= kMaxTcpPort)
             return env;
     }
 

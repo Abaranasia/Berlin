@@ -102,7 +102,7 @@
       <AdditionalManifestFiles/>
     </Manifest>
     <PreBuildEvent>
-      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer
+      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer || exit /b 1
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -155,7 +155,7 @@
       <AdditionalManifestFiles/>
     </Manifest>
     <PreBuildEvent>
-      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer
+      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer || exit /b 1
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
