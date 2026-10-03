@@ -4,7 +4,7 @@
 #include "midi/MidiChannel.h"
 #include "midi/MidiOutputSink.h"
 #include "plugin/BerlinAudioProcessor.h"
-#include "plugin/BerlinAudioProcessorEditor.h"
+#include "ui/EditorFactory.h"
 
 //==============================================================================
 /*
@@ -37,7 +37,7 @@ private:
     static constexpr int kMidiBufferBytes = 1024;
 
     berlin::BerlinAudioProcessor       processor;   // MUST precede `editor` - editor takes a reference to it
-    berlin::BerlinAudioProcessorEditor editor;
+    std::unique_ptr<juce::Component>   editor;      // legacy editor or WebEditor (berlin::createBerlinEditor)
     berlin::MidiOutputSink             midiSink;
     juce::MidiBuffer                   midiBlock;
 

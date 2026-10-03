@@ -53,9 +53,11 @@ std::optional<AssetResource> findAsset (AssetTable table, const juce::String& re
 
 juce::String mimeTypeForPath (const juce::String& path)
 {
+    if (! path.contains ("."))
+        return "application/octet-stream";
+
     const auto extension = path.fromLastOccurrenceOf (".", false, false).toLowerCase();
 
-    if (! path.contains (".")) return "application/octet-stream";
     if (extension == "html")   return "text/html";
     if (extension == "js")     return "text/javascript";
     if (extension == "css")    return "text/css";

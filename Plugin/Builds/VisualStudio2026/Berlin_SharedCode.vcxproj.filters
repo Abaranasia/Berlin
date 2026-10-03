@@ -883,6 +883,12 @@
     <ClCompile Include="..\..\..\Source\preset\PresetManager.cpp">
       <Filter>Berlin\preset</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\ui\EditorFactory.cpp">
+      <Filter>Berlin\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ui\WebEditor.cpp">
+      <Filter>Berlin\ui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\ui\WebAssets.cpp">
       <Filter>Berlin\ui</Filter>
     </ClCompile>
@@ -3875,6 +3881,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\preset\PresetManager.h">
       <Filter>Berlin\preset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\EditorFactory.h">
+      <Filter>Berlin\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\WebEditor.h">
+      <Filter>Berlin\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ui\WebAssets.h">
       <Filter>Berlin\ui</Filter>

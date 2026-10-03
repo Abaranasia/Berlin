@@ -2,10 +2,10 @@
 
 //==============================================================================
 MainComponent::MainComponent()
-    : editor (processor),
+    : editor (berlin::createBerlinEditor (processor)),
       midiSink (berlin::kMidiChannel)
 {
-    addAndMakeVisible (editor);
+    addAndMakeVisible (*editor);
     setSize (800, 680);
 
     midiSink.openFirstAvailableDevice();   // return ignored: false is the valid silent state
@@ -74,5 +74,5 @@ void MainComponent::paint (juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    editor.setBounds (getLocalBounds());
+    editor->setBounds (getLocalBounds());
 }

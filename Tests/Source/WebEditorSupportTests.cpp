@@ -79,14 +79,21 @@ public:
             berlin::BerlinAudioProcessor processor;
             berlin::UiBridge bridge (processor);
 
-            // getSnapshot-style command with no args must not produce an adapter error.
-            const auto absent = dispatchNativeCall (bridge, callArgs ({ "setBpm" }));
-            const auto voided = dispatchNativeCall (bridge, callArgs ({ "setBpm", juce::var() }));
-            for (const auto& r : { absent, voided })
-            {
-                const auto error = r["error"].toString();
-                expect (error != "invalid type: args" && error != "missing arg: command", error);
-            }
+            // "mutate" ignores its args and succeeds, so ok:true proves the adapter
+            // forwarded a valid (empty) args object instead of rejecting or crashing.
+            const auto absent = dispatchNativeCall (bridge, callArgs ({ "mutate" }));
+
+            // mutate reports "busy" while one is in flight, so use a fresh processor.
+            berlin::BerlinAudioProcessor otherProcessor;
+            berlin::UiBridge otherBridge (otherProcessor);
+            const auto voided = dispatchNativeCall (otherBridge, callArgs ({ "mutate", juce::var() }));
+            expect (static_cast<bool> (absent["ok"]), absent["error"].toString());
+            expect (static_cast<bool> (voided["ok"]), voided["error"].toString());
+
+            // A command that needs a field reports the BRIDGE's own missing-arg error,
+            // not the adapter's "invalid type: args".
+            const auto missingBpm = dispatchNativeCall (bridge, callArgs ({ "setBpm" }));
+            expect (missingBpm["error"].toString() == "missing arg: bpm", missingBpm["error"].toString());
         }
 
         beginTest ("adapter rejects non-object args");
@@ -125,6 +132,17 @@ public:
             expect (! devServerOrigin ("http://example.com:5173").has_value());
             expect (! devServerOrigin ("http://localhost").has_value());
             expect (! devServerOrigin ("http://localhost:5173.evil.com").has_value());
+        }
+
+        beginTest ("dev server origin port must be 1-65535");
+        {
+            using berlin::devServerOrigin;
+            expect (devServerOrigin ("http://localhost:1").has_value());
+            expect (devServerOrigin ("http://localhost:65535").has_value());
+            expect (! devServerOrigin ("http://localhost:0").has_value());
+            expect (! devServerOrigin ("http://localhost:00000").has_value());
+            expect (! devServerOrigin ("http://localhost:65536").has_value());
+            expect (! devServerOrigin ("http://127.0.0.1:99999").has_value());
         }
     }
 };

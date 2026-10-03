@@ -94,42 +94,50 @@ Run the embed script once (task 3.2) BEFORE any resave so the generated files ex
 ## Phase 7: PR1 review gate and commit
 
 - [x] 7.1 Check size: PR1 authored lines (exclude lockfile, generated, vcxproj) within the 800 budget (~540 forecast). **Result: ~880 authored lines (380 of them tests), over budget. User accepted `size:exception` for PR1 on 2026-10-03, rejecting a PR1a/PR1b split.**
-- [ ] 7.2 Run bounded review (`gentle-ai review start`, then lenses, then finalize) on the staged PR1 target; obtain an approved lineage.
-- [ ] 7.3 Run `gentle-ai review bind-sdd --change webview-poc` with the approved lineage BEFORE `git commit` (Slice 0 lesson). Then `gentle-ai review validate --gate pre-commit`.
-- [ ] 7.4 Commit with a conventional message, no AI attribution (e.g. `feat: add web ui build plumbing and gui-free helpers`). Verify git state yourself.
-- [ ] 7.5 Push and open PR1 targeting `feat/ui-engine-api-pr2`, with Chain Context + dependency diagram (PR1 marked), start/end, follow-up = PR2, out-of-scope = WebEditor/UI. Validate pre-push/pre-pr gates.
+- [x] 7.2 Run bounded review (`gentle-ai review start`, then lenses, then finalize) on the staged PR1 target; obtain an approved lineage. **Done: review-3ba7e7dbd902a4b6 approved (4R, no blockers), bound via bind-sdd before commit; PR1 commit 9df6d61 pushed; pre-push/pre-pr allow.**
+- [x] 7.3 Run `gentle-ai review bind-sdd --change webview-poc` with the approved lineage BEFORE `git commit` (Slice 0 lesson). Then `gentle-ai review validate --gate pre-commit`. **Done: review-3ba7e7dbd902a4b6 approved (4R, no blockers), bound via bind-sdd before commit; PR1 commit 9df6d61 pushed; pre-push/pre-pr allow.**
+- [x] 7.4 Commit with a conventional message, no AI attribution (e.g. `feat: add web ui build plumbing and gui-free helpers`). Verify git state yourself. **Done: review-3ba7e7dbd902a4b6 approved (4R, no blockers), bound via bind-sdd before commit; PR1 commit 9df6d61 pushed; pre-push/pre-pr allow.**
+- [x] 7.5 Push and open PR1 targeting `feat/ui-engine-api-pr2`, with Chain Context + dependency diagram (PR1 marked), start/end, follow-up = PR2, out-of-scope = WebEditor/UI. Validate pre-push/pre-pr gates. **Done: review-3ba7e7dbd902a4b6 approved (4R, no blockers), bound via bind-sdd before commit; PR1 commit 9df6d61 pushed; pre-push/pre-pr allow.**
+
+## Phase 7b: PR1 review follow-ups (PR2)
+
+- [x] 7b.1 RES-1/REL-1: Projucer has no per-target pre-build (`prebuildCommand` is per configuration, applied to every project), so the script is made concurrency-safe: unique tmp names (pid+random), rename retry on EPERM/EBUSY/ENOENT (`renameWithRetry`), lock file `Source/ui/generated/.lock` with stale-lock timeout (`withLock`) and a stamp re-check inside the lock. Vitest covers both mechanisms and the lock/stamp interplay.
+- [x] 7b.2 RES-2: both `.jucer` prebuild commands end the embed call with `|| exit /b 1`; pnpm `spawnSync` has a 5 min timeout, reported as `BRL006: pnpm ... timed out`; Vitest covers the timeout path via the injected spawn.
+- [x] 7b.3 REL-2/READ-4: `devServerOrigin` port must be 1-65535 (named constants); RED tests first (0, 00000, 65536, 99999 rejected; 1, 65535 accepted).
+- [x] 7b.4 REL-3/READ-2: absent/void-args test now proves args became `{}` (`mutate` succeeds with no args; `setBpm` with no args returns the bridge's own `missing arg: bpm`); misleading comment fixed.
+- [x] 7b.5 READ-1 (no-op `.map` removed from `stampInputs`), READ-3 (`mimeTypeForPath` guards before computing the extension), READ-5 (generated header no longer redeclares `getEmbeddedAssets`; `BERLIN_EMBEDDED_ASSETS_FULL` documented, consumed by WebEditor's `static_assert`).
 
 ## Phase 8: WebEditor, factory, host wiring (PR2; branch `feat/ui-webview-poc-pr2` off PR1)
 
 No automated test is possible for GUI code (BerlinTests stays gui-free). Behavior it relies on is already covered by Phases 4-5. Write the code to thin-adapter shape; verify by build + manual phase.
 
-- [ ] 8.1 Re-run baselines on the PR2 branch (BerlinTests count, both app builds flag off) to confirm PR1 as the starting point.
-- [ ] 8.2 `Source/ui/EditorFactory.{h,cpp}`: `createBerlinEditor(BerlinAudioProcessor&)` returning `juce::AudioProcessorEditor*` / unique_ptr; single `#if BERLIN_WEB_UI` (WebEditor vs the legacy `BerlinAudioProcessorEditor`) (D6).
-- [ ] 8.3 `Source/ui/WebEditor.{h,cpp}`: derives `juce::AudioProcessorEditor`; entire body inside `#if BERLIN_WEB_UI`; `static_assert(BERLIN_EMBEDDED_ASSETS_FULL)` (D2); member order `processor&`, `UiBridge`, `PlayheadChangeDetector`, `fallbackLabel`, `unique_ptr<WebBrowserComponent> browser`; constructor `setSize(800,680)`, `createDirectory()` on the data folder, options with `Backend::webview2`, `withNativeFunction` `dispatch` (via `dispatchNativeCall`) and `getSnapshot`, `withResourceProvider` (via `findAsset`/`mimeTypeForPath`), debug-only dev origin under `#if JUCE_DEBUG`; `areOptionsSupported` false or folder failure -> show fallback label, no browser, no timer; else `goToURL(getResourceProviderRoot())` and `startTimerHz(30)`; `timerCallback` emits `playhead` via `emitEventIfBrowserIsVisible`, calling `detector.commit` only when sent; destructor `stopTimer()` then `browser.reset()`.
-- [ ] 8.4 `Source/plugin/BerlinAudioProcessor.cpp`: `createEditor` calls `createBerlinEditor` inside the non-`BERLIN_HEADLESS` branch only (BerlinTests must not pull GUI code).
-- [ ] 8.5 `Source/MainComponent.{h,cpp}`: `std::unique_ptr<juce::Component> editor` declared after `processor`; legacy path keeps its current size and behavior (no clipping fix).
-- [ ] 8.6 Register `EditorFactory.{h,cpp}`, `WebEditor.{h,cpp}` in `Berlin.jucer` and `Plugin/BerlinPlugin.jucer` only (not BerlinTests). Resave both after running the embed script.
-- [ ] 8.7 Build both app targets flag OFF; confirm 0 errors, warnings equal to baseline, legacy editor identical (WebEditor compiles to nothing).
+- [x] 8.1 Re-run baselines on the PR2 branch (BerlinTests count, both app builds flag off) to confirm PR1 as the starting point. **Done: Baseline on PR2 branch: BerlinTests 367 before follow-ups; both app builds flag off OK.**
+- [x] 8.2 `Source/ui/EditorFactory.{h,cpp}`: `createBerlinEditor(BerlinAudioProcessor&)` returning `juce::AudioProcessorEditor*` / unique_ptr; single `#if BERLIN_WEB_UI` (WebEditor vs the legacy `BerlinAudioProcessorEditor`) (D6).
+- [x] 8.3 `Source/ui/WebEditor.{h,cpp}`: derives `juce::AudioProcessorEditor`; entire body inside `#if BERLIN_WEB_UI`; `static_assert(BERLIN_EMBEDDED_ASSETS_FULL)` (D2); member order `processor&`, `UiBridge`, `PlayheadChangeDetector`, `fallbackLabel`, `unique_ptr<WebBrowserComponent> browser`; constructor `setSize(800,680)`, `createDirectory()` on the data folder, options with `Backend::webview2`, `withNativeFunction` `dispatch` (via `dispatchNativeCall`) and `getSnapshot`, `withResourceProvider` (via `findAsset`/`mimeTypeForPath`), debug-only dev origin under `#if JUCE_DEBUG`; `areOptionsSupported` false or folder failure -> show fallback label, no browser, no timer; else `goToURL(getResourceProviderRoot())` and `startTimerHz(30)`; `timerCallback` emits `playhead` via `emitEventIfBrowserIsVisible`, calling `detector.commit` only when sent; destructor `stopTimer()` then `browser.reset()`.
+- [x] 8.4 `Source/plugin/BerlinAudioProcessor.cpp`: `createEditor` calls `createBerlinEditor` inside the non-`BERLIN_HEADLESS` branch only (BerlinTests must not pull GUI code).
+- [x] 8.5 `Source/MainComponent.{h,cpp}`: `std::unique_ptr<juce::Component> editor` declared after `processor`; legacy path keeps its current size and behavior (no clipping fix).
+- [x] 8.6 Register `EditorFactory.{h,cpp}`, `WebEditor.{h,cpp}` in `Berlin.jucer` and `Plugin/BerlinPlugin.jucer` only (not BerlinTests). Resave both after running the embed script.
+- [x] 8.7 Build both app targets flag OFF; confirm 0 errors, warnings equal to baseline, legacy editor identical (WebEditor compiles to nothing). **Done: Debug+Release x64 Rebuild both solutions flag OFF, PATH without pnpm: 0 errors, warnings = baseline (app 2 C4100, plugin 0).**
 
 ## Phase 9: React UI and its tests (PR2, strict TDD)
 
-- [ ] 9.1 Copy JUCE `native/javascript/index.js` to `ui/src/bridge/juce/index.js` (not counted).
-- [ ] 9.2 RED Vitest `state/steps.test.ts` `stepRow(playheadStep, playing)`: 16 entries; exactly one active when playing at a step; none active when stopped; out-of-range/negative step -> none active.
-- [ ] 9.3 RED Vitest `bridge/native.test.ts` against a mock `window.__JUCE__`: `dispatch(cmd,args)` calls the native function and returns its result; `getSnapshot()` returns the snapshot; playhead event listener subscribe/unsubscribe; missing `__JUCE__` degrades without throwing.
-- [ ] 9.4 RED Vitest `App.test.tsx` (react-dom test, small): shows BPM from initial snapshot; + and - issue `dispatch("setBpm", ...)` with bpm+1 and bpm-1; playhead event moves the highlighted step.
-- [ ] 9.5 Run `pnpm --dir ui test`; confirm 9.2-9.4 FAIL.
-- [ ] 9.6 GREEN `ui/src/state/steps.ts`, `bridge/native.ts`, `App.tsx`, `main.tsx`, `ui/index.html`; no controls beyond BPM -/+ and the 16-step row.
-- [ ] 9.7 Run `pnpm --dir ui test` and `pnpm --dir ui run typecheck`/`build` (add scripts if missing); confirm GREEN and `ui/dist` produced.
+- [x] 9.1 Copy JUCE `native/javascript/index.js` to `ui/src/bridge/juce/index.js` (not counted).
+- [x] 9.2 RED Vitest `state/steps.test.ts` `stepRow(playheadStep, playing)`: 16 entries; exactly one active when playing at a step; none active when stopped; out-of-range/negative step -> none active.
+- [x] 9.3 RED Vitest `bridge/native.test.ts` against a mock `window.__JUCE__`: `dispatch(cmd,args)` calls the native function and returns its result; `getSnapshot()` returns the snapshot; playhead event listener subscribe/unsubscribe; missing `__JUCE__` degrades without throwing.
+- [x] 9.4 RED Vitest `App.test.tsx` (react-dom test, small): shows BPM from initial snapshot; + and - issue `dispatch("setBpm", ...)` with bpm+1 and bpm-1; playhead event moves the highlighted step.
+- [x] 9.5 Run `pnpm --dir ui test`; confirm 9.2-9.4 FAIL.
+- [x] 9.6 GREEN `ui/src/state/steps.ts`, `bridge/native.ts`, `App.tsx`, `main.tsx`, `ui/index.html`; no controls beyond BPM -/+ and the 16-step row.
+- [x] 9.7 Run `pnpm --dir ui test` and `pnpm --dir ui run typecheck`/`build` (add scripts if missing); confirm GREEN and `ui/dist` produced. **Done: Vitest 51 passing (was 18); typecheck clean; `vite build` produces ui/dist.**
 
 ## Phase 10: Flag-on verification (PR2)
 
-- [ ] 10.1 Temporarily add `BERLIN_WEB_UI=1` to `JUCERPROJECT@defines` of `Berlin.jucer` (plugin: new line `&#10;` after `JUCE_VST3_CAN_REPLACE_VST2=0`), resave, build standalone and VST3 (Debug x64): confirm the full pipeline (`pnpm install --frozen-lockfile`, build, embed) runs, `static_assert` passes, and a second build skips via stamp.
-- [ ] 10.2 Negative checks: flag on with pnpm removed from PATH -> build fails with `BRL002 ... pnpm not found`; flag on with stub assets forced -> compile fails on `static_assert` (D2). Revert any temporary edits.
-- [ ] 10.3 Decide with the user whether the flag-on `.jucer` edit is reverted to OFF before commit (default: committed OFF; flag stays off by default). Rebuild flag-off and run `BerlinTests --category=Berlin`: count unchanged from PR1.
+- [x] 10.1 Temporarily add `BERLIN_WEB_UI=1` to `JUCERPROJECT@defines` of `Berlin.jucer` (plugin: new line `&#10;` after `JUCE_VST3_CAN_REPLACE_VST2=0`), resave, build standalone and VST3 (Debug x64): confirm the full pipeline (`pnpm install --frozen-lockfile`, build, embed) runs, `static_assert` passes, and a second build skips via stamp. **Done: Flag-on Rebuild of both solutions (Debug x64): pipeline ran, static_assert passed, second build skipped via stamp.**
+- [x] 10.2 Negative checks: flag on with pnpm removed from PATH -> build fails with `BRL002 ... pnpm not found`; flag on with stub assets forced -> compile fails on `static_assert` (D2). Revert any temporary edits. **Done: Verified: no pnpm on PATH -> BRL002 exit 1; forcing FULL 0 -> C2338 static_assert failure. Edits reverted.**
+- [x] 10.3 Decide with the user whether the flag-on `.jucer` edit is reverted to OFF before commit (default: committed OFF; flag stays off by default). Rebuild flag-off and run `BerlinTests --category=Berlin`: count unchanged from PR1. **Done: Default applied: committed OFF (.jucer/vcxproj byte-identical to pre-flag state, no residual BERLIN_WEB_UI). BerlinTests 368 (367 + 1 port-range test).**
 
 ## Phase 11: PR2 review gate and commit
 
-- [ ] 11.1 Check size: PR2 authored lines within the 800 budget (~370 forecast); confirm total across PRs ~910.
+- [x] 11.1 Check size: PR2 authored lines within the 800 budget (~370 forecast); confirm total across PRs ~910. **Result: ~885 authored lines (~375 tests, ~330 PR1 review follow-ups), over budget. User accepted `size:exception` for PR2 on 2026-10-03, rejecting a split.**
 - [ ] 11.2 Run bounded review on the staged PR2 target; obtain an approved lineage.
 - [ ] 11.3 Run `gentle-ai review bind-sdd --change webview-poc` with the approved lineage BEFORE `git commit`. Then validate the pre-commit gate.
 - [ ] 11.4 Commit (conventional, no AI attribution, e.g. `feat: add WebView2 editor and PoC react ui behind BERLIN_WEB_UI`). Verify git state yourself.
@@ -139,19 +147,22 @@ No automated test is possible for GUI code (BerlinTests stays gui-free). Behavio
 
 Who: the user. The first NuGet restore (WebView2 package, needs network) is done by the user (or in a user-observed build), before the apply agent's build verification in 6.4. Any failure below is a no-go (fall back to plain JUCE).
 
-- [ ] 12.1 **MANUAL** Standalone `Berlin.exe` (flag on): UI renders, BPM -/+ changes the engine BPM, playhead row follows playback.
-- [ ] 12.2 **MANUAL** Cakewalk Sonar with `BerlinPlugin.vst3` (flag on): same checks as 12.1.
-- [ ] 12.3 **MANUAL** Two plugin instances open simultaneously in Sonar operate independently, no crash.
-- [ ] 12.4 **MANUAL** Correct layout/text at 100% and 150%+ DPI (standalone and Sonar).
-- [ ] 12.5 **MANUAL** Keyboard focus: input works inside the web view; host shortcuts are not stolen when focus is outside it.
-- [ ] 12.6 **MANUAL** Close and reopen the editor repeatedly: engine state intact, no leak/crash.
-- [ ] 12.7 **MANUAL** Missing-runtime fallback: simulate WebView2 runtime absence (or an unsupported options path); native fallback label shows, host stable.
-- [ ] 12.8 **MANUAL** Flag-off builds unchanged: legacy editor identical in standalone and Sonar; flag-off build succeeds on a machine/PATH without pnpm; BerlinTests and Vitest pass.
-- [ ] 12.9 Record the go/no-go decision in the PR2 description and in Engram; if no-go, stop Slices 2-5.
+- [x] 12.1 **MANUAL** Standalone `Berlin.exe` (flag on): UI renders, BPM -/+ changes the engine BPM, playhead row follows playback.
+- [x] 12.2 **MANUAL** Cakewalk Sonar with `BerlinPlugin.vst3` (flag on): same checks as 12.1.
+- [x] 12.3 **MANUAL** Two plugin instances open simultaneously in Sonar operate independently, no crash.
+- [x] 12.4 **MANUAL** Correct layout/text at 100% and 150%+ DPI (standalone and Sonar).
+- [x] 12.5 **MANUAL** Keyboard focus: input works inside the web view; host shortcuts are not stolen when focus is outside it.
+- [x] 12.6 **MANUAL** Close and reopen the editor repeatedly: engine state intact, no leak/crash.
+- [ ] 12.7 **MANUAL** Missing-runtime fallback: simulate WebView2 runtime absence (or an unsupported options path); native fallback label shows, host stable. **Not run: Windows 11 ships the WebView2 runtime, so its absence cannot be simulated here. The fallback path is covered by code review and the resized() fix; deferred to a machine without the runtime.**
+- [ ] 12.8 **MANUAL** Flag-off builds unchanged: legacy editor identical in standalone and Sonar; flag-off build succeeds on a machine/PATH without pnpm; BerlinTests and Vitest pass. **Automated parts PASS (apply 2026-10-03: flag-off Debug+Release builds of both solutions at baseline warnings with pnpm absent from PATH; BerlinTests 368, Vitest 51). Manual legacy-editor check pending: needs a flag-off rebuild, which overwrites the flag-on test binaries.**
+- [x] 12.9 Record the go/no-go decision in the PR2 description and in Engram; if no-go, stop Slices 2-5.
+
+**Go/no-go result (2026-10-03): GO.** The user ran 12.1-12.6 on flag-on Debug builds (standalone and Cakewalk Sonar) and all passed: the UI renders, BPM -/+ drives the engine, the playhead follows playback, two instances work, DPI, focus and close/reopen are fine. The first run showed a blank window: the WebView stayed at 0x0 because `setSize()` ran `resized()` before the browser existed. Fixed in `WebEditor.cpp` by calling `resized()` after creating the browser and the fallback label, and confirmed via a DevTools probe (innerWidth/innerHeight 800x680, "+" changed BPM 120 to 121).
 
 ## Delivery Notes
 
 - PR1 is delivered as `size:exception`: ~880 authored lines against the 800 budget (forecast ~540). Of these, 380 are tests (C++ 231, Vitest 149). User decision, 2026-10-03.
+- PR2 is delivered as `size:exception`: ~885 authored lines against the 800 budget (forecast ~370). About 375 are tests and about 330 are PR1 review follow-ups (Phase 7b). User decision, 2026-10-03.
 - Open Question carried over: the Visual Studio fast up-to-date check can skip the pre-build after edits made only under `ui/`; use Rebuild in that case (accepted for the PoC).
 - Resave discipline: each `.jucer` is resaved only from its own directory, and only after the embed script has generated the stub (D4, D7).
 - Threat matrix: only the pre-build subprocess boundary applies; its RED cases are Phase 2.4 and the smoke checks 3.2-3.3.
