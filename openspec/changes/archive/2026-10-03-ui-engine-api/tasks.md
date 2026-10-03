@@ -112,11 +112,13 @@ Chain strategy: size-exception
 
 ## Phase 10: Manual Verification (human-only — flag clearly, not automatable)
 
-- [ ] 10.1 **MANUAL**: Run the standalone app (`Berlin.exe`) — confirm it launches and plays as before (no engine API change is reachable from the old editor except the Phase 7 exception).
-- [ ] 10.2 **MANUAL**: Confirm Synth on/off and FX on/off toggles still behave as before in the standalone app (no regression from the new `isSynthEnabled`/`areEffectsEnabled` getters, which are additive reads).
-- [ ] 10.3 **MANUAL**: Confirm the old editor still works end-to-end (knobs, presets, tempo sync) with only the Phase 7 one-line change applied.
-- [ ] 10.4 **MANUAL**: Listen for a click or dropout when the master level changes rapidly (stress beyond the 2205-sample unit test) — confirm the 50 ms smoother sounds clean in practice.
-- [ ] 10.5 **MANUAL, if a DAW is available**: Load `BerlinPlugin.vst3` in a host — confirm it scans, loads, and plays (first real exercise of the now-fixed Plugin build from Phase 9.2).
+- [x] 10.1 **MANUAL**: Run the standalone app (`Berlin.exe`) — confirm it launches and plays as before (no engine API change is reachable from the old editor except the Phase 7 exception).
+- [x] 10.2 **MANUAL**: Confirm Synth on/off and FX on/off toggles still behave as before in the standalone app (no regression from the new `isSynthEnabled`/`areEffectsEnabled` getters, which are additive reads).
+- [x] 10.3 **MANUAL**: Confirm the old editor still works end-to-end (knobs, presets, tempo sync) with only the Phase 7 one-line change applied.
+- [x] 10.4 **MANUAL**: Listen for a click or dropout when the master level changes rapidly (stress beyond the 2205-sample unit test) — confirm the 50 ms smoother sounds clean in practice.
+- [x] 10.5 **MANUAL, if a DAW is available**: Load `BerlinPlugin.vst3` in a host — confirm it scans, loads, and plays (first real exercise of the now-fixed Plugin build from Phase 9.2).
+
+**Phase 10 result (2026-10-03, user-run on a fresh Debug rebuild of `725cee5`):** 10.1-10.4 PASS in `Berlin.exe`, no clicks or dropouts heard. 10.5 PASS in Cakewalk Sonar (`BerlinPlugin.vst3` scans, loads, plays). 10.4 limitation: the old editor changes output level only through preset loads, so the smoother was exercised via preset switches, not a dedicated level control.
 
 Note: Threat matrix is N/A for this change (no routing/shell/subprocess/VCS/process-integration boundary; `exportMidi` writes only to a user-chosen absolute path, rejected pre-`juce::File` when relative per D13) — no RED tasks owed beyond Phases 1-6's cases already listed.
 
