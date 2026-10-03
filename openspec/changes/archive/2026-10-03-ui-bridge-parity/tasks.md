@@ -16,9 +16,9 @@ Strict TDD is active: every behavior task is RED (write the failing test, run it
 | PR1 | `feat/ui-bridge-parity` -> `feat/ui-webview-poc-pr2` (branch exists) | C++ host: gate, dialogs, `snapshot` event, `busy`, preset cache, `owner` removal | ~420 (prod ~230, tests ~190); risk Low | `BerlinTests --category=Berlin`; both app builds flag off and flag on | Revert PR1: UI still sends PoC commands; additive `busy` and cache are internal |
 | PR2 | `feat/ui-bridge-parity-pr2` -> PR1 | TS foundation: protocol, limits, status, bridges, store, dev script, App rewire | ~760; risk Medium (95% of budget) | `pnpm --dir ui test`; `typecheck`; `build` + no mock chunk | Revert PR2: C++ host stays inert; Slice 1 UI is restored |
 | PR2a | `feat/ui-bridge-parity-pr2` -> PR1 | Split of PR2: dev script, protocol, limits, status, `Bridge` interface, mock bridge, `assertNoMockChunk` (Phases 6-8 and part of 9) | ~626 measured | `pnpm --dir ui test`; `typecheck`; `build` + no mock chunk | Revert PR2a: nothing imports the new modules yet; Slice 1 UI unchanged |
-| PR2b | `feat/ui-bridge-parity-pr2b` -> PR2a | Split of PR2: `nativeBridge` rewrite, `resolveBridge`, store, context, App/main rewire (rest of Phase 9, Phases 10-11) | ~551 measured | `pnpm --dir ui test`; `typecheck`; `build` + no mock chunk | Revert PR2b: PR2a modules stay unused; Slice 1 UI is restored |
-| PR3 | `feat/ui-bridge-parity-pr3` -> PR2b (`feat/ui-bridge-parity-pr2b`) | Controls A: primitives, status, transport, toggles, generation, rhythm, pitch, evolution, export | ~760; risk Medium (95%) | `pnpm --dir ui test` | Revert PR3: store and bridges stay, panels vanish |
-| PR4 | `feat/ui-bridge-parity-pr4` -> PR3 | Controls B: synth, skew, delay, reverb, presets | ~740; risk Medium (93%) | `pnpm --dir ui test` | Revert PR4: Controls A stays |
+| PR2b | `feat/ui-bridge-parity-pr2-b` -> PR2a | Split of PR2: `nativeBridge` rewrite, `resolveBridge`, store, context, App/main rewire (rest of Phase 9, Phases 10-11) | ~551 measured | `pnpm --dir ui test`; `typecheck`; `build` + no mock chunk | Revert PR2b: PR2a modules stay unused; Slice 1 UI is restored |
+| PR3 (final, merged with PR4) | `feat/ui-bridge-parity-pr3` -> PR2b (`feat/ui-bridge-parity-pr2-b`) | Store hardening (PR2b review WARNINGs) + Controls A (primitives, status, transport, toggles, generation, rhythm, pitch, evolution, export) + Controls B (skew, delay recs, synth, delay, reverb, presets). `size:exception`, user decision 2026-10-03 | ~1,500 forecast + hardening; measured in the apply-progress | `pnpm --dir ui test` | Revert PR3: store and bridges stay, panels vanish |
+| PR4 | merged into PR3 (no separate branch) | Controls B moved into PR3 (Phases 19-22 run on `feat/ui-bridge-parity-pr3`) | n/a | n/a | n/a |
 
 Proposed split points if a PR measures above 800 during apply (do not exceed; stop and split instead):
 - PR2 -> PR2a (protocol, limits, status, bridge/native, resolveBridge, dev script) + PR2b (mock, `assertNoMockChunk`, store, App rewire). Cut at Phase 9/10.
@@ -35,9 +35,8 @@ Dependency diagram (each PR body must repeat it, marking the current PR):
     feat/ui-webview-poc-pr2 (Slice 1 PR2)
       <- PR1 feat/ui-bridge-parity       (C++ host)
            <- PR2a feat/ui-bridge-parity-pr2   (TS foundation: protocol, limits, status, mock)
-                <- PR2b feat/ui-bridge-parity-pr2b  (TS foundation: native, store, App rewire)
-                     <- PR3 feat/ui-bridge-parity-pr3  (Controls A)
-                          <- PR4 feat/ui-bridge-parity-pr4  (Controls B)
+                <- PR2b feat/ui-bridge-parity-pr2-b  (TS foundation: native, store, App rewire)
+                     <- PR3 feat/ui-bridge-parity-pr3  (Controls A + B, merged PR3/PR4, size:exception)
 
 ### Suggested Work Units
 
@@ -143,7 +142,7 @@ Files: `ui/src/store/status.ts`, `ui/src/store/status.test.ts` (spec: "Status Li
 
 Files: `ui/src/bridge/{bridge,native,mock,index}.ts` and tests, `ui/scripts/embed-lib.mjs`, `ui/scripts/embed-lib.test.mjs` (spec: "Bridge Interface And Implementations", "Mock Bridge Is Dev-Only").
 
-PR2 split: 9.2, 9.4, 9.7, 9.9 and the `bridge.ts` half of 9.6 ship in PR2a; 9.1, 9.3, the `native.ts` half of 9.6 and 9.8 moved to PR2b (code held outside the repo until branch `feat/ui-bridge-parity-pr2b` exists).
+PR2 split: 9.2, 9.4, 9.7, 9.9 and the `bridge.ts` half of 9.6 ship in PR2a; 9.1, 9.3, the `native.ts` half of 9.6 and 9.8 moved to PR2b (code held outside the repo until branch `feat/ui-bridge-parity-pr2-b` exists).
 
 - [x] 9.1 (PR2b) RED `native.test.ts` (rewritten against `window.__JUCE__`): `dispatch`, `getSnapshot`, `chooseExportFile`, `confirm` forward to native functions; `onPlayhead` and `onSnapshot` subscribe and unsubscribe; missing host degrades without throwing.
 - [x] 9.2 RED `mock.test.ts`: envelopes `{ok,...snapshot}`; value clamps to `limits.ts`; mock reproduces error tokens (`missing arg`, `invalid enum`, `exists`, `busy`).
@@ -158,7 +157,7 @@ PR2 split: 9.2, 9.4, 9.7, 9.9 and the `bridge.ts` half of 9.6 ship in PR2a; 9.1,
 
 ## Phase 10: External store (PR2b, strict TDD)
 
-PR2 split: this phase moved to PR2b; its code was written during the PR2 apply and is held outside the repo until branch `feat/ui-bridge-parity-pr2b` exists.
+PR2 split: this phase moved to PR2b; its code was written during the PR2 apply and is held outside the repo until branch `feat/ui-bridge-parity-pr2-b` exists.
 
 Files: `ui/src/store/{store,context}.ts(x)`, `ui/src/store/store.test.ts` (spec: store, optimistic, stale, failures requirements; D8, D13).
 
@@ -185,136 +184,148 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 
 ## Phase 12: PR2a verification, review gate, commit (PR2a, branch `feat/ui-bridge-parity-pr2`)
 
-- [ ] 12.1 Flag-off builds of both app solutions and `BerlinTests` unchanged (PR2 touches no C++); flag-on standalone build embeds the new UI and loads (smoke). **Partial: BerlinTests rebuilt and 379/379 green (PR2 touches no C++; embed-lib.mjs changed); flag-off app solutions and flag-on standalone smoke not run.**
-- [ ] 12.2 Size check: PR2 authored lines within 800 (~760 forecast). If above, stop and split at Phase 9/10 per the forecast. **Measured 1177 added lines (552 prod, 625 tests) > 800: STOP, split required (see apply-progress).** **After the split, PR2a measures 626 authored lines (prod 366, tests 260); typecheck, 125 tests and build green; `ui/dist` has no mock chunk.**
-- [ ] 12.3 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage.
-- [ ] 12.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
-- [ ] 12.5 USER commits (e.g. `feat: add typed bridge protocol, store and mock bridge`) and pushes; verify git state yourself.
-- [ ] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2a body: Chain Context, diagram (PR2a marked).
+- [x] 12.1 Flag-off builds of both app solutions and `BerlinTests` unchanged (PR2 touches no C++); flag-on standalone build embeds the new UI and loads (smoke). **Partial: BerlinTests rebuilt and 379/379 green (PR2 touches no C++; embed-lib.mjs changed); flag-off app solutions and flag-on standalone smoke not run.** **Done:** no C++ in PR2a/PR2b; BerlinTests 379/379 at 6a08097 (verify); flag-on embed covered by the be8629a flag-on build and Phase 23.
+- [x] 12.2 Size check: PR2 authored lines within 800 (~760 forecast). If above, stop and split at Phase 9/10 per the forecast. **Measured 1177 added lines (552 prod, 625 tests) > 800: STOP, split required (see apply-progress).** **After the split, PR2a measures 626 authored lines (prod 366, tests 260); typecheck, 125 tests and build green; `ui/dist` has no mock chunk.** **Done:** measured 1177, split into PR2a (92a0f7f) and PR2b (3b7b06d).
+- [x] 12.3 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage. **Done:** PR2a review-f87dcc7341bba45a, PR2b review-690e05e482f3264e (high tier, approved).
+- [x] 12.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Done:** both lineages bound to ui-bridge-parity before commit; pre-commit allow.
+- [x] 12.5 USER commits (e.g. `feat: add typed bridge protocol, store and mock bridge`) and pushes; verify git state yourself. **Done:** user committed and pushed 92a0f7f and 3b7b06d; git state verified.
+- [x] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2a body: Chain Context, diagram (PR2a marked). **Closed by maintainer decision (2026-10-03, option 1):** not run for PR2a/PR2b. Accepted as a tooling limit of stacked multi-commit lineages; every reviewed tree is unchanged and each commit passed pre-commit. Recorded in the archive report.
 
-## Phase 12b: PR2b restore, verification, review gate, commit (PR2b, branch `feat/ui-bridge-parity-pr2b` off PR2a)
+## Phase 12b: PR2b restore, verification, review gate, commit (PR2b, branch `feat/ui-bridge-parity-pr2-b` off PR2a)
 
-- [x] 12b.1 After PR2a is committed, create branch `feat/ui-bridge-parity-pr2b` from it; restore the held PR2b files over the workspace (see the holding `README.txt`); confirm 9.1 and 9.3 RED by temporarily reverting `native.ts`/`index.ts`, or record that RED was proven before the split. **Done: branch off PR2a 92a0f7f, files restored byte-identical by the orchestrator. RED for 9.1/9.3 was proven before the split (not re-proved by reverting).**
+- [x] 12b.1 After PR2a is committed, create branch `feat/ui-bridge-parity-pr2-b` from it; restore the held PR2b files over the workspace (see the holding `README.txt`); confirm 9.1 and 9.3 RED by temporarily reverting `native.ts`/`index.ts`, or record that RED was proven before the split. **Done: branch off PR2a 92a0f7f, files restored byte-identical by the orchestrator. RED for 9.1/9.3 was proven before the split (not re-proved by reverting).**
 - [x] 12b.2 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN and no mock chunk in `ui/dist`; then tick 9.1, 9.3, 9.6, 9.8, 9.10 and Phases 10-11. **Done 2026-10-03: typecheck clean, 158/158 tests (12 files), build OK; `ui/dist` = index.html + one JS asset, no mock chunk or mock module code (only the `loadMock` parameter identifier of `resolveBridge`, `undefined` in prod).**
 - [x] 12b.3 Size check: PR2b authored lines within 800 (~551 forecast); report the measured number. **Measured 656 added lines (232 prod, 424 tests) incl. the REL-1/REL-2 mock fix; 551 before the fix. Within 800.**
 - [x] 12b.x Fix PR2a review WARNINGs REL-1/REL-2 in `mock.ts` (strict TDD): synced delay derived in `setPatch`/`setBpm` (D7); `setGenerationParams` rounds ints after clamp and applies `normalizePitchRange` / lone-field span clamp (D12). 8 RED tests then GREEN (mock.test.ts 28/28).
-- [ ] 12b.4 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage.
-- [ ] 12b.5 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
-- [ ] 12b.6 USER commits (e.g. `feat: add native bridge, store and app rewire`) and pushes; verify git state yourself.
-- [ ] 12b.7 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2`. PR2b body: Chain Context, diagram (PR2b marked).
+- [x] 12b.4 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage. **Approved: lineage review-690e05e482f3264e.**
+- [x] 12b.5 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Bound, revision sha256:36a7f322....**
+- [x] 12b.6 USER commits (e.g. `feat: add native bridge, store and app rewire`) and pushes; verify git state yourself. **Commit 3b7b06d, pushed.**
+- [x] 12b.7 **pre-push and pre-pr allow.** Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2`. PR2b body: Chain Context, diagram (PR2b marked).
 
-## Phase 13: Primitives and seed helper (PR3; branch `feat/ui-bridge-parity-pr3` off PR2b)
+## Phase 13: Store hardening, primitives and seed helper (PR3; branch `feat/ui-bridge-parity-pr3` off PR2b)
 
-- [ ] 13.1 Create branch `feat/ui-bridge-parity-pr3` from PR2b (`feat/ui-bridge-parity-pr2b`); re-run Vitest baseline.
-- [ ] 13.2 RED `components/controls/controls.test.tsx`: `Slider` (value, `onChange`, disabled, optional `skew` prop passes through), `Select`, `Toggle`, `Button` render and fire handlers.
-- [ ] 13.3 RED `lib/seed.test.ts`: `/^-?\d+$/` accepts `0`, `-5`, a 19-digit seed as a string (no Number rounding); rejects `""`, `1.5`, `abc`, `--1` (spec "Seed Validation").
-- [ ] 13.4 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 13.5 GREEN `components/controls/{Slider,Select,Toggle,Button}.tsx` and `lib/seed.ts` (D11, D12).
+- [x] 13.1 Branch `feat/ui-bridge-parity-pr3` exists off PR2b (`feat/ui-bridge-parity-pr2-b`, commit 3b7b06d); re-run Vitest baseline. **Baseline 158/158 (12 files), 2026-10-03.**
+- [x] 13.6 Store hardening RES-1 (PR2b review WARNING), strict TDD: in `store.ts` `run()`, a malformed resolved result (null, undefined, missing `ok`, `ok:true` without a snapshot, `ok:false` without a string error) or a throw inside the success handler MUST still settle the key and set a status, with no unhandled rejection. RED tests first, then a result-shape validator and a trailing catch. **Done: 14 RED tests (8 RES-1, 6 RES-2) confirmed failing, then GREEN; store.test.ts 45/45. Malformed shapes: null, undefined, no ok, ok:true without snapshot, ok:false without string error -> `Error: malformed response`.**
+- [x] 13.7 Store hardening RES-2, strict TDD: per-dispatch settle timeout, injectable (`createStore(bridge, {settleTimeoutMs})`, default 5000). On timeout settle the key (drop the overlay, set a status, send any pending value). A late response after the timeout MUST NOT disturb the key's newer run or re-apply stale state (seq rules). **Done: default 5000 ms, `Error: request timed out`; a late response after the timeout cannot touch the key newer run (settled guard) and is applied only by the seq rule.**
+- [x] 13.8 Store hardening READ-1, strict TDD (type-level): typed `StoreKey` with a per-key value type, so `send` and `shown` stay paired by type for every control; document the key convention in `store.ts`. **Done: `KeyValues`/`StoreKey` in store.ts with the key convention comment; `send` and `shown` are typed by it; `keys.test.ts` ts-expect-error lines enforced by typecheck (RED: 7 tsc errors).**
+- [x] 13.9 Suggestions: `main.tsx` catches a `resolveBridge` rejection, logs it and falls back to `nativeBridge`; fix the garbled `stdClamp` comment in `mock.ts`. **Done: `resolveBridgeOrNative` in bridge/index.ts (3 RED tests) used by main.tsx; stdClamp comment fixed.**
+- [x] 13.2 RED `components/controls/controls.test.tsx`: `Slider` (value, `onChange`, disabled, optional `skew` prop passes through), `Select`, `Toggle`, `Button` render and fire handlers.
+- [x] 13.3 RED `lib/seed.test.ts`: `/^-?\d+$/` accepts `0`, `-5`, a 19-digit seed as a string (no Number rounding); rejects `""`, `1.5`, `abc`, `--1` (spec "Seed Validation").
+- [x] 13.4 Run `pnpm --dir ui test`; confirm fail.
+- [x] 13.5 GREEN `components/controls/{Slider,Select,Toggle,Button}.tsx` and `lib/seed.ts` (D11, D12). **Done: Slider (optional `skew` mapper {toPosition,toValue}), Select, Toggle, Button, seed.ts.**
 
 ## Phase 14: StatusLine and Transport (PR3, strict TDD)
 
-- [ ] 14.1 RED `StatusLine.test.tsx`: renders store status text; error rows use the error style; seed message `Seed must be a whole number.`.
-- [ ] 14.2 RED `Transport.test.tsx`: Play/Stop sends the matching command and shows `playing` from the snapshot; BPM +/- and input send `setBpm`; master level slider sends `setMasterLevel` and reverts on failure.
-- [ ] 14.3 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 14.4 GREEN `StatusLine.tsx` and `Transport.tsx`.
+- [x] 14.1 RED `StatusLine.test.tsx`: renders store status text; error rows use the error style; seed message `Seed must be a whole number.`.
+- [x] 14.2 RED `Transport.test.tsx`: Play/Stop sends the matching command and shows `playing` from the snapshot; BPM +/- and input send `setBpm`; master level slider sends `setMasterLevel` and reverts on failure.
+- [x] 14.3 Run `pnpm --dir ui test`; confirm fail.
+- [x] 14.4 GREEN `StatusLine.tsx` and `Transport.tsx`. **Done.**
 
 ## Phase 15: Toggles and Generation (PR3, strict TDD)
 
-- [ ] 15.1 RED `EngineToggles.test.tsx`: Synth and FX toggles send `setSynthEnabled`/`setEffectsEnabled` (spec "Toggle FX").
-- [ ] 15.2 RED `GenerationPanel.test.tsx`: Generate/Randomize/Mutate send `regenerate`/`mutate` with the right args and show `Generated.`/`Randomized.`/`Mutated.`; seed field sends `setSeed` with the raw string and, when invalid, no dispatch plus the seed message; large seed preserved; Lock disables Randomize; rhythm fields reflect the snapshot.
-- [ ] 15.3 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 15.4 GREEN `EngineToggles.tsx` and `GenerationPanel.tsx`.
+- [x] 15.1 RED `EngineToggles.test.tsx`: Synth and FX toggles send `setSynthEnabled`/`setEffectsEnabled` (spec "Toggle FX").
+- [x] 15.2 RED `GenerationPanel.test.tsx`: Generate/Randomize/Mutate send `regenerate`/`mutate` with the right args and show `Generated.`/`Randomized.`/`Mutated.`; seed field sends `setSeed` with the raw string and, when invalid, no dispatch plus the seed message; large seed preserved; Lock disables Randomize; rhythm fields reflect the snapshot.
+- [x] 15.3 Run `pnpm --dir ui test`; confirm fail.
+- [x] 15.4 GREEN `EngineToggles.tsx` and `GenerationPanel.tsx`. **Done. The rhythm-fields-reflect-snapshot check of 15.2 lives in RhythmPanel.test.tsx (16.1), where the fields are.**
 
 ## Phase 16: Rhythm, Pitch, Evolution (PR3, strict TDD)
 
-- [ ] 16.1 RED `RhythmPanel.test.tsx`: mode, pulses, rotation, chance send `setGenerationParams` live (spec "Live send"); fields reflect the snapshot.
-- [ ] 16.2 RED `PitchPanel.test.tsx`: scale choices equal the `ScaleType` list; root sends `setGenerationParams`; range Lo/Hi sends `rangeLow` and `rangeHigh` together under key `gen.range` (spec "Range sent together").
-- [ ] 16.3 RED `EvolutionPanel.test.tsx`: Auto-Evolve toggle and rate send `setAutoEvolveEnabled`/`setAutoEvolveRate`; a `snapshot` event updates `mutationCount` display.
-- [ ] 16.4 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 16.5 GREEN `RhythmPanel.tsx`, `PitchPanel.tsx`, `EvolutionPanel.tsx`.
+- [x] 16.1 RED `RhythmPanel.test.tsx`: mode, pulses, rotation, chance send `setGenerationParams` live (spec "Live send"); fields reflect the snapshot.
+- [x] 16.2 RED `PitchPanel.test.tsx`: scale choices equal the `ScaleType` list; root sends `setGenerationParams`; range Lo/Hi sends `rangeLow` and `rangeHigh` together under key `gen.range` (spec "Range sent together").
+- [x] 16.3 RED `EvolutionPanel.test.tsx`: Auto-Evolve toggle and rate send `setAutoEvolveEnabled`/`setAutoEvolveRate`; a `snapshot` event updates `mutationCount` display.
+- [x] 16.4 Run `pnpm --dir ui test`; confirm fail.
+- [x] 16.5 GREEN `RhythmPanel.tsx`, `PitchPanel.tsx`, `EvolutionPanel.tsx`. **Done. Found in GREEN: a tuple selector (gen.range) loops useSyncExternalStore, so PitchPanel selects each end as a number.**
 
 ## Phase 17: Export flow and composition (PR3, strict TDD)
 
-- [ ] 17.1 RED `ExportButton.test.tsx` with a fake `Bridge`: chosen path -> `exportMidi{path}` then `Exported to <file name>`; cancelled -> no dispatch; `error:"busy"` -> status `Busy, try again`, no dispatch; `writeFailed` -> `Export failed: could not write the file.`.
-- [ ] 17.2 RED `App.test.tsx` addition: all PR3 panels are present in `App`; disabled states (FX off) per spec "Disabled States".
-- [ ] 17.3 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 17.4 GREEN `ExportButton.tsx`; compose PR3 panels in `App.tsx`.
-- [ ] 17.5 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN.
+- [x] 17.1 RED `ExportButton.test.tsx` with a fake `Bridge`: chosen path -> `exportMidi{path}` then `Exported to <file name>`; cancelled -> no dispatch; `error:"busy"` -> status `Busy, try again`, no dispatch; `writeFailed` -> `Export failed: could not write the file.`.
+- [x] 17.2 RED `App.test.tsx` addition: all PR3 panels are present in `App`; disabled states (FX off) per spec "Disabled States". **Done. FX-off disabling of Delay/Reverb belongs to batch 2 (Phase 20); here: all PR3 panels composed, Randomize disabled with Lock Seed, and a step display from `snapshot` events.**
+- [x] 17.3 Run `pnpm --dir ui test`; confirm fail.
+- [x] 17.4 GREEN `ExportButton.tsx`; compose PR3 panels in `App.tsx`.
+- [x] 17.5 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN. **Done 2026-10-03: typecheck clean, 280/280 tests (23 files), build OK, no mock chunk or mock engine code in ui/dist.**
 
 ## Phase 18: PR3 verification, review gate, commit (PR3)
 
-- [ ] 18.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR3 panels.
-- [ ] 18.2 Size check: PR3 within 800 (~760 forecast); if above, split at Phase 15/16.
-- [ ] 18.3 `gentle-ai review start`; lenses; finalize; approved lineage.
-- [ ] 18.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
-- [ ] 18.5 USER commits (e.g. `feat: add transport, generation, pitch, evolution and export controls`) and pushes; verify git state yourself.
-- [ ] 18.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2b`. PR3 body: Chain Context, diagram (PR3 marked).
+- [x] 18.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR3 panels. **Batch 1 touched no C++ (ui/ and openspec only), so BerlinTests and the app solutions are unaffected; not rebuilt. The flag-on standalone smoke is NOT run (needs the user build); left open for the final gate.** **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
+- [x] 18.2 Size check: PR3 within 800 (~760 forecast); if above, split at Phase 15/16. **Measured (batch 1, size:exception): 1621 added authored lines in ui/ (prod 521, tests 1100 incl. the 79-line harness).**
+- [x] 18.3 `gentle-ai review start`; lenses; finalize; approved lineage. **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
+- [x] 18.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
+- [x] 18.5 USER commits (e.g. `feat: add transport, generation, pitch, evolution and export controls`) and pushes; verify git state yourself. **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
+- [x] 18.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b`. (Phase 18 is a batch-1 checkpoint only: PR3 and PR4 are one PR; the review, commit and final gate run once, after Phase 22.) **Superseded:** Phase 18 checkpoint folded into the final PR (8d83912); see 22.x.
 
-## Phase 19: Skew and delay recommendation helpers (PR4; branch `feat/ui-bridge-parity-pr4` off PR3)
+## Phase 19: Skew and delay recommendation helpers (formerly PR4; same branch `feat/ui-bridge-parity-pr3`, merged into PR3)
 
-- [ ] 19.1 Create branch `feat/ui-bridge-parity-pr4` from PR3; re-run Vitest baseline.
-- [ ] 19.2 RED `lib/skew.test.ts`: JUCE midpoint skew; midpoints cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2; round trip and endpoints exact (spec "Skewed Sliders").
-- [ ] 19.3 RED `lib/delayRecs.test.ts`: at 120 bpm `60000/bpm × [2,1,.75,.5,1/3,.25]` rounded to whole ms with labels `1/2, 1/4, 1/8., 1/8, 1/8T, 1/16`; recomputes at other bpm.
-- [ ] 19.4 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 19.5 GREEN `lib/skew.ts` and `lib/delayRecs.ts` (D12).
+- [x] 19.1 (No new branch: PR4 is merged into PR3.) Re-run the Vitest baseline after Phase 18. **Baseline 280/280 (23 files).**
+- [x] 19.2 RED `lib/skew.test.ts`: JUCE midpoint skew; midpoints cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2; round trip and endpoints exact (spec "Skewed Sliders"). **Done: skew.test.ts, 18 tests; RED = module missing.**
+- [x] 19.3 RED `lib/delayRecs.test.ts`: at 120 bpm `60000/bpm × [2,1,.75,.5,1/3,.25]` rounded to whole ms with labels `1/2, 1/4, 1/8., 1/8, 1/8T, 1/16`; recomputes at other bpm. **Done: delayRecs.test.ts, 4 tests; RED = module missing.**
+- [x] 19.4 Run `pnpm --dir ui test`; confirm fail. **Confirmed: 2 suites failed to load.**
+- [x] 19.5 GREEN `lib/skew.ts` and `lib/delayRecs.ts` (D12). **Done: 22/22. skew.ts (makeSkew + SKEWS, {toPosition,toValue} mapper) and delayRecs.ts (delayRecommendations, formatDelayRecommendations).**
 
 ## Phase 20: Synth, Delay, Reverb (PR4, strict TDD)
 
-- [ ] 20.1 RED `SynthPanel.test.tsx`: waveform choices equal the `Waveform` list; cutoff slider uses skew and sends `setPatch{cutoff}`; pulse width, resonance, ADSR, LFO destination/rate/depth send `setPatch` per field.
-- [ ] 20.2 RED `DelayPanel.test.tsx`: Sync on stores `draft.lastManualDelay` and Sync off restores it; Time disabled while Sync is on; recommendations shown and update with BPM; division, feedback, mix send `setPatch`.
-- [ ] 20.3 RED `ReverbPanel.test.tsx`: Room, Damping, Wet, Dry send `setPatch` (spec "Wet change"); delay and reverb disabled while FX is off.
-- [ ] 20.4 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 20.5 GREEN `SynthPanel.tsx`, `DelayPanel.tsx`, `ReverbPanel.tsx`.
+- [x] 20.1 RED `SynthPanel.test.tsx`: waveform choices equal the `Waveform` list; cutoff slider uses skew and sends `setPatch{cutoff}`; pulse width, resonance, ADSR, LFO destination/rate/depth send `setPatch` per field. **Done: SynthPanel.test.tsx, 13 tests.**
+- [x] 20.2 RED `DelayPanel.test.tsx`: Sync on stores `draft.lastManualDelay` and Sync off restores it; Time disabled while Sync is on; recommendations shown and update with BPM; division, feedback, mix send `setPatch`. **Done: DelayPanel.test.tsx, 9 tests. Sync off restores the time in the SAME setPatch (delaySynced:false + delayTimeSeconds) so the host does not overwrite it.**
+- [x] 20.3 RED `ReverbPanel.test.tsx`: Room, Damping, Wet, Dry send `setPatch` (spec "Wet change"); delay and reverb disabled while FX is off. **Done: ReverbPanel.test.tsx, 4 tests (FX-off disabling checked for delay and reverb).**
+- [x] 20.4 Run `pnpm --dir ui test`; confirm fail. **Confirmed: 3 suites failed to load.**
+- [x] 20.5 GREEN `SynthPanel.tsx`, `DelayPanel.tsx`, `ReverbPanel.tsx`. **Done: 26/26 (one test-side fix: the LFO rate initial value is already the midpoint, so the test moves it to 0.75).**
 
 ## Phase 21: Presets UI and composition (PR4, strict TDD)
 
-- [ ] 21.1 RED `PresetPanel.test.tsx` with a fake `Bridge`: Save disabled with empty name, Load disabled with no selection; new name -> `savePreset{overwrite:false}` -> `Saved "<name>".`; `exists` -> `confirm` -> true -> `savePreset{overwrite:true}`; declined -> no second dispatch; Load fills the name field and shows `Loaded "<name>".`; Load `busy` -> `Busy, try again`, name unchanged; `presetNames` refresh from the snapshot.
-- [ ] 21.2 RED `App.test.tsx` addition: all PR4 panels present.
-- [ ] 21.3 Run `pnpm --dir ui test`; confirm fail.
-- [ ] 21.4 GREEN `PresetPanel.tsx`; compose PR4 panels in `App.tsx`.
-- [ ] 21.5 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN and no mock chunk.
+- [x] 21.1 RED `PresetPanel.test.tsx` with a fake `Bridge`: Save disabled with empty name, Load disabled with no selection; new name -> `savePreset{overwrite:false}` -> `Saved "<name>".`; `exists` -> `confirm` -> true -> `savePreset{overwrite:true}`; declined -> no second dispatch; Load fills the name field and shows `Loaded "<name>".`; Load `busy` -> `Busy, try again`, name unchanged; `presetNames` refresh from the snapshot. **Done: PresetPanel.test.tsx, 12 tests.**
+- [x] 21.2 RED `App.test.tsx` addition: all PR4 panels present. **Done: App.test.tsx Controls B (26 RED, then green), incl. FX-off disabling of delay and reverb from the App.**
+- [x] 21.3 Run `pnpm --dir ui test`; confirm fail. **Confirmed: 26 App tests failed, PresetPanel suite missing.**
+- [x] 21.4 GREEN `PresetPanel.tsx`; compose PR4 panels in `App.tsx`. **Done. Needed a store extension: Store.send takes an optional onSettled(outcome) callback (7 RED tests in store.test.ts) so the save flow can see the `exists` token without bypassing the store.**
+- [x] 21.5 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN and no mock chunk. **Done 2026-10-03: typecheck clean, 373/373 tests (29 files), build OK, ui/dist = index.html + one JS asset, no mock chunk or mock engine strings.**
 
 ## Phase 22: PR4 verification, review gate, commit (PR4)
 
-- [ ] 22.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR4 panels.
-- [ ] 22.2 Size check: PR4 within 800 (~740 forecast); if above, split at Phase 20/21.
-- [ ] 22.3 `gentle-ai review start`; lenses; finalize; approved lineage.
-- [ ] 22.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
-- [ ] 22.5 USER commits (e.g. `feat: add synth, delay, reverb and preset controls`) and pushes; verify git state yourself.
-- [ ] 22.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr3`. PR4 body: Chain Context, diagram (PR4 marked).
+- [x] 22.1 Flag-off builds and `BerlinTests` unchanged; flag-on standalone smoke of the PR4 panels. **Flag-on Debug x64 builds of App and Plugin done (EmbeddedAssets BERLIN_EMBEDDED_ASSETS_FULL 1); tracked project files reverted to HEAD. The smoke of the panels is the user manual Phase 23. Left open: flag-off app builds and BerlinTests not re-run (no C++ changed).** **Done:** flag-on Debug x64 App and VST3 built at be8629a; flag-off rebuild with pnpm off PATH (23.20); BerlinTests 379/379.
+- [x] 22.2 Size check: PR4 within 800 (~740 forecast); if above, split at Phase 20/21. **Measured (whole final PR vs 3b7b06d, size:exception): 2513 added authored lines in ui/ (prod 765, tests 1748 incl. harness); batch 2 alone ~892 (prod 244, tests 648).**
+- [x] 22.3 `gentle-ai review start`; lenses; finalize; approved lineage. **Done:** final PR review-f89e70d4742c5bd1 (high), follow-up review-a4251d62e397f4af (medium), approved.
+- [x] 22.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Done:** both lineages bound before commit; pre-commit allow.
+- [x] 22.5 USER commits (e.g. `feat: add synth, delay, reverb and preset controls`) and pushes; verify git state yourself. **Done:** committed 8d83912 and be8629a (user-authorized), user pushed; remote verified at be8629a.
+- [x] 22.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b` (merged PR3/PR4: the base is PR2b, not PR3). Final PR body: Chain Context, diagram (PR3 marked), `size:exception` note. **Closed by maintainer decision (2026-10-03, option 1):** pre-push allow for review-a4251d62e397f4af only; review-f89e70d4742c5bd1 pre-push invalidated (not one commit from reviewed base) and both pre-pr scope-changed against origin/feat/ui-bridge-parity-pr2-b. Accepted as a tooling limit of stacked multi-commit lineages; every reviewed tree is unchanged and each commit passed pre-commit. Recorded in the archive report.
+
+## Phase 22b: Final-review parity follow-ups (lineage review-f89e70d4742c5bd1, approved; applied after HEAD 8d83912, uncommitted)
+
+- [x] 22b.1 REL-1: Evolve rate is a Select with exactly the legacy choices 1, 2, 4, 8, 16 (`Every N loops`, as the legacy ComboBox); the test that sent 9 now sends 8 and 16 and asserts the option list. `EvolutionPanel.tsx`. RED: 2 failed (range input, no options); GREEN 5/5.
+- [x] 22b.2 REL-2: seed is trimmed first (`normalizeSeed`), validated, and the TRIMMED string is sent and shown (legacy trims at editor line ~159). `seed.ts`, `GenerationPanel.tsx`; `' 5'` and `'5 '` moved from rejected to accepted-after-trim, blank stays invalid. RED: normalizeSeed missing + untrimmed send; GREEN 21/21 and 11/11.
+- [x] 22b.3 REL-3: `formatDelayRecommendations` matches `Source/core/TempoSync.cpp:29-47` exactly: `<label> <ms> ms` joined with ` | `. Updated delayRecs, DelayPanel and App assertions. RED: 3 failed on the old `=`/`, ` format.
+- [x] 22b.4 REL-4: Sync-to-Free restore no longer depends on the panel having turned Sync on. Order: `draft.lastManualDelay`, else the last time shown while unsynced (snapshots), else 0.3 (`kDefaultPatch.delayTimeSeconds`, `SynthPatch.h`); still one `setPatch {delaySynced:false, delayTimeSeconds}`. The old test "no remembered time sends only delaySynced" is replaced by two tests (host-synced restores the last unsynced time; synced-from-start falls back to 0.3). Note: the mock engine default delay time is 0.5, the C++ default is 0.3; the fallback uses the C++ value. `DelayPanel.tsx`.
 
 ## Phase 23: Manual parity checklist (HUMAN-ONLY, flag-on build)
 
 Who: the user. Run flag-on in standalone `Berlin.exe` AND Cakewalk Sonar (`BerlinPlugin.vst3`). Compare each item against the legacy editor (explore.md section 1). Any failure blocks the Slice.
 
-- [ ] 23.1 **MANUAL** Export MIDI: native save dialog opens at `Documents/Berlin/berlin-export.mid`; file is written; cancel does nothing.
-- [ ] 23.2 **MANUAL** Synth and FX toggles.
-- [ ] 23.3 **MANUAL** Tempo (BPM -/+ and input); the synced delay recomputes.
-- [ ] 23.4 **MANUAL** Delay Sync (restores the last manual time), Division, Time (disabled in Sync), Feedback, Mix.
-- [ ] 23.5 **MANUAL** Delay recommendations label matches the legacy label at the same BPM.
-- [ ] 23.6 **MANUAL** Reverb Room, Damping, Wet, Dry; delay and reverb disabled while FX is off.
-- [ ] 23.7 **MANUAL** Seed (valid, invalid red message, large value).
-- [ ] 23.8 **MANUAL** Generate, Randomize (disabled with Lock), Mutate.
-- [ ] 23.9 **MANUAL** Lock Seed, Rhythm mode, Pulses, Rotation, Chance %.
-- [ ] 23.10 **MANUAL** Scale, Root, Range Lo/Hi (range clamps together).
-- [ ] 23.11 **MANUAL** Preset save (new name), overwrite prompt confirm and decline, load fills the name, load while busy shows `Busy, try again`.
-- [ ] 23.12 **MANUAL** Auto-Evolve and Rate; the UI follows evolution via `snapshot` events.
-- [ ] 23.13 **MANUAL** Waveform, Pulse Width, Cutoff, Resonance, ADSR, LFO Dest/Rate/Depth (skewed sliders feel like legacy).
-- [ ] 23.14 **MANUAL** Status line messages for each error path reachable by hand.
-- [ ] 23.15 **MANUAL** Play/Stop and the playhead row follow playback.
-- [ ] 23.16 **MANUAL** Master level slider.
-- [ ] 23.17 **MANUAL** Dialog close mid-flight: close the editor while the export chooser, then the overwrite confirm, is open; no crash, no stale callback. Confirm whether the Win32 teardown invokes the callback synchronously (design open question).
-- [ ] 23.18 **MANUAL** `snapshot` event on auto-evolve and on state restore (save the host project, reopen, UI shows restored values; auto-evolve updates the pattern live).
-- [ ] 23.19 **MANUAL** Slider drags do not re-parse presets (no stutter with a large preset folder).
-- [ ] 23.20 **MANUAL** Flag-off: rebuild with the flag off; the legacy editor is unchanged in standalone and Sonar, and the build works with pnpm absent from PATH.
-- [ ] 23.21 Record the parity result in the last PR description and in Engram.
+- [x] 23.1 **MANUAL** Export MIDI: native save dialog opens at `Documents/Berlin/berlin-export.mid`; file is written; cancel does nothing.
+- [x] 23.2 **MANUAL** Synth and FX toggles.
+- [x] 23.3 **MANUAL** Tempo (BPM -/+ and input); the synced delay recomputes.
+- [x] 23.4 **MANUAL** Delay Sync (restores the last manual time), Division, Time (disabled in Sync), Feedback, Mix.
+- [x] 23.5 **MANUAL** Delay recommendations label matches the legacy label at the same BPM.
+- [x] 23.6 **MANUAL** Reverb Room, Damping, Wet, Dry; delay and reverb disabled while FX is off.
+- [x] 23.7 **MANUAL** Seed (valid, invalid red message, large value).
+- [x] 23.8 **MANUAL** Generate, Randomize (disabled with Lock), Mutate.
+- [x] 23.9 **MANUAL** Lock Seed, Rhythm mode, Pulses, Rotation, Chance %.
+- [x] 23.10 **MANUAL** Scale, Root, Range Lo/Hi (range clamps together).
+- [x] 23.11 **MANUAL** Preset save (new name), overwrite prompt confirm and decline, load fills the name, load while busy shows `Busy, try again`.
+- [x] 23.12 **MANUAL** Auto-Evolve and Rate; the UI follows evolution via `snapshot` events.
+- [x] 23.13 **MANUAL** Waveform, Pulse Width, Cutoff, Resonance, ADSR, LFO Dest/Rate/Depth (skewed sliders feel like legacy).
+- [x] 23.14 **MANUAL** Status line messages for each error path reachable by hand.
+- [x] 23.15 **MANUAL** Play/Stop and the playhead row follow playback.
+- [x] 23.16 **MANUAL** Master level slider.
+- [x] 23.17 **MANUAL** Dialog close mid-flight: close the editor while the export chooser, then the overwrite confirm, is open; no crash, no stale callback. Confirm whether the Win32 teardown invokes the callback synchronously (design open question).
+- [x] 23.18 **MANUAL** `snapshot` event on auto-evolve and on state restore (save the host project, reopen, UI shows restored values; auto-evolve updates the pattern live).
+- [x] 23.19 **MANUAL** Slider drags do not re-parse presets (no stutter with a large preset folder).
+- [x] 23.20 **MANUAL** Flag-off: rebuild with the flag off; the legacy editor is unchanged in standalone and Sonar, and the build works with pnpm absent from PATH.
+- [x] 23.21 Record the parity result in the last PR description and in Engram.
 
 ## Delivery Notes
 
 - Flag-on test builds need `BERLIN_WEB_UI=1` in the `.jucer` project defines (`JUCERPROJECT@defines`; plugin: a new `&#10;` line after `JUCE_VST3_CAN_REPLACE_VST2=0`), then a Projucer resave (`H:\Proyectos\Juce\Projucer\Projucer.exe --resave <jucer>`, each from its own directory). Revert both edits and resave before commit; the flag-off diff of `.jucer`/vcxproj must be empty.
 - The Projucer per-configuration prebuild runs in all 3 plugin targets.
 - Review budget is 800 authored lines per PR, excluding lockfiles and generated files (`ui/pnpm-lock.yaml`, `ui/src/bridge/juce/index.js`, `Source/ui/generated/*`, Projucer output). PR2-PR4 forecasts sit at 93-95% of budget; the split points are listed in the forecast. Do not exceed; split.
-- PR2 split into PR2a (`feat/ui-bridge-parity-pr2`, ~626) and PR2b (`feat/ui-bridge-parity-pr2b`, targets PR2a, ~551) after apply measured 1177 lines; user decision 2026-10-03.
+- PR2 split into PR2a (`feat/ui-bridge-parity-pr2`, ~626) and PR2b (`feat/ui-bridge-parity-pr2-b`, targets PR2a, ~551) after apply measured 1177 lines; user decision 2026-10-03.
+- PR3 and PR4 are merged into ONE PR on `feat/ui-bridge-parity-pr3`, based on `feat/ui-bridge-parity-pr2-b` (the user's branch name), delivered as `size:exception`, by user decision 2026-10-03. The final gate's `--base-ref` is `origin/feat/ui-bridge-parity-pr2-b`. Batch 1 = store hardening + Phases 13-18; batch 2 = Phases 19-22.
 - Decision applied: the busy message is the legacy string `Busy, try again`.
 - User-reviewable new status strings with no legacy source: `Export failed: the path is not absolute.`, `A preset with that name already exists.` and `Error: <message>`.
 - Chained-PR skill note: `gentle-ai-chained-pr` was not found in the skill registry; `C:\Users\ran_k\.claude\skills\chained-pr\SKILL.md` was used instead. Each PR body repeats the dependency diagram.

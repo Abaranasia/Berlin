@@ -38,7 +38,7 @@ const DIVISION_BEATS: Record<string, number> = {
 };
 const MIN_PITCH_RANGE_SPAN = 12;
 const [MIN_PITCH, MAX_PITCH] = [GENERATION_LIMITS.rangeLow.min, GENERATION_LIMITS.rangeLow.max];
-// std::clamp semantics (lo wins over v, hi wins over lo's check order), as in UiBridge.
+// std::clamp as in UiBridge: below lo gives lo, otherwise above hi gives hi, otherwise v (so lo wins when lo > hi).
 const stdClamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : hi < v ? hi : v);
 // std::lround: half away from zero.
 const lround = (v: number): number => Math.sign(v) * Math.round(Math.abs(v));
