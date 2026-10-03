@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readWebUiFlag, renderAssetSources, computeStamp, runPipeline, withLock, renameWithRetry, PNPM_TIMEOUT_MS } from './embed-lib.mjs';
+import { readWebUiFlag, renderAssetSources, computeStamp, runPipeline, withLock, renameWithRetry, PNPM_TIMEOUT_MS, assertNoMockChunk } from './embed-lib.mjs';
 
 const jucer = (defines, extra = '') =>
   `<?xml version="1.0"?>\n<JUCERPROJECT id="x" name="Berlin" ${defines === null ? '' : `defines="${defines}"`}>\n${extra}</JUCERPROJECT>`;
@@ -311,5 +311,27 @@ describe('renameWithRetry', () => {
     let n = 0;
     expect(() => renameWithRetry({ rename: () => { n++; throw err('EACCES'); }, sleep: () => {} }, 'a', 'b', 5)).toThrow('EACCES');
     expect(n).toBe(1);
+  });
+});
+
+describe('assertNoMockChunk (mock bridge is dev-only)', () => {
+  const asset = (path) => ({ path, data: Buffer.from('x') });
+
+  it('passes when no asset name matches /mock/', () => {
+    expect(() => assertNoMockChunk([asset('index.html'), asset('assets/index-abc123.js')])).not.toThrow();
+  });
+  it('throws and names the offending file', () => {
+    expect(() => assertNoMockChunk([asset('index.html'), asset('assets/mock-9f8e7d.js')])).toThrow(/BRL007.*assets\/mock-9f8e7d\.js/);
+  });
+  it('the pipeline refuses to embed a build that contains a mock chunk', () => {
+    const files = {};
+    const io = {
+      stampInputs: () => [],
+      collectAssets: () => [asset('assets/mock-1.js')],
+      read: () => null,
+      writeIfChanged: (n, c) => ((files[n] = c), true),
+    };
+    expect(() => runPipeline({ flagOn: true, spawn: () => ({ status: 0 }), io })).toThrow(/BRL007/);
+    expect(files).toEqual({});
   });
 });
