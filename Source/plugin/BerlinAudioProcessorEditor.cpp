@@ -918,6 +918,8 @@ juce::String BerlinAudioProcessorEditor::describePresetFailure (berlin::PresetRe
             return "Preset file is invalid or corrupted.";
         case berlin::PresetResult::unsupportedVersion:
             return "Preset was saved by a newer version of Berlin.";
+        case berlin::PresetResult::busy:
+            return "Busy, try again";
         case berlin::PresetResult::ok:
         default:
             return {};

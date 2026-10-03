@@ -52,6 +52,43 @@ void PlayheadChangeDetector::commit (PlayheadState state) noexcept
     hasCommitted = true;
 }
 
+void PendingEventGate::markPending() noexcept
+{
+    pending = true;
+}
+
+bool PendingEventGate::shouldEmit (bool visible) const noexcept
+{
+    return pending && visible;
+}
+
+void PendingEventGate::commit() noexcept
+{
+    pending = false;
+}
+
+juce::File defaultExportFile (const juce::File& documentsDir)
+{
+    return documentsDir.getChildFile ("Berlin").getChildFile ("berlin-export.mid");
+}
+
+juce::var exportChooserResult (const juce::File& result)
+{
+    auto* object = new juce::DynamicObject();
+    object->setProperty ("cancelled", result == juce::File());
+    object->setProperty ("path", result == juce::File() ? juce::String() : result.getFullPathName());
+    return juce::var (object);
+}
+
+juce::var busyChooserResult()
+{
+    auto* object = new juce::DynamicObject();
+    object->setProperty ("cancelled", true);
+    object->setProperty ("path", juce::String());
+    object->setProperty ("error", "busy");
+    return juce::var (object);
+}
+
 std::optional<juce::String> devServerOrigin (const juce::String& env)
 {
     for (const auto* prefix : { "http://localhost:", "http://127.0.0.1:" })

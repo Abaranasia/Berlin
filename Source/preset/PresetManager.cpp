@@ -417,17 +417,49 @@ juce::File PresetManager::fileForName (const juce::String& name) const
 
 juce::StringArray PresetManager::listPresetNames() const
 {
+    const std::lock_guard<std::mutex> lock (cacheMutex);
+
     juce::StringArray names;
+    std::map<juce::String, CacheEntry> seen;   // replaces `cache`, which prunes removed files
 
     for (const auto& file : presetDirectory.findChildFiles (juce::File::findFiles, false, "*.xml"))
     {
-        Preset preset;
-        if (load (file.getFileNameWithoutExtension(), preset) == PresetResult::ok)
-            names.add (preset.name);
+        const auto key      = file.getFullPathName();
+        const auto size     = file.getSize();
+        const auto modified = file.getLastModificationTime();
+
+        CacheEntry entry;
+        const auto cached = cache.find (key);
+
+        if (cached != cache.end() && cached->second.size == size && cached->second.modified == modified)
+        {
+            entry = cached->second;
+        }
+        else
+        {
+            ++parses;
+            Preset preset;
+            entry.size     = size;
+            entry.modified = modified;
+            if (load (file.getFileNameWithoutExtension(), preset) == PresetResult::ok)
+                entry.name = preset.name;
+        }
+
+        if (entry.name)
+            names.add (*entry.name);
+
+        seen.emplace (key, std::move (entry));
     }
 
+    cache = std::move (seen);
     names.sort (true);
     return names;
+}
+
+std::size_t PresetManager::parseCount() const
+{
+    const std::lock_guard<std::mutex> lock (cacheMutex);
+    return parses;
 }
 
 PresetResult PresetManager::save (const Preset& preset) const

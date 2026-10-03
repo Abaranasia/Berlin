@@ -151,6 +151,112 @@ public:
             expect (manager.listPresetNames().contains ("First"));
         }
 
+        beginTest ("cached listPresetNames equals a fresh manager's scan (valid, invalid and non-xml files)");
+        {
+            TempPresetDir temp;
+            berlin::PresetManager manager (temp.dir);
+
+            berlin::Preset alpha;
+            alpha.name = "Alpha";
+            berlin::Preset beta;
+            beta.name = "Beta";
+            expect (manager.save (alpha) == berlin::PresetResult::ok);
+            expect (manager.save (beta) == berlin::PresetResult::ok);
+            temp.dir.getChildFile ("garbage.xml").replaceWithText ("not xml at all <<<");
+            temp.dir.getChildFile ("notes.txt").replaceWithText ("ignored");
+
+            const auto first  = manager.listPresetNames();
+            const auto second = manager.listPresetNames();   // served from the cache
+            const auto fresh  = berlin::PresetManager (temp.dir).listPresetNames();
+
+            expectEquals (first.size(), 2);
+            expect (first == fresh);
+            expect (second == fresh);
+        }
+
+        beginTest ("an unchanged file is not re-parsed on the next listPresetNames");
+        {
+            TempPresetDir temp;
+            berlin::PresetManager manager (temp.dir);
+
+            berlin::Preset alpha;
+            alpha.name = "Alpha";
+            expect (manager.save (alpha) == berlin::PresetResult::ok);
+            temp.dir.getChildFile ("garbage.xml").replaceWithText ("not xml at all <<<");
+
+            expectEquals ((int) manager.parseCount(), 0);
+            manager.listPresetNames();
+            const auto afterFirst = manager.parseCount();
+            expectEquals ((int) afterFirst, 2);   // the valid file and the invalid one
+
+            manager.listPresetNames();
+            expectEquals ((int) manager.parseCount(), (int) afterFirst);   // invalid results are cached too
+        }
+
+        beginTest ("a changed file is re-parsed: size change, mtime-only change, in-place corruption");
+        {
+            TempPresetDir temp;
+            berlin::PresetManager manager (temp.dir);
+
+            berlin::Preset alpha;
+            alpha.name = "Alpha";
+            alpha.seed = 1;
+            berlin::Preset beta;
+            beta.name = "Beta";
+            expect (manager.save (alpha) == berlin::PresetResult::ok);
+            expect (manager.save (beta) == berlin::PresetResult::ok);
+            expectEquals (manager.listPresetNames().size(), 2);
+            auto parsed = manager.parseCount();
+
+            alpha.seed = 123456789;   // more digits -> different file size
+            expect (manager.save (alpha) == berlin::PresetResult::ok);
+            expectEquals (manager.listPresetNames().size(), 2);
+            expectEquals ((int) manager.parseCount(), (int) parsed + 1);
+            parsed = manager.parseCount();
+
+            const auto betaFile = manager.fileForName ("Beta");
+            expect (betaFile.setLastModificationTime (betaFile.getLastModificationTime() + juce::RelativeTime::seconds (10)));
+            manager.listPresetNames();
+            expectEquals ((int) manager.parseCount(), (int) parsed + 1);   // same size, new mtime
+            parsed = manager.parseCount();
+
+            betaFile.replaceWithText ("corrupted");
+            const auto names = manager.listPresetNames();
+            expectEquals ((int) manager.parseCount(), (int) parsed + 1);
+            expect (names.contains ("Alpha"));
+            expect (! names.contains ("Beta"));   // delisted
+        }
+
+        beginTest ("added files appear, removed files disappear and their cache entry is pruned");
+        {
+            TempPresetDir temp;
+            berlin::PresetManager manager (temp.dir);
+
+            berlin::Preset alpha;
+            alpha.name = "Alpha";
+            expect (manager.save (alpha) == berlin::PresetResult::ok);
+            expectEquals (manager.listPresetNames().size(), 1);
+
+            berlin::Preset gamma;
+            gamma.name = "Gamma";
+            expect (manager.save (gamma) == berlin::PresetResult::ok);
+            expect (manager.listPresetNames().contains ("Gamma"));
+
+            const auto gammaFile  = manager.fileForName ("Gamma");
+            const auto gammaTime  = gammaFile.getLastModificationTime();
+            const auto gammaBytes = gammaFile.loadFileAsString();
+            expect (gammaFile.deleteFile());
+            expect (! manager.listPresetNames().contains ("Gamma"));
+
+            // Recreate byte-identical content with the same mtime: a surviving
+            // cache entry would match on size+mtime and skip the parse.
+            gammaFile.replaceWithText (gammaBytes, false, false, nullptr);
+            expect (gammaFile.setLastModificationTime (gammaTime));
+            const auto before = manager.parseCount();
+            expect (manager.listPresetNames().contains ("Gamma"));
+            expectEquals ((int) manager.parseCount(), (int) before + 1);   // pruned entry -> parsed again
+        }
+
         beginTest ("load of a name with no saved preset returns fileNotFound, out left untouched");
         {
             TempPresetDir temp;

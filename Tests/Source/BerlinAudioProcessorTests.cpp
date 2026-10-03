@@ -850,6 +850,43 @@ public:
             expectEquals (processor.getMutationCount(), mutationCountBefore);
         }
 
+        beginTest ("ui-bridge-parity 3.1: loadPreset while a publish is pending returns busy and leaves patch, params, seed and bpm unchanged");
+        {
+            TempPresetDir temp;
+
+            {
+                berlin::BerlinAudioProcessor saver (temp.dir);
+                berlin::SynthPatch saved;
+                saved.cutoffHz = 4321.0f;
+                saver.setPatch (saved);
+                saver.setSeed (2468);
+                saver.setBpm (77.0);
+                expect (saver.save ("Busy Preset") == berlin::PresetResult::ok);
+            }
+
+            berlin::BerlinAudioProcessor processor (temp.dir);
+            processor.setSeed (999);
+            expect (processor.regenerate (false));   // publish now pending/unadopted
+
+            const auto patchBefore  = processor.getPatch();
+            const auto paramsBefore = processor.getGenerationParams();
+            const auto seedBefore   = processor.getSeed();
+            const auto bpmBefore    = processor.getBpm();
+            const auto sequenceBefore = processor.getCurrentSequence();
+
+            expect (processor.loadPreset ("Busy Preset") == berlin::PresetResult::busy);
+
+            expectEquals (processor.getPatch().cutoffHz, patchBefore.cutoffHz);
+            expect (processor.getPatch().waveform == patchBefore.waveform);
+            expect (processor.getGenerationParams().scaleType == paramsBefore.scaleType);
+            expectEquals (processor.getGenerationParams().rootPitchClass, paramsBefore.rootPitchClass);
+            expect (processor.getSeed() == seedBefore);
+            expect (processor.getSeed() == 999);
+            expectEquals (processor.getBpm(), bpmBefore);
+            expect (processor.getBpm() != 77.0);
+            expect (processor.getCurrentSequence() == sequenceBefore);
+        }
+
         beginTest ("new getters/setters round-trip: isPlaying, getPlayheadStep, getLoopCount, isSynthEnabled, areEffectsEnabled, isAutoEvolveEnabled, getAutoEvolveRate, getMasterLevel/setMasterLevel");
         {
             berlin::BerlinAudioProcessor processor;

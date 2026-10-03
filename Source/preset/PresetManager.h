@@ -46,6 +46,11 @@
 
 #pragma once
 
+#include <cstddef>
+#include <map>
+#include <mutex>
+#include <optional>
+
 #include <juce_core/juce_core.h>
 #include <juce_data_structures/juce_data_structures.h>
 
@@ -70,7 +75,13 @@ public:
 
     // `name` property of every parseable *.xml directly inside the preset
     // directory, sorted. Unparseable files are silently excluded, never fatal.
+    // Per-file validity is cached by (size, mtime): an unchanged file is not
+    // re-parsed, a changed/added file is, and a removed file's entry is
+    // pruned (ui-bridge-parity D4). Safe to call from any thread.
     juce::StringArray listPresetNames() const;
+
+    // Number of preset files parsed by listPresetNames() so far (test seam).
+    std::size_t parseCount() const;
 
     // Unconditional - the caller has already confirmed any overwrite.
     // Creates the preset directory if needed.
@@ -101,7 +112,18 @@ public:
     static bool         parseDivision (const juce::String& name, SyncDivision& out);
 
 private:
+    struct CacheEntry
+    {
+        juce::int64                 size = 0;
+        juce::Time                  modified;
+        std::optional<juce::String> name;   // nullopt: the file is not a valid preset
+    };
+
     juce::File presetDirectory;
+
+    mutable std::mutex                       cacheMutex;
+    mutable std::map<juce::String, CacheEntry> cache;   // keyed by full path
+    mutable std::size_t                      parses = 0;
 };
 
 } // namespace berlin

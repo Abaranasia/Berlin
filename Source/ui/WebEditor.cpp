@@ -17,6 +17,7 @@ namespace
     constexpr int kEditorWidth  = 800;
     constexpr int kEditorHeight = 680;
     constexpr int kPlayheadHz   = 30;
+    constexpr int kConfirmOkResult = 1;   // OK/Cancel box: button[0] (OK) returns 1
 
     std::optional<juce::String> debugDevOrigin()
     {
@@ -30,10 +31,10 @@ namespace
 
 WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit)
     : juce::AudioProcessorEditor (processorToEdit),
-      owner (processorToEdit),
       bridge (processorToEdit)
 {
     setSize (kEditorWidth, kEditorHeight);
+    engine().addChangeListener (this);
 
     const auto dataFolder = webViewUserDataFolder (juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory));
     const auto devOrigin  = debugDevOrigin();
@@ -52,6 +53,16 @@ WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit)
                              [this] (const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion done)
                              {
                                  done (bridge.snapshot());
+                             })
+        .withNativeFunction ("chooseExportFile",
+                             [this] (const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion done)
+                             {
+                                 chooseExportFile (std::move (done));
+                             })
+        .withNativeFunction ("confirm",
+                             [this] (const juce::Array<juce::var>& args, juce::WebBrowserComponent::NativeFunctionCompletion done)
+                             {
+                                 confirm (args, std::move (done));
                              })
         .withResourceProvider ([] (const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>
                                {
@@ -83,7 +94,14 @@ WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit)
 
 WebEditor::~WebEditor()
 {
+    // Order matters (design D1/D2): stop new events first, then flag teardown
+    // so a dialog callback fired synchronously by a reset below is ignored
+    // (a SafePointer is only cleared in ~Component, after this body).
+    engine().removeChangeListener (this);
+    shuttingDown = true;
     stopTimer();
+    exportChooser.reset();
+    confirmBox = {};
     browser.reset();
 }
 
@@ -95,20 +113,84 @@ void WebEditor::resized()
         browser->setBounds (getLocalBounds());
 }
 
+void WebEditor::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    gate.markPending();   // emitted from timerCallback, one path for all events
+}
+
 void WebEditor::timerCallback()
 {
-    const PlayheadState state { owner.getPlayheadStep(), owner.isPlaying() };
+    const bool visible = browser != nullptr && browser->isVisible();
+    const PlayheadState state { engine().getPlayheadStep(), engine().isPlaying() };
 
     // Commit only when the event is really sent, so a hidden-to-visible
     // transition re-emits (web-editor spec).
-    if (browser == nullptr || ! browser->isVisible() || ! detector.hasChanged (state))
-        return;
+    if (visible && detector.hasChanged (state))
+    {
+        auto* payload = new juce::DynamicObject();
+        payload->setProperty ("step", state.step);
+        payload->setProperty ("playing", state.playing);
+        browser->emitEventIfBrowserIsVisible ("playhead", juce::var (payload));
+        detector.commit (state);
+    }
 
-    auto* payload = new juce::DynamicObject();
-    payload->setProperty ("step", state.step);
-    payload->setProperty ("playing", state.playing);
-    browser->emitEventIfBrowserIsVisible ("playhead", juce::var (payload));
-    detector.commit (state);
+    if (gate.shouldEmit (visible))
+    {
+        browser->emitEventIfBrowserIsVisible ("snapshot", bridge.snapshot());
+        gate.commit();
+    }
+}
+
+void WebEditor::chooseExportFile (juce::WebBrowserComponent::NativeFunctionCompletion done)
+{
+    if (dialogOpen)
+    {
+        done (busyChooserResult());
+        return;
+    }
+
+    dialogOpen = true;
+    exportChooser = std::make_unique<juce::FileChooser> ("Export MIDI...",
+                                                          defaultExportFile (juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)),
+                                                          "*.mid");
+
+    const int chooserFlags = juce::FileBrowserComponent::saveMode
+                            | juce::FileBrowserComponent::canSelectFiles
+                            | juce::FileBrowserComponent::warnAboutOverwriting;
+
+    exportChooser->launchAsync (chooserFlags,
+                                [safe = juce::Component::SafePointer<WebEditor> (this), done] (const juce::FileChooser& chooser)
+                                {
+                                    if (safe == nullptr || safe->shuttingDown)
+                                        return;
+
+                                    safe->dialogOpen = false;
+                                    done (exportChooserResult (chooser.getResult()));
+                                });
+}
+
+void WebEditor::confirm (const juce::Array<juce::var>& args, juce::WebBrowserComponent::NativeFunctionCompletion done)
+{
+    if (dialogOpen)
+    {
+        done (false);
+        return;
+    }
+
+    dialogOpen = true;
+    confirmBox = juce::NativeMessageBox::showScopedAsync (
+        juce::MessageBoxOptions::makeOptionsOkCancel (juce::MessageBoxIconType::QuestionIcon,
+                                                      args[0].toString(),
+                                                      args[1].toString(),
+                                                      {}, {}, this),
+        [safe = juce::Component::SafePointer<WebEditor> (this), done] (int result)
+        {
+            if (safe == nullptr || safe->shuttingDown)
+                return;
+
+            safe->dialogOpen = false;
+            done (result == kConfirmOkResult);
+        });
 }
 
 } // namespace berlin
