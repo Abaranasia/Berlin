@@ -84,6 +84,18 @@
       <FILE id="brUbrH" name="UiBridge.h" compile="0" resource="0" file="Source/bridge/UiBridge.h"/>
       <FILE id="brUbrC" name="UiBridge.cpp" compile="1" resource="0" file="Source/bridge/UiBridge.cpp"/>
     </GROUP>
+    <GROUP id="{B3D5F7A9-1C2E-4B6D-8F0A-2E4C6A8D0B13}" name="ui">
+      <FILE id="uiWasH" name="WebAssets.h" compile="0" resource="0" file="Source/ui/WebAssets.h"/>
+      <FILE id="uiWasC" name="WebAssets.cpp" compile="1" resource="0" file="Source/ui/WebAssets.cpp"/>
+      <FILE id="uiWesH" name="WebEditorSupport.h" compile="0" resource="0"
+            file="Source/ui/WebEditorSupport.h"/>
+      <FILE id="uiWesC" name="WebEditorSupport.cpp" compile="1" resource="0"
+            file="Source/ui/WebEditorSupport.cpp"/>
+      <FILE id="uiEmaH" name="EmbeddedAssets.h" compile="0" resource="0"
+            file="Source/ui/generated/EmbeddedAssets.h"/>
+      <FILE id="uiEmaC" name="EmbeddedAssets.cpp" compile="1" resource="0"
+            file="Source/ui/generated/EmbeddedAssets.cpp"/>
+    </GROUP>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -101,12 +113,12 @@
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
-  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_USE_WIN_WEBVIEW2="1"/>
   <EXPORTFORMATS>
     <VS2026 targetFolder="Builds/VisualStudio2026">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="Berlin" headerPath="../../Source"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="Berlin" headerPath="../../Source"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="Berlin" headerPath="../../Source" prebuildCommand="where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\ui\scripts\embed-assets.mjs --jucer ..\..\Berlin.jucer"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="Berlin" headerPath="../../Source" prebuildCommand="where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\ui\scripts\embed-assets.mjs --jucer ..\..\Berlin.jucer"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../Projucer/modules"/>

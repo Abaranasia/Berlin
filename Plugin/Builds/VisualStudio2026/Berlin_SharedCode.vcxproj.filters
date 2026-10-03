@@ -29,6 +29,9 @@
     <Filter Include="Berlin\preset">
       <UniqueIdentifier>{D8EBFB99-536E-3543-8DF1-354D5B7840E7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\ui">
+      <UniqueIdentifier>{C9837735-E270-65F7-F50C-8BA93D1ADC66}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -879,6 +882,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\preset\PresetManager.cpp">
       <Filter>Berlin\preset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ui\WebAssets.cpp">
+      <Filter>Berlin\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ui\WebEditorSupport.cpp">
+      <Filter>Berlin\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ui\generated\EmbeddedAssets.cpp">
+      <Filter>Berlin\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -3863,6 +3875,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\preset\PresetManager.h">
       <Filter>Berlin\preset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\WebAssets.h">
+      <Filter>Berlin\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\WebEditorSupport.h">
+      <Filter>Berlin\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\generated\EmbeddedAssets.h">
+      <Filter>Berlin\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -8534,5 +8555,6 @@
     <None Include="..\..\..\..\..\Projucer\modules\juce_graphics\unicode\sheenbidi\JUCE_CHANGES.txt">
       <Filter>JUCE Modules\juce_graphics\unicode\sheenbidi</Filter>
     </None>
+    <None Include="packages.config"/>
   </ItemGroup>
 </Project>
