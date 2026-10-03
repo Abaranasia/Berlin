@@ -144,7 +144,8 @@ When delay sync is on, `delayTimeSeconds` MUST be derived from BPM and the selec
 
 ### Requirement: Preset And Export Commands
 
-`savePreset {name, overwrite}` MUST return `ok:false, error:"exists"` and write nothing when a preset with `name` already exists and `overwrite` is false. `loadPreset {name}` MUST return `ok:false` with the `PresetResult` name (e.g. `fileNotFound`) when `name` does not resolve to an existing preset. `exportMidi {path}` MUST require an absolute `path`, returning `ok:false, error:"path not absolute"` for a relative one, and MUST return `ok:false` with the `MidiFileWriteResult` name on a write failure.
+`savePreset {name, overwrite}` MUST return `ok:false, error:"exists"` and write nothing when a preset with `name` already exists and `overwrite` is false. `loadPreset {name}` MUST return `ok:false` with the `PresetResult` name (e.g. `fileNotFound`) when `name` does not resolve to an existing preset. `loadPreset` MUST return `ok:false, error:"busy"` (exactly that token, from the new `PresetResult::busy`) when a previously published sequence is still pending adoption by the audio thread; this check MUST happen before the preset is resolved or anything is applied, so on `busy` the current state (patch, seed, bpm, generation params, sequence) is unchanged. `loadPreset` MUST also return `ok:false, error:"busy"` if the post-load `regenerate(false)` reports failure. `exportMidi {path}` MUST require an absolute `path`, returning `ok:false, error:"path not absolute"` for a relative one, and MUST return `ok:false` with the `MidiFileWriteResult` name on a write failure.
+(Previously: `loadPreset` reported ok even when the post-load regeneration failed or was busy.)
 
 #### Scenario: savePreset without overwrite on an existing name fails cleanly
 - GIVEN a saved preset named "Lead A"
@@ -161,6 +162,16 @@ When delay sync is on, `delayTimeSeconds` MUST be derived from BPM and the selec
 - WHEN `dispatch("loadPreset", {name: "Ghost"})` is called
 - THEN `ok` is false, `error` is `"fileNotFound"`, and current state is unchanged
 
+#### Scenario: loadPreset while regeneration is busy
+- GIVEN a valid preset "Lead A" and a previously published sequence not yet adopted by the audio thread
+- WHEN `dispatch("loadPreset", {name: "Lead A"})` is called
+- THEN `ok` is false, `error` is exactly `"busy"`, no `snapshot` key is present, and the current state (patch, seed, bpm, generation params) is unchanged
+
+#### Scenario: loadPreset success is unchanged
+- GIVEN a valid preset and no pending sequence
+- WHEN `dispatch("loadPreset", {name: "Lead A"})` is called
+- THEN `ok` is true with a fresh snapshot
+
 #### Scenario: exportMidi rejects a relative path
 - GIVEN any valid state
 - WHEN `dispatch("exportMidi", {path: "output.mid"})` is called (relative, not absolute)
@@ -174,6 +185,15 @@ When delay sync is on, `delayTimeSeconds` MUST be derived from BPM and the selec
 - GIVEN any valid engine state
 - WHEN `snapshot()` is called
 - THEN the result contains all of: patch, generation params, seed, bpm, playing, playheadStep, loopCount, synthEnabled, effectsEnabled, masterLevel, autoEvolveEnabled, autoEvolveRate, mutationCount, 16-entry steps, presetNames
+
+### Requirement: Snapshot presetNames Is Always Current
+
+`snapshot().presetNames` MUST always equal the current contents of the preset directory, including files added, changed or removed outside the app, regardless of any internal caching.
+
+#### Scenario: External add and remove are visible
+- GIVEN a snapshot listed preset "A"
+- WHEN a valid preset file "B" is added and "A" removed externally
+- THEN the next snapshot's `presetNames` contains "B" and not "A"
 
 ### Requirement: Message-Thread-Only Dispatch
 
