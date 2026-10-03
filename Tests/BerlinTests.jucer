@@ -67,6 +67,10 @@
             file="Source/SynthEffectsTests.cpp"/>
       <FILE id="btUbrC" name="UiBridgeTests.cpp" compile="1" resource="0"
             file="Source/UiBridgeTests.cpp"/>
+      <FILE id="btWasC" name="WebAssetsTests.cpp" compile="1" resource="0"
+            file="Source/WebAssetsTests.cpp"/>
+      <FILE id="btWesC" name="WebEditorSupportTests.cpp" compile="1" resource="0"
+            file="Source/WebEditorSupportTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -170,6 +174,14 @@
             file="../Source/bridge/UiBridge.h"/>
       <FILE id="tbUbrC" name="UiBridge.cpp" compile="1" resource="0"
             file="../Source/bridge/UiBridge.cpp"/>
+    </GROUP>
+    <GROUP id="{B3D5F7A9-1C2E-4B6D-8F0A-2E4C6A8D0B13}" name="ui">
+      <FILE id="tuWasH" name="WebAssets.h" compile="0" resource="0" file="../Source/ui/WebAssets.h"/>
+      <FILE id="tuWasC" name="WebAssets.cpp" compile="1" resource="0" file="../Source/ui/WebAssets.cpp"/>
+      <FILE id="tuWesH" name="WebEditorSupport.h" compile="0" resource="0"
+            file="../Source/ui/WebEditorSupport.h"/>
+      <FILE id="tuWesC" name="WebEditorSupport.cpp" compile="1" resource="0"
+            file="../Source/ui/WebEditorSupport.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

@@ -32,6 +32,9 @@
     <Filter Include="BerlinTests\bridge">
       <UniqueIdentifier>{611AA459-91DC-47F6-06C7-8D8D52D36DBC}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BerlinTests\ui">
+      <UniqueIdentifier>{4C7E0A45-7153-A771-2ADD-4F068D91408E}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BerlinTests">
       <UniqueIdentifier>{99B26223-EE90-F7C5-C12F-435CBF576C49}</UniqueIdentifier>
     </Filter>
@@ -547,6 +550,12 @@
     <ClCompile Include="..\..\Source\UiBridgeTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\WebAssetsTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\WebEditorSupportTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
@@ -612,6 +621,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\bridge\UiBridge.cpp">
       <Filter>BerlinTests\bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ui\WebAssets.cpp">
+      <Filter>BerlinTests\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ui\WebEditorSupport.cpp">
+      <Filter>BerlinTests\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -2057,6 +2072,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\bridge\UiBridge.h">
       <Filter>BerlinTests\bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\WebAssets.h">
+      <Filter>BerlinTests\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\WebEditorSupport.h">
+      <Filter>BerlinTests\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>

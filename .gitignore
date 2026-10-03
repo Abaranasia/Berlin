@@ -39,3 +39,11 @@ xcuserdata/
 # OS junk
 Thumbs.db
 .DS_Store
+
+# Web UI (generated / dependencies)
+Source/ui/generated/
+ui/node_modules/
+ui/dist/
+
+# NuGet restore output (WebView2)
+**/Builds/VisualStudio2026/packages/
