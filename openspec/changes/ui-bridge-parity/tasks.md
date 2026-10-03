@@ -145,16 +145,16 @@ Files: `ui/src/bridge/{bridge,native,mock,index}.ts` and tests, `ui/scripts/embe
 
 PR2 split: 9.2, 9.4, 9.7, 9.9 and the `bridge.ts` half of 9.6 ship in PR2a; 9.1, 9.3, the `native.ts` half of 9.6 and 9.8 moved to PR2b (code held outside the repo until branch `feat/ui-bridge-parity-pr2b` exists).
 
-- [ ] 9.1 (PR2b) RED `native.test.ts` (rewritten against `window.__JUCE__`): `dispatch`, `getSnapshot`, `chooseExportFile`, `confirm` forward to native functions; `onPlayhead` and `onSnapshot` subscribe and unsubscribe; missing host degrades without throwing.
+- [x] 9.1 (PR2b) RED `native.test.ts` (rewritten against `window.__JUCE__`): `dispatch`, `getSnapshot`, `chooseExportFile`, `confirm` forward to native functions; `onPlayhead` and `onSnapshot` subscribe and unsubscribe; missing host degrades without throwing.
 - [x] 9.2 RED `mock.test.ts`: envelopes `{ok,...snapshot}`; value clamps to `limits.ts`; mock reproduces error tokens (`missing arg`, `invalid enum`, `exists`, `busy`).
-- [ ] 9.3 (PR2b) RED `index.test.ts` `resolveBridge({hasHost, loadMock})` matrix: host -> native; no host + `loadMock` -> mock; no host + undefined -> native (degrades).
+- [x] 9.3 (PR2b) RED `index.test.ts` `resolveBridge({hasHost, loadMock})` matrix: host -> native; no host + `loadMock` -> mock; no host + undefined -> native (degrades).
 - [x] 9.4 RED `embed-lib.test.mjs` `assertNoMockChunk(files)`: throws on any asset name matching `/mock/`; passes otherwise.
 - [x] 9.5 Run `pnpm --dir ui test`; confirm 9.1-9.4 fail. **Done before the split; PR2b re-confirms 9.1 and 9.3 RED on its branch.**
-- [ ] 9.6 GREEN `bridge.ts` (`Bridge` interface) and rewrite `native.ts` as `nativeBridge` (D7). **Split: `bridge.ts` done in PR2a; the `native.ts` rewrite is in PR2b.**
+- [x] 9.6 GREEN `bridge.ts` (`Bridge` interface) and rewrite `native.ts` as `nativeBridge` (D7). **Split: `bridge.ts` done in PR2a; the `native.ts` rewrite is in PR2b.** **PR2b: `native.ts` rewrite landed; typecheck and tests green.**
 - [x] 9.7 GREEN `mock.ts` (`mockBridge`, minimal engine, same tokens).
-- [ ] 9.8 (PR2b) GREEN `index.ts` `resolveBridge`.
+- [x] 9.8 (PR2b) GREEN `index.ts` `resolveBridge`.
 - [x] 9.9 GREEN `embed-lib.mjs` `assertNoMockChunk` and call it in the embed step.
-- [ ] 9.10 Run `pnpm --dir ui test`; confirm GREEN. **PR2a part green (125 tests, 2026-10-03); re-run on PR2b once 9.1, 9.3, 9.6 and 9.8 land.**
+- [x] 9.10 Run `pnpm --dir ui test`; confirm GREEN. **PR2a part green (125 tests, 2026-10-03); re-run on PR2b once 9.1, 9.3, 9.6 and 9.8 land.** **PR2b re-run 2026-10-03: 158 tests green.**
 
 ## Phase 10: External store (PR2b, strict TDD)
 
@@ -162,15 +162,15 @@ PR2 split: this phase moved to PR2b; its code was written during the PR2 apply a
 
 Files: `ui/src/store/{store,context}.ts(x)`, `ui/src/store/store.test.ts` (spec: store, optimistic, stale, failures requirements; D8, D13).
 
-- [ ] 10.1 RED slices: `engine`, `overlay`, `playhead`, `status`, `draft`; selector isolation (an unrelated key does not notify); `snapshot` event updates `engine`.
-- [ ] 10.2 RED coalescing: 3 rapid `send` on one key -> 2 dispatches, last value wins; different keys do not block each other.
-- [ ] 10.3 RED optimistic and ordering: overlay shows instantly; out-of-order response (`seq <= lastAppliedSeq`) dropped but its key still settles; a `snapshot` event does not clobber an overlay until the key settles.
-- [ ] 10.4 RED failure: `ok:false` with nothing pending drops the overlay and sets status from the token; a newer pending value keeps its overlay and is still sent.
-- [ ] 10.5 RED rejection: a thrown or rejected dispatch never escapes; status becomes `Error: <message>`.
-- [ ] 10.6 Run `pnpm --dir ui test`; confirm 10.1-10.5 fail.
-- [ ] 10.7 GREEN `store.ts` `createStore(bridge)` with `send(key, cmd, optimistic)`, global `seq`, `useSyncExternalStore` selectors, `.catch` everywhere.
-- [ ] 10.8 GREEN `context.ts` provider and `useStore` hook.
-- [ ] 10.9 Run `pnpm --dir ui test`; confirm GREEN.
+- [x] 10.1 RED slices: `engine`, `overlay`, `playhead`, `status`, `draft`; selector isolation (an unrelated key does not notify); `snapshot` event updates `engine`.
+- [x] 10.2 RED coalescing: 3 rapid `send` on one key -> 2 dispatches, last value wins; different keys do not block each other.
+- [x] 10.3 RED optimistic and ordering: overlay shows instantly; out-of-order response (`seq <= lastAppliedSeq`) dropped but its key still settles; a `snapshot` event does not clobber an overlay until the key settles.
+- [x] 10.4 RED failure: `ok:false` with nothing pending drops the overlay and sets status from the token; a newer pending value keeps its overlay and is still sent.
+- [x] 10.5 RED rejection: a thrown or rejected dispatch never escapes; status becomes `Error: <message>`.
+- [x] 10.6 Run `pnpm --dir ui test`; confirm 10.1-10.5 fail.
+- [x] 10.7 GREEN `store.ts` `createStore(bridge)` with `send(key, cmd, optimistic)`, global `seq`, `useSyncExternalStore` selectors, `.catch` everywhere.
+- [x] 10.8 GREEN `context.ts` provider and `useStore` hook.
+- [x] 10.9 Run `pnpm --dir ui test`; confirm GREEN.
 
 ## Phase 11: App and main rewire (PR2b, strict TDD)
 
@@ -178,10 +178,10 @@ PR2 split: this phase moved to PR2b; in PR2a `App.tsx`, `main.tsx` and `App.test
 
 Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid BPM presses"; fixes the Slice 1 `changeBpm` stale closure).
 
-- [ ] 11.1 RED rewrite `App.test.tsx` with `react-dom/client` + `act` and a fake `Bridge` (drop `vi.mock('./bridge/native')`): BPM from snapshot; + and - send `setBpm` through the store; rapid presses coalesce and end at the last value; playhead event moves the active step.
-- [ ] 11.2 Run `pnpm --dir ui test`; confirm 11.1 fails.
-- [ ] 11.3 GREEN `App.tsx` takes `store` as a prop and uses selectors; `main.tsx` calls `resolveBridge({hasHost, loadMock: import.meta.env.DEV ? () => import('./bridge/mock').then(m => m.mockBridge) : undefined})` (D7, D11).
-- [ ] 11.4 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm `ui/dist` contains no mock chunk (`assertNoMockChunk` passes).
+- [x] 11.1 RED rewrite `App.test.tsx` with `react-dom/client` + `act` and a fake `Bridge` (drop `vi.mock('./bridge/native')`): BPM from snapshot; + and - send `setBpm` through the store; rapid presses coalesce and end at the last value; playhead event moves the active step.
+- [x] 11.2 Run `pnpm --dir ui test`; confirm 11.1 fails.
+- [x] 11.3 GREEN `App.tsx` takes `store` as a prop and uses selectors; `main.tsx` calls `resolveBridge({hasHost, loadMock: import.meta.env.DEV ? () => import('./bridge/mock').then(m => m.mockBridge) : undefined})` (D7, D11).
+- [x] 11.4 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm `ui/dist` contains no mock chunk (`assertNoMockChunk` passes).
 
 ## Phase 12: PR2a verification, review gate, commit (PR2a, branch `feat/ui-bridge-parity-pr2`)
 
@@ -194,9 +194,10 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 
 ## Phase 12b: PR2b restore, verification, review gate, commit (PR2b, branch `feat/ui-bridge-parity-pr2b` off PR2a)
 
-- [ ] 12b.1 After PR2a is committed, create branch `feat/ui-bridge-parity-pr2b` from it; restore the held PR2b files over the workspace (see the holding `README.txt`); confirm 9.1 and 9.3 RED by temporarily reverting `native.ts`/`index.ts`, or record that RED was proven before the split.
-- [ ] 12b.2 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN and no mock chunk in `ui/dist`; then tick 9.1, 9.3, 9.6, 9.8, 9.10 and Phases 10-11.
-- [ ] 12b.3 Size check: PR2b authored lines within 800 (~551 forecast); report the measured number.
+- [x] 12b.1 After PR2a is committed, create branch `feat/ui-bridge-parity-pr2b` from it; restore the held PR2b files over the workspace (see the holding `README.txt`); confirm 9.1 and 9.3 RED by temporarily reverting `native.ts`/`index.ts`, or record that RED was proven before the split. **Done: branch off PR2a 92a0f7f, files restored byte-identical by the orchestrator. RED for 9.1/9.3 was proven before the split (not re-proved by reverting).**
+- [x] 12b.2 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN and no mock chunk in `ui/dist`; then tick 9.1, 9.3, 9.6, 9.8, 9.10 and Phases 10-11. **Done 2026-10-03: typecheck clean, 158/158 tests (12 files), build OK; `ui/dist` = index.html + one JS asset, no mock chunk or mock module code (only the `loadMock` parameter identifier of `resolveBridge`, `undefined` in prod).**
+- [x] 12b.3 Size check: PR2b authored lines within 800 (~551 forecast); report the measured number. **Measured 656 added lines (232 prod, 424 tests) incl. the REL-1/REL-2 mock fix; 551 before the fix. Within 800.**
+- [x] 12b.x Fix PR2a review WARNINGs REL-1/REL-2 in `mock.ts` (strict TDD): synced delay derived in `setPatch`/`setBpm` (D7); `setGenerationParams` rounds ints after clamp and applies `normalizePitchRange` / lone-field span clamp (D12). 8 RED tests then GREEN (mock.test.ts 28/28).
 - [ ] 12b.4 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage.
 - [ ] 12b.5 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
 - [ ] 12b.6 USER commits (e.g. `feat: add native bridge, store and app rewire`) and pushes; verify git state yourself.

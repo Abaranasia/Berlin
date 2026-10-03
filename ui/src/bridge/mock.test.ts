@@ -49,6 +49,65 @@ describe('mock bridge clamps to limits.ts', () => {
   });
 });
 
+describe('mock bridge synced delay (host D7)', () => {
+  const delayAfter = async (mock: ReturnType<typeof createMockBridge>, command: unknown) =>
+    snapshotOf(await run(mock, command)).patch.delayTimeSeconds;
+
+  it('setPatch derives delayTimeSeconds from bpm and division when synced', async () => {
+    const mock = createMockBridge();
+    expect(await delayAfter(mock, { name: 'setPatch', args: { delaySynced: true, delayDivision: 'eighth' } })).toBeCloseTo(0.25, 6);
+    expect(await delayAfter(mock, { name: 'setPatch', args: { delayDivision: 'dottedEighth' } })).toBeCloseTo(0.375, 6);
+  });
+
+  it('a synced setPatch overrides a supplied delayTimeSeconds', async () => {
+    const mock = createMockBridge();
+    const seconds = await delayAfter(mock, { name: 'setPatch', args: { delaySynced: true, delayDivision: 'half', delayTimeSeconds: 0.1 } });
+    expect(seconds).toBeCloseTo(1, 6);
+  });
+
+  it('setBpm recomputes the delay while synced', async () => {
+    const mock = createMockBridge();
+    await run(mock, { name: 'setPatch', args: { delaySynced: true, delayDivision: 'quarter' } });
+    expect(snapshotOf(await run(mock, { name: 'setBpm', args: { bpm: 60 } })).patch.delayTimeSeconds).toBeCloseTo(1, 6);
+  });
+
+  it('free mode keeps the supplied delayTimeSeconds and setBpm leaves it alone', async () => {
+    const mock = createMockBridge();
+    expect(await delayAfter(mock, { name: 'setPatch', args: { delayTimeSeconds: 0.7 } })).toBeCloseTo(0.7, 6);
+    expect(snapshotOf(await run(mock, { name: 'setBpm', args: { bpm: 60 } })).patch.delayTimeSeconds).toBeCloseTo(0.7, 6);
+  });
+});
+
+describe('mock bridge setGenerationParams mirrors the host', () => {
+  const params = async (args: Record<string, unknown>) =>
+    snapshotOf(await run(createMockBridge(), { name: 'setGenerationParams', args })).generationParams;
+
+  it('rounds int fields after the clamp, half away from zero', async () => {
+    expect(await params({ pulses: 4.5, rotation: 2.4, rootPitchClass: 7.6 })).toMatchObject({ pulses: 5, rotation: 2, rootPitchClass: 8 });
+    expect(await params({ pulses: 99.4 })).toMatchObject({ pulses: 16 });
+  });
+
+  it('rounds both range fields', async () => {
+    expect(await params({ rangeLow: 40.4, rangeHigh: 80.5 })).toMatchObject({ rangeLow: 40, rangeHigh: 81 });
+  });
+
+  it('normalizes when both range fields are supplied (swap, then widen upward)', async () => {
+    expect(await params({ rangeLow: 80, rangeHigh: 60 })).toMatchObject({ rangeLow: 60, rangeHigh: 80 });
+    expect(await params({ rangeLow: 50, rangeHigh: 53 })).toMatchObject({ rangeLow: 50, rangeHigh: 62 });
+    expect(await params({ rangeLow: 120, rangeHigh: 127 })).toMatchObject({ rangeLow: 115, rangeHigh: 127 });
+  });
+
+  it('span-clamps a lone rangeLow against the stored rangeHigh', async () => {
+    expect(await params({ rangeLow: 70 })).toMatchObject({ rangeLow: 60, rangeHigh: 72 });
+    expect(await params({ rangeLow: 50 })).toMatchObject({ rangeLow: 50, rangeHigh: 72 });
+  });
+
+  it('span-clamps a lone rangeHigh against the stored rangeLow', async () => {
+    expect(await params({ rangeHigh: 40 })).toMatchObject({ rangeLow: 36, rangeHigh: 48 });
+    expect(await params({ rangeHigh: 100 })).toMatchObject({ rangeLow: 36, rangeHigh: 100 });
+  });
+});
+
 describe('mock bridge reproduces error tokens', () => {
   it.each([
     [{ name: 'setBpm', args: {} }, 'missing arg: bpm'],

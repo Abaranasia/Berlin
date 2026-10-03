@@ -1,35 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
-import { dispatch, getSnapshot, onPlayhead } from './bridge/native';
+import { useEffect } from 'react';
+import { LIMITS } from './bridge/limits';
+import { StoreProvider, useStore, useStoreApi } from './store/context';
+import { shown, type Store } from './store/store';
 import { stepRow } from './state/steps';
 
 const DEFAULT_BPM = 120;
+const bpmOf = (s: Parameters<typeof shown>[0]) => shown(s, 'bpm', s.engine?.bpm ?? DEFAULT_BPM);
 
-export function App() {
-  const [bpm, setBpm] = useState(DEFAULT_BPM);
-  const [playhead, setPlayhead] = useState({ step: 0, playing: false });
-  const gotEvent = useRef(false); // a live event is newer than the mount-time snapshot
+function Main() {
+  const store = useStoreApi();
+  const bpm = useStore(bpmOf);
+  const playhead = useStore((s) => s.playhead);
 
-  useEffect(() => {
-    let alive = true;
-    void getSnapshot().then((snapshot) => {
-      if (!alive || !snapshot) return;
-      setBpm(snapshot.bpm);
-      if (!gotEvent.current) setPlayhead({ step: snapshot.playheadStep, playing: snapshot.playing });
-    });
-    const off = onPlayhead((event) => {
-      gotEvent.current = true;
-      setPlayhead(event);
-    });
-    return () => {
-      alive = false;
-      off();
-    };
-  }, []);
-
+  // Read the displayed value at click time, not from a render closure, so rapid presses accumulate.
   const changeBpm = (delta: number) => {
-    void dispatch('setBpm', { bpm: bpm + delta }).then((result) => {
-      if (result.ok && result.snapshot) setBpm(result.snapshot.bpm);
-    });
+    const next = Math.min(LIMITS.bpm.max, Math.max(LIMITS.bpm.min, bpmOf(store.getState()) + delta));
+    store.send('bpm', { name: 'setBpm', args: { bpm: next } }, next);
   };
 
   const row = stepRow(playhead.step, playhead.playing);
@@ -49,5 +35,14 @@ export function App() {
         ))}
       </div>
     </main>
+  );
+}
+
+export function App({ store }: { store: Store }) {
+  useEffect(() => store.start(), [store]);
+  return (
+    <StoreProvider store={store}>
+      <Main />
+    </StoreProvider>
   );
 }
