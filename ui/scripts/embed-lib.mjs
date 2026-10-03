@@ -26,6 +26,13 @@ export function readWebUiFlag(jucerXml) {
   return false;
 }
 
+// The mock bridge is dev-only (ui-bridge-parity D7): a release build must not ship a chunk named after it.
+export function assertNoMockChunk(files) {
+  const names = files.map((f) => f.path ?? f);
+  const found = names.filter((n) => /mock/.test(n));
+  if (found.length) throw new Error(`BRL007: the UI build contains mock bridge assets: ${found.join(', ')}`);
+}
+
 const hex = (buf) => Array.from(buf, (b) => `0x${b.toString(16).padStart(2, '0')}`).join(',');
 
 // D2: stub = empty table, full = every asset. Output is deterministic.
@@ -152,7 +159,9 @@ export function runPipeline({ flagOn, spawn, io }) {
       if (runPnpm(spawn, ['--dir', 'ui', 'run', 'build']) !== 0) throw new Error('BRL003: pnpm run build failed');
     }
 
-    const { header, source } = renderAssetSources({ mode, assets: flagOn ? io.collectAssets() : [] });
+    const assets = flagOn ? io.collectAssets() : [];
+    assertNoMockChunk(assets);
+    const { header, source } = renderAssetSources({ mode, assets });
     io.writeIfChanged('EmbeddedAssets.h', header);
     io.writeIfChanged('EmbeddedAssets.cpp', source);
     io.writeIfChanged('.stamp', stamp);

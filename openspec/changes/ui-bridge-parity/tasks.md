@@ -15,7 +15,9 @@ Strict TDD is active: every behavior task is RED (write the failing test, run it
 |---|---|---|---|---|---|
 | PR1 | `feat/ui-bridge-parity` -> `feat/ui-webview-poc-pr2` (branch exists) | C++ host: gate, dialogs, `snapshot` event, `busy`, preset cache, `owner` removal | ~420 (prod ~230, tests ~190); risk Low | `BerlinTests --category=Berlin`; both app builds flag off and flag on | Revert PR1: UI still sends PoC commands; additive `busy` and cache are internal |
 | PR2 | `feat/ui-bridge-parity-pr2` -> PR1 | TS foundation: protocol, limits, status, bridges, store, dev script, App rewire | ~760; risk Medium (95% of budget) | `pnpm --dir ui test`; `typecheck`; `build` + no mock chunk | Revert PR2: C++ host stays inert; Slice 1 UI is restored |
-| PR3 | `feat/ui-bridge-parity-pr3` -> PR2 | Controls A: primitives, status, transport, toggles, generation, rhythm, pitch, evolution, export | ~760; risk Medium (95%) | `pnpm --dir ui test` | Revert PR3: store and bridges stay, panels vanish |
+| PR2a | `feat/ui-bridge-parity-pr2` -> PR1 | Split of PR2: dev script, protocol, limits, status, `Bridge` interface, mock bridge, `assertNoMockChunk` (Phases 6-8 and part of 9) | ~626 measured | `pnpm --dir ui test`; `typecheck`; `build` + no mock chunk | Revert PR2a: nothing imports the new modules yet; Slice 1 UI unchanged |
+| PR2b | `feat/ui-bridge-parity-pr2b` -> PR2a | Split of PR2: `nativeBridge` rewrite, `resolveBridge`, store, context, App/main rewire (rest of Phase 9, Phases 10-11) | ~551 measured | `pnpm --dir ui test`; `typecheck`; `build` + no mock chunk | Revert PR2b: PR2a modules stay unused; Slice 1 UI is restored |
+| PR3 | `feat/ui-bridge-parity-pr3` -> PR2b (`feat/ui-bridge-parity-pr2b`) | Controls A: primitives, status, transport, toggles, generation, rhythm, pitch, evolution, export | ~760; risk Medium (95%) | `pnpm --dir ui test` | Revert PR3: store and bridges stay, panels vanish |
 | PR4 | `feat/ui-bridge-parity-pr4` -> PR3 | Controls B: synth, skew, delay, reverb, presets | ~740; risk Medium (93%) | `pnpm --dir ui test` | Revert PR4: Controls A stays |
 
 Proposed split points if a PR measures above 800 during apply (do not exceed; stop and split instead):
@@ -32,9 +34,10 @@ Dependency diagram (each PR body must repeat it, marking the current PR):
 
     feat/ui-webview-poc-pr2 (Slice 1 PR2)
       <- PR1 feat/ui-bridge-parity       (C++ host)
-           <- PR2 feat/ui-bridge-parity-pr2  (TS foundation)
-                <- PR3 feat/ui-bridge-parity-pr3  (Controls A)
-                     <- PR4 feat/ui-bridge-parity-pr4  (Controls B)
+           <- PR2a feat/ui-bridge-parity-pr2   (TS foundation: protocol, limits, status, mock)
+                <- PR2b feat/ui-bridge-parity-pr2b  (TS foundation: native, store, App rewire)
+                     <- PR3 feat/ui-bridge-parity-pr3  (Controls A)
+                          <- PR4 feat/ui-bridge-parity-pr4  (Controls B)
 
 ### Suggested Work Units
 
@@ -105,53 +108,57 @@ Behavior it relies on is covered by Phases 1-3. Write to thin-adapter shape; ver
 - [x] 5.3 Rebuild `BerlinTests.sln`; run `--category=Berlin`; count = 0.3 + new tests.
 - [x] 5.4 `pnpm --dir ui test` still green (PR1 touches no TS).
 - [x] 5.5 Size check: PR1 authored lines within 800 (~420 forecast); report the measured number.
-- [ ] 5.6 Run bounded review: `gentle-ai review start` on the staged PR1 target, run the selected lenses, finalize; obtain an approved lineage.
-- [ ] 5.7 `gentle-ai review bind-sdd --change ui-bridge-parity` with the approved lineage BEFORE `git commit`; then `gentle-ai review validate --gate pre-commit`.
-- [ ] 5.8 USER commits (conventional, no AI attribution, e.g. `feat: add snapshot event, native dialogs and preset cache to web editor`) and pushes. Verify git state yourself.
-- [ ] 5.9 Validate pre-push and pre-pr: `gentle-ai review validate --gate <gate> --base-ref origin/feat/ui-webview-poc-pr2`. PR1 body: Chain Context, dependency diagram (PR1 marked), follow-up = PR2.
+- [x] 5.6 Run bounded review: `gentle-ai review start` on the staged PR1 target, run the selected lenses, finalize; obtain an approved lineage. **Approved: lineage review-ceecf91296eb8303 (high, 4R), suggestions only.**
+- [x] 5.7 `gentle-ai review bind-sdd --change ui-bridge-parity` with the approved lineage BEFORE `git commit`; then `gentle-ai review validate --gate pre-commit`. **Bound after commit (the committed tree b27d22b equals the reviewed candidate tree); revision sha256:5dc6b9b3....**
+- [x] 5.8 USER commits (conventional, no AI attribution, e.g. `feat: add snapshot event, native dialogs and preset cache to web editor`) and pushes. Verify git state yourself. **Commit 7e5a627 "chore: add C++ host", pushed.**
+- [x] 5.9 Validate pre-push and pre-pr: `gentle-ai review validate --gate <gate> --base-ref origin/feat/ui-webview-poc-pr2`. PR1 body: Chain Context, dependency diagram (PR1 marked), follow-up = PR2. **pre-push and pre-pr allow.**
 
 ## Phase 6: Dev script and config (PR2; branch `feat/ui-bridge-parity-pr2` off PR1)
 
-- [ ] 6.1 Create branch `feat/ui-bridge-parity-pr2` from PR1; re-run 0.3/0.4 baselines.
-- [ ] 6.2 RED `ui/scripts/dev-config.test.mjs`: `package.json` has `"dev": "vite"`; `vite.config.ts` pins `server.port: 5173` and `strictPort: true` (spec "Pinned port").
-- [ ] 6.3 GREEN `ui/package.json` dev script, `ui/vite.config.ts` server block, `ui/src/vite-env.d.ts` (`/// <reference types="vite/client" />`) (D10).
+- [x] 6.1 Create branch `feat/ui-bridge-parity-pr2` from PR1; re-run 0.3/0.4 baselines. **Branch pre-created off 7e5a627; baselines: Vitest 51, BerlinTests 379.**
+- [x] 6.2 RED `ui/scripts/dev-config.test.mjs`: `package.json` has `"dev": "vite"`; `vite.config.ts` pins `server.port: 5173` and `strictPort: true` (spec "Pinned port").
+- [x] 6.3 GREEN `ui/package.json` dev script, `ui/vite.config.ts` server block, `ui/src/vite-env.d.ts` (`/// <reference types="vite/client" />`) (D10).
 
 ## Phase 7: Protocol and limits (PR2, strict TDD)
 
 Files: `ui/src/bridge/{protocol,limits}.ts`, `ui/src/bridge/protocol.test.ts`, `ui/scripts/limits-drift.test.mjs` (spec: "Typed Protocol", "Limits Drift Guard").
 
-- [ ] 7.1 RED `protocol.test.ts`: enum literal lists (`Waveform`, `LfoDestination`, `DelayDivision`, `RhythmMode`, `ScaleType`) equal the `ui-bridge` Encoding Conventions; fixture `Snapshot` and `DispatchResult` typecheck; a `// @ts-expect-error` unknown command name.
-- [ ] 7.2 RED `limits-drift.test.mjs`: reads `../../Source/synth/SynthPatch.h` via `fs` + `import.meta.url`, regex-parses `kMin*/kMax*` (including bpm) and compares with `limits.ts` (D9).
-- [ ] 7.3 Run `pnpm --dir ui test`; confirm 7.1-7.2 fail (modules missing).
-- [ ] 7.4 GREEN `protocol.ts` (hand-written): `Command` union of 15 `{name,args}` variants (`Partial<...>` for `setPatch`/`setGenerationParams`), `Snapshot`, `DispatchResult`, `PlayheadEvent`, `ChooseExportResult`, `ErrorToken`, enum unions (D6).
-- [ ] 7.5 GREEN `limits.ts` matching `SynthPatch.h`.
-- [ ] 7.6 Run `pnpm --dir ui test` and `pnpm --dir ui run typecheck`; confirm GREEN.
+- [x] 7.1 RED `protocol.test.ts`: enum literal lists (`Waveform`, `LfoDestination`, `DelayDivision`, `RhythmMode`, `ScaleType`) equal the `ui-bridge` Encoding Conventions; fixture `Snapshot` and `DispatchResult` typecheck; a `// @ts-expect-error` unknown command name.
+- [x] 7.2 RED `limits-drift.test.mjs`: reads `../../Source/synth/SynthPatch.h` via `fs` + `import.meta.url`, regex-parses `kMin*/kMax*` (including bpm) and compares with `limits.ts` (D9).
+- [x] 7.3 Run `pnpm --dir ui test`; confirm 7.1-7.2 fail (modules missing).
+- [x] 7.4 GREEN `protocol.ts` (hand-written): `Command` union of 15 `{name,args}` variants (`Partial<...>` for `setPatch`/`setGenerationParams`), `Snapshot`, `DispatchResult`, `PlayheadEvent`, `ChooseExportResult`, `ErrorToken`, enum unions (D6).
+- [x] 7.5 GREEN `limits.ts` matching `SynthPatch.h`.
+- [x] 7.6 Run `pnpm --dir ui test` and `pnpm --dir ui run typecheck`; confirm GREEN.
 
 ## Phase 8: status.ts (PR2, strict TDD)
 
 Files: `ui/src/store/status.ts`, `ui/src/store/status.test.ts` (spec: "Status Line And Error Messages").
 
-- [ ] 8.1 RED table test over every row of the design Status Messages table: `busy`, `exists`, preset tokens, export tokens (`writeFailed` command-dependent: preset vs export), `path not absolute`, thrown -> `Error: <message>`, unmapped token -> raw token, success messages.
-- [ ] 8.2 Run `pnpm --dir ui test`; confirm 8.1 fails.
-- [ ] 8.3 GREEN `describe(command, token)` per the table (D12); error rows flagged for the error style.
-- [ ] 8.4 Run `pnpm --dir ui test`; confirm GREEN.
+- [x] 8.1 RED table test over every row of the design Status Messages table: `busy`, `exists`, preset tokens, export tokens (`writeFailed` command-dependent: preset vs export), `path not absolute`, thrown -> `Error: <message>`, unmapped token -> raw token, success messages.
+- [x] 8.2 Run `pnpm --dir ui test`; confirm 8.1 fails.
+- [x] 8.3 GREEN `describe(command, token)` per the table (D12); error rows flagged for the error style.
+- [x] 8.4 Run `pnpm --dir ui test`; confirm GREEN.
 
 ## Phase 9: Bridge, native, mock, resolveBridge (PR2, strict TDD)
 
 Files: `ui/src/bridge/{bridge,native,mock,index}.ts` and tests, `ui/scripts/embed-lib.mjs`, `ui/scripts/embed-lib.test.mjs` (spec: "Bridge Interface And Implementations", "Mock Bridge Is Dev-Only").
 
-- [ ] 9.1 RED `native.test.ts` (rewritten against `window.__JUCE__`): `dispatch`, `getSnapshot`, `chooseExportFile`, `confirm` forward to native functions; `onPlayhead` and `onSnapshot` subscribe and unsubscribe; missing host degrades without throwing.
-- [ ] 9.2 RED `mock.test.ts`: envelopes `{ok,...snapshot}`; value clamps to `limits.ts`; mock reproduces error tokens (`missing arg`, `invalid enum`, `exists`, `busy`).
-- [ ] 9.3 RED `index.test.ts` `resolveBridge({hasHost, loadMock})` matrix: host -> native; no host + `loadMock` -> mock; no host + undefined -> native (degrades).
-- [ ] 9.4 RED `embed-lib.test.mjs` `assertNoMockChunk(files)`: throws on any asset name matching `/mock/`; passes otherwise.
-- [ ] 9.5 Run `pnpm --dir ui test`; confirm 9.1-9.4 fail.
-- [ ] 9.6 GREEN `bridge.ts` (`Bridge` interface) and rewrite `native.ts` as `nativeBridge` (D7).
-- [ ] 9.7 GREEN `mock.ts` (`mockBridge`, minimal engine, same tokens).
-- [ ] 9.8 GREEN `index.ts` `resolveBridge`.
-- [ ] 9.9 GREEN `embed-lib.mjs` `assertNoMockChunk` and call it in the embed step.
-- [ ] 9.10 Run `pnpm --dir ui test`; confirm GREEN.
+PR2 split: 9.2, 9.4, 9.7, 9.9 and the `bridge.ts` half of 9.6 ship in PR2a; 9.1, 9.3, the `native.ts` half of 9.6 and 9.8 moved to PR2b (code held outside the repo until branch `feat/ui-bridge-parity-pr2b` exists).
 
-## Phase 10: External store (PR2, strict TDD)
+- [ ] 9.1 (PR2b) RED `native.test.ts` (rewritten against `window.__JUCE__`): `dispatch`, `getSnapshot`, `chooseExportFile`, `confirm` forward to native functions; `onPlayhead` and `onSnapshot` subscribe and unsubscribe; missing host degrades without throwing.
+- [x] 9.2 RED `mock.test.ts`: envelopes `{ok,...snapshot}`; value clamps to `limits.ts`; mock reproduces error tokens (`missing arg`, `invalid enum`, `exists`, `busy`).
+- [ ] 9.3 (PR2b) RED `index.test.ts` `resolveBridge({hasHost, loadMock})` matrix: host -> native; no host + `loadMock` -> mock; no host + undefined -> native (degrades).
+- [x] 9.4 RED `embed-lib.test.mjs` `assertNoMockChunk(files)`: throws on any asset name matching `/mock/`; passes otherwise.
+- [x] 9.5 Run `pnpm --dir ui test`; confirm 9.1-9.4 fail. **Done before the split; PR2b re-confirms 9.1 and 9.3 RED on its branch.**
+- [ ] 9.6 GREEN `bridge.ts` (`Bridge` interface) and rewrite `native.ts` as `nativeBridge` (D7). **Split: `bridge.ts` done in PR2a; the `native.ts` rewrite is in PR2b.**
+- [x] 9.7 GREEN `mock.ts` (`mockBridge`, minimal engine, same tokens).
+- [ ] 9.8 (PR2b) GREEN `index.ts` `resolveBridge`.
+- [x] 9.9 GREEN `embed-lib.mjs` `assertNoMockChunk` and call it in the embed step.
+- [ ] 9.10 Run `pnpm --dir ui test`; confirm GREEN. **PR2a part green (125 tests, 2026-10-03); re-run on PR2b once 9.1, 9.3, 9.6 and 9.8 land.**
+
+## Phase 10: External store (PR2b, strict TDD)
+
+PR2 split: this phase moved to PR2b; its code was written during the PR2 apply and is held outside the repo until branch `feat/ui-bridge-parity-pr2b` exists.
 
 Files: `ui/src/store/{store,context}.ts(x)`, `ui/src/store/store.test.ts` (spec: store, optimistic, stale, failures requirements; D8, D13).
 
@@ -165,7 +172,9 @@ Files: `ui/src/store/{store,context}.ts(x)`, `ui/src/store/store.test.ts` (spec:
 - [ ] 10.8 GREEN `context.ts` provider and `useStore` hook.
 - [ ] 10.9 Run `pnpm --dir ui test`; confirm GREEN.
 
-## Phase 11: App and main rewire (PR2, strict TDD)
+## Phase 11: App and main rewire (PR2b, strict TDD)
+
+PR2 split: this phase moved to PR2b; in PR2a `App.tsx`, `main.tsx` and `App.test.tsx` stay at their PR1 versions.
 
 Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid BPM presses"; fixes the Slice 1 `changeBpm` stale closure).
 
@@ -174,18 +183,28 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 - [ ] 11.3 GREEN `App.tsx` takes `store` as a prop and uses selectors; `main.tsx` calls `resolveBridge({hasHost, loadMock: import.meta.env.DEV ? () => import('./bridge/mock').then(m => m.mockBridge) : undefined})` (D7, D11).
 - [ ] 11.4 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm `ui/dist` contains no mock chunk (`assertNoMockChunk` passes).
 
-## Phase 12: PR2 verification, review gate, commit (PR2)
+## Phase 12: PR2a verification, review gate, commit (PR2a, branch `feat/ui-bridge-parity-pr2`)
 
-- [ ] 12.1 Flag-off builds of both app solutions and `BerlinTests` unchanged (PR2 touches no C++); flag-on standalone build embeds the new UI and loads (smoke).
-- [ ] 12.2 Size check: PR2 authored lines within 800 (~760 forecast). If above, stop and split at Phase 9/10 per the forecast.
+- [ ] 12.1 Flag-off builds of both app solutions and `BerlinTests` unchanged (PR2 touches no C++); flag-on standalone build embeds the new UI and loads (smoke). **Partial: BerlinTests rebuilt and 379/379 green (PR2 touches no C++; embed-lib.mjs changed); flag-off app solutions and flag-on standalone smoke not run.**
+- [ ] 12.2 Size check: PR2 authored lines within 800 (~760 forecast). If above, stop and split at Phase 9/10 per the forecast. **Measured 1177 added lines (552 prod, 625 tests) > 800: STOP, split required (see apply-progress).** **After the split, PR2a measures 626 authored lines (prod 366, tests 260); typecheck, 125 tests and build green; `ui/dist` has no mock chunk.**
 - [ ] 12.3 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage.
 - [ ] 12.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
 - [ ] 12.5 USER commits (e.g. `feat: add typed bridge protocol, store and mock bridge`) and pushes; verify git state yourself.
-- [ ] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2 body: Chain Context, diagram (PR2 marked).
+- [ ] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2a body: Chain Context, diagram (PR2a marked).
 
-## Phase 13: Primitives and seed helper (PR3; branch `feat/ui-bridge-parity-pr3` off PR2)
+## Phase 12b: PR2b restore, verification, review gate, commit (PR2b, branch `feat/ui-bridge-parity-pr2b` off PR2a)
 
-- [ ] 13.1 Create branch `feat/ui-bridge-parity-pr3` from PR2; re-run Vitest baseline.
+- [ ] 12b.1 After PR2a is committed, create branch `feat/ui-bridge-parity-pr2b` from it; restore the held PR2b files over the workspace (see the holding `README.txt`); confirm 9.1 and 9.3 RED by temporarily reverting `native.ts`/`index.ts`, or record that RED was proven before the split.
+- [ ] 12b.2 Run `pnpm --dir ui test`, `typecheck`, `build`; confirm GREEN and no mock chunk in `ui/dist`; then tick 9.1, 9.3, 9.6, 9.8, 9.10 and Phases 10-11.
+- [ ] 12b.3 Size check: PR2b authored lines within 800 (~551 forecast); report the measured number.
+- [ ] 12b.4 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage.
+- [ ] 12b.5 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
+- [ ] 12b.6 USER commits (e.g. `feat: add native bridge, store and app rewire`) and pushes; verify git state yourself.
+- [ ] 12b.7 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2`. PR2b body: Chain Context, diagram (PR2b marked).
+
+## Phase 13: Primitives and seed helper (PR3; branch `feat/ui-bridge-parity-pr3` off PR2b)
+
+- [ ] 13.1 Create branch `feat/ui-bridge-parity-pr3` from PR2b (`feat/ui-bridge-parity-pr2b`); re-run Vitest baseline.
 - [ ] 13.2 RED `components/controls/controls.test.tsx`: `Slider` (value, `onChange`, disabled, optional `skew` prop passes through), `Select`, `Toggle`, `Button` render and fire handlers.
 - [ ] 13.3 RED `lib/seed.test.ts`: `/^-?\d+$/` accepts `0`, `-5`, a 19-digit seed as a string (no Number rounding); rejects `""`, `1.5`, `abc`, `--1` (spec "Seed Validation").
 - [ ] 13.4 Run `pnpm --dir ui test`; confirm fail.
@@ -228,7 +247,7 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 - [ ] 18.3 `gentle-ai review start`; lenses; finalize; approved lineage.
 - [ ] 18.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit.
 - [ ] 18.5 USER commits (e.g. `feat: add transport, generation, pitch, evolution and export controls`) and pushes; verify git state yourself.
-- [ ] 18.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2`. PR3 body: Chain Context, diagram (PR3 marked).
+- [ ] 18.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2b`. PR3 body: Chain Context, diagram (PR3 marked).
 
 ## Phase 19: Skew and delay recommendation helpers (PR4; branch `feat/ui-bridge-parity-pr4` off PR3)
 
@@ -294,6 +313,7 @@ Who: the user. Run flag-on in standalone `Berlin.exe` AND Cakewalk Sonar (`Berli
 - Flag-on test builds need `BERLIN_WEB_UI=1` in the `.jucer` project defines (`JUCERPROJECT@defines`; plugin: a new `&#10;` line after `JUCE_VST3_CAN_REPLACE_VST2=0`), then a Projucer resave (`H:\Proyectos\Juce\Projucer\Projucer.exe --resave <jucer>`, each from its own directory). Revert both edits and resave before commit; the flag-off diff of `.jucer`/vcxproj must be empty.
 - The Projucer per-configuration prebuild runs in all 3 plugin targets.
 - Review budget is 800 authored lines per PR, excluding lockfiles and generated files (`ui/pnpm-lock.yaml`, `ui/src/bridge/juce/index.js`, `Source/ui/generated/*`, Projucer output). PR2-PR4 forecasts sit at 93-95% of budget; the split points are listed in the forecast. Do not exceed; split.
+- PR2 split into PR2a (`feat/ui-bridge-parity-pr2`, ~626) and PR2b (`feat/ui-bridge-parity-pr2b`, targets PR2a, ~551) after apply measured 1177 lines; user decision 2026-10-03.
 - Decision applied: the busy message is the legacy string `Busy, try again`.
 - User-reviewable new status strings with no legacy source: `Export failed: the path is not absolute.`, `A preset with that name already exists.` and `Error: <message>`.
 - Chained-PR skill note: `gentle-ai-chained-pr` was not found in the skill registry; `C:\Users\ran_k\.claude\skills\chained-pr\SKILL.md` was used instead. Each PR body repeats the dependency diagram.
