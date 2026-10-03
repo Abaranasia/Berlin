@@ -65,6 +65,8 @@
             file="Source/TransportTempoChangeTests.cpp"/>
       <FILE id="btSfxC" name="SynthEffectsTests.cpp" compile="1" resource="0"
             file="Source/SynthEffectsTests.cpp"/>
+      <FILE id="btUbrC" name="UiBridgeTests.cpp" compile="1" resource="0"
+            file="Source/UiBridgeTests.cpp"/>
     </GROUP>
     <GROUP id="{5D8C3F4B-9E2A-4C7D-A1F6-2B4E6D8F0A1C}" name="core">
       <FILE id="tcStpH" name="Step.h" compile="0" resource="0" file="../Source/core/Step.h"/>
@@ -162,6 +164,12 @@
             file="../Source/plugin/BerlinAudioProcessor.h"/>
       <FILE id="tlBapC" name="BerlinAudioProcessor.cpp" compile="1" resource="0"
             file="../Source/plugin/BerlinAudioProcessor.cpp"/>
+    </GROUP>
+    <GROUP id="{9E1C3A5D-7F2B-4D6E-8A0C-3F5B7D9E1C32}" name="bridge">
+      <FILE id="tbUbrH" name="UiBridge.h" compile="0" resource="0"
+            file="../Source/bridge/UiBridge.h"/>
+      <FILE id="tbUbrC" name="UiBridge.cpp" compile="1" resource="0"
+            file="../Source/bridge/UiBridge.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

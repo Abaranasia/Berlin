@@ -179,6 +179,7 @@
     <ClCompile Include="..\..\Source\TempoSyncTests.cpp"/>
     <ClCompile Include="..\..\Source\TransportTempoChangeTests.cpp"/>
     <ClCompile Include="..\..\Source\SynthEffectsTests.cpp"/>
+    <ClCompile Include="..\..\Source\UiBridgeTests.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp"/>
     <ClCompile Include="..\..\..\Source\core\Scale.cpp"/>
     <ClCompile Include="..\..\..\Source\core\TempoSync.cpp"/>
@@ -200,6 +201,7 @@
     <ClCompile Include="..\..\..\Source\synth\SynthEffects.cpp"/>
     <ClCompile Include="..\..\..\Source\preset\PresetManager.cpp"/>
     <ClCompile Include="..\..\..\Source\plugin\BerlinAudioProcessor.cpp"/>
+    <ClCompile Include="..\..\..\Source\bridge\UiBridge.cpp"/>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1506,6 +1508,7 @@
     <ClInclude Include="..\..\..\Source\preset\Preset.h"/>
     <ClInclude Include="..\..\..\Source\preset\PresetManager.h"/>
     <ClInclude Include="..\..\..\Source\plugin\BerlinAudioProcessor.h"/>
+    <ClInclude Include="..\..\..\Source\bridge\UiBridge.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

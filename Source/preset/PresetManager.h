@@ -83,6 +83,23 @@ public:
     static juce::ValueTree toValueTree (const Preset& preset);
     static PresetResult    fromValueTree (const juce::ValueTree& tree, Preset& out);
 
+    // ui-engine-api design.md D8: shared enum<->name forwarders, so UiBridge
+    // (and anything else) can encode/decode the SAME preset-XML name tables
+    // this class already owns, without a second copy drifting out of sync.
+    // Each delegates one line into the existing anonymous-namespace helper in
+    // PresetManager.cpp - no table move, no behavior change.
+    static juce::String waveformName (Waveform waveform);
+    static bool         parseWaveform (const juce::String& name, Waveform& out);
+
+    static juce::String lfoDestinationName (LfoDestination destination);
+    static bool         parseLfoDestination (const juce::String& name, LfoDestination& out);
+
+    static juce::String scaleTypeName (ScaleType type);
+    static bool         parseScaleType (const juce::String& name, ScaleType& out);
+
+    static juce::String divisionName (SyncDivision division);
+    static bool         parseDivision (const juce::String& name, SyncDivision& out);
+
 private:
     juce::File presetDirectory;
 };

@@ -134,6 +134,21 @@ PresetManager::PresetManager (juce::File presetDirectoryToUse)
 {
 }
 
+// ui-engine-api design.md D8: one-line forwarders into the anonymous-
+// namespace tables above - distinct names (not `waveformToName` etc.) avoid
+// any risk of these member functions recursing into themselves.
+juce::String PresetManager::waveformName (Waveform waveform) { return waveformToName (waveform); }
+bool PresetManager::parseWaveform (const juce::String& name, Waveform& out) { return waveformFromName (name, out); }
+
+juce::String PresetManager::lfoDestinationName (LfoDestination destination) { return lfoDestinationToName (destination); }
+bool PresetManager::parseLfoDestination (const juce::String& name, LfoDestination& out) { return lfoDestinationFromName (name, out); }
+
+juce::String PresetManager::scaleTypeName (ScaleType type) { return scaleTypeToName (type); }
+bool PresetManager::parseScaleType (const juce::String& name, ScaleType& out) { return scaleTypeFromName (name, out); }
+
+juce::String PresetManager::divisionName (SyncDivision division) { return divisionToName (division); }
+bool PresetManager::parseDivision (const juce::String& name, SyncDivision& out) { return divisionFromName (name, out); }
+
 juce::File PresetManager::defaultPresetDirectory()
 {
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)

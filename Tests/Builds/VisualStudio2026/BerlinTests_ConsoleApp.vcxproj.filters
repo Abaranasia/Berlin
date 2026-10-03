@@ -29,6 +29,9 @@
     <Filter Include="BerlinTests\plugin">
       <UniqueIdentifier>{83801E8D-D157-2872-DC09-232AFFB72DCF}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BerlinTests\bridge">
+      <UniqueIdentifier>{611AA459-91DC-47F6-06C7-8D8D52D36DBC}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BerlinTests">
       <UniqueIdentifier>{99B26223-EE90-F7C5-C12F-435CBF576C49}</UniqueIdentifier>
     </Filter>
@@ -541,6 +544,9 @@
     <ClCompile Include="..\..\Source\SynthEffectsTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\UiBridgeTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\core\Sequence.cpp">
       <Filter>BerlinTests\core</Filter>
     </ClCompile>
@@ -603,6 +609,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\plugin\BerlinAudioProcessor.cpp">
       <Filter>BerlinTests\plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\bridge\UiBridge.cpp">
+      <Filter>BerlinTests\bridge</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -2045,6 +2054,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\plugin\BerlinAudioProcessor.h">
       <Filter>BerlinTests\plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\bridge\UiBridge.h">
+      <Filter>BerlinTests\bridge</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
