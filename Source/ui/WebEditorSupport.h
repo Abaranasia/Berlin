@@ -42,6 +42,31 @@ private:
     PlayheadState last { 0, false };
 };
 
+// Coalesces "engine changed" notifications into at most one emit per timer
+// tick. markPending() records a change; shouldEmit() stays true until
+// commit() (so a hidden browser keeps the event pending); commit() is called
+// only after a real send. Message thread only.
+class PendingEventGate
+{
+public:
+    void markPending() noexcept;
+    bool shouldEmit (bool visible) const noexcept;
+    void commit() noexcept;
+
+private:
+    bool pending = false;
+};
+
+// <documentsDir>/Berlin/berlin-export.mid
+juce::File defaultExportFile (const juce::File& documentsDir);
+
+// File() (dialog cancelled) -> {cancelled:true, path:""};
+// otherwise {cancelled:false, path:<full path>}.
+juce::var exportChooserResult (const juce::File& result);
+
+// Another dialog is already open -> {cancelled:true, path:"", error:"busy"}.
+juce::var busyChooserResult();
+
 // Accepts only http://localhost:<port> or http://127.0.0.1:<port>.
 std::optional<juce::String> devServerOrigin (const juce::String& env);
 

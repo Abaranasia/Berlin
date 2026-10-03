@@ -426,6 +426,66 @@ public:
             expect (loadMissing["error"].toString() == "fileNotFound");
         }
 
+        beginTest ("snapshot presetNames reflects files added or removed outside the bridge on the next read (ui-bridge-parity 2.5)");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor processor (temp.dir);
+            berlin::UiBridge bridge (processor);
+
+            const auto names = [&bridge]
+            {
+                juce::StringArray result;
+                const auto snapshot = bridge.snapshot();   // keep the var alive while its array is read
+                const auto* array = snapshot["presetNames"].getArray();
+                if (array != nullptr)
+                    for (const auto& name : *array)
+                        result.add (name.toString());
+                return result;
+            };
+
+            expect (names().isEmpty());   // empty folder: nothing yet
+
+            {
+                berlin::BerlinAudioProcessor external (temp.dir);   // a second writer, not the bridge's processor
+                expect (external.save ("External") == berlin::PresetResult::ok);
+            }
+            expect (names().contains ("External"));
+            expectEquals (names().size(), 1);
+
+            expect (processor.listPresetNames().contains ("External"));
+            expect (juce::File (temp.dir).getChildFile ("External.xml").deleteFile());
+            expect (names().isEmpty());   // removed file is dropped
+        }
+
+        beginTest ("loadPreset while regeneration is busy -> ok:false \"busy\", no snapshot, state unchanged; success path unchanged (ui-bridge-parity 3.3)");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor processor (temp.dir);
+            berlin::UiBridge bridge (processor);
+
+            auto saveArgs = new juce::DynamicObject();
+            saveArgs->setProperty ("name", "Lead A");
+            saveArgs->setProperty ("overwrite", false);
+            expect (static_cast<bool> (bridge.dispatch ("savePreset", juce::var (saveArgs))["ok"]));
+
+            auto loadArgs = new juce::DynamicObject();
+            loadArgs->setProperty ("name", "Lead A");
+
+            // Not pending yet: load succeeds and (like any regenerate) leaves a publish pending.
+            const auto loaded = bridge.dispatch ("loadPreset", juce::var (loadArgs));
+            expect (static_cast<bool> (loaded["ok"]));
+            expect (loaded.hasProperty ("snapshot"));
+
+            const auto before = snapshotText (bridge);
+            auto busyArgs = new juce::DynamicObject();
+            busyArgs->setProperty ("name", "Lead A");
+            const auto busy = bridge.dispatch ("loadPreset", juce::var (busyArgs));
+            expect (! static_cast<bool> (busy["ok"]));
+            expect (busy["error"].toString() == "busy");
+            expect (! busy.hasProperty ("snapshot"));
+            expect (snapshotText (bridge) == before);
+        }
+
         beginTest ("exportMidi rejects a relative path before constructing a juce::File, no file written (6.8, D13)");
         {
             berlin::BerlinAudioProcessor processor;

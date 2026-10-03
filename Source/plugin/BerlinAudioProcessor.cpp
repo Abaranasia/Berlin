@@ -236,6 +236,12 @@ PresetResult BerlinAudioProcessor::save (const juce::String& name)
 
 PresetResult BerlinAudioProcessor::loadPreset (const juce::String& name)
 {
+    // ui-bridge-parity D3: busy is checked at the ROOT, before the preset is
+    // read or any state touched (same rule as regenerate()). Only the message
+    // thread publishes, so pending cannot clear before the regenerate below.
+    if (player.isPublishPending())
+        return PresetResult::busy;
+
     Preset preset;
     const auto result = presetManager.load (name, preset);
 
@@ -257,9 +263,9 @@ PresetResult BerlinAudioProcessor::loadPreset (const juce::String& name)
     generationParams.rangeLow       = preset.rangeLow;
     generationParams.rangeHigh      = preset.rangeHigh;
 
-    regenerate (false);   // drawNewSeed=false: the preset's saved seed applies even if Lock Seed is on
-
-    return PresetResult::ok;
+    // drawNewSeed=false: the preset's saved seed applies even if Lock Seed is on.
+    // Defensive second guard: the pending check above makes a refusal unreachable.
+    return regenerate (false) ? PresetResult::ok : PresetResult::busy;
 }
 
 bool BerlinAudioProcessor::presetExists (const juce::String& name) const

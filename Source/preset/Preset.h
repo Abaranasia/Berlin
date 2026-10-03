@@ -67,7 +67,8 @@ enum class PresetResult
     writeFailed,
     fileNotFound,
     parseFailed,
-    unsupportedVersion
+    unsupportedVersion,
+    busy   // ui-bridge-parity D3: loadPreset refused, a sequence publish is pending; state untouched
 };
 
 } // namespace berlin

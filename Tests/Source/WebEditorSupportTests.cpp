@@ -122,6 +122,59 @@ public:
             expect (! detector.hasChanged ({ 4, true }));
         }
 
+        beginTest ("pending event gate: initially quiet, emits only when pending and visible, quiet after commit");
+        {
+            berlin::PendingEventGate gate;
+            expect (! gate.shouldEmit (true));            // nothing pending yet
+
+            gate.markPending();
+            expect (! gate.shouldEmit (false));           // hidden keeps it pending
+            expect (gate.shouldEmit (true));              // visible -> emit
+            expect (gate.shouldEmit (true));              // no commit -> still true
+
+            gate.commit();
+            expect (! gate.shouldEmit (true));            // committed
+
+            gate.markPending();
+            gate.markPending();
+            gate.markPending();
+            expect (gate.shouldEmit (true));
+            gate.commit();                                // one commit absorbs the burst
+            expect (! gate.shouldEmit (true));
+        }
+
+        beginTest ("default export file is <documents>/Berlin/berlin-export.mid");
+        {
+            const auto docs = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("docs-root");
+            const auto file = berlin::defaultExportFile (docs);
+
+            expect (file == docs.getChildFile ("Berlin").getChildFile ("berlin-export.mid"));
+            expect (file.getFileName() == "berlin-export.mid");
+            expect (file.getParentDirectory().getFileName() == "Berlin");
+        }
+
+        beginTest ("export chooser result: cancelled for no file, path for a chosen file");
+        {
+            const auto cancelled = berlin::exportChooserResult (juce::File());
+            expect (static_cast<bool> (cancelled["cancelled"]));
+            expect (cancelled["path"].toString().isEmpty());
+            expect (! cancelled.hasProperty ("error"));
+
+            const auto chosenFile = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("out.mid");
+            const auto chosen = berlin::exportChooserResult (chosenFile);
+            expect (! static_cast<bool> (chosen["cancelled"]));
+            expect (chosen["path"].toString() == chosenFile.getFullPathName());
+            expect (chosen["path"].toString().isNotEmpty());
+        }
+
+        beginTest ("busy chooser result is cancelled with error busy");
+        {
+            const auto busy = berlin::busyChooserResult();
+            expect (static_cast<bool> (busy["cancelled"]));
+            expect (busy["path"].toString().isEmpty());
+            expect (busy["error"].toString() == "busy");
+        }
+
         beginTest ("dev server origin accepts only loopback http with a port");
         {
             using berlin::devServerOrigin;

@@ -149,6 +149,7 @@ namespace
             case PresetResult::fileNotFound:         return "fileNotFound";
             case PresetResult::parseFailed:          return "parseFailed";
             case PresetResult::unsupportedVersion:   return "unsupportedVersion";
+            case PresetResult::busy:                 return "busy";
         }
 
         return "parseFailed";   // unreachable for a valid enumerator

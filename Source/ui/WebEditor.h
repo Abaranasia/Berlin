@@ -27,7 +27,8 @@ namespace berlin
 {
 
 class WebEditor final : public juce::AudioProcessorEditor,
-                        private juce::Timer
+                        private juce::Timer,
+                        private juce::ChangeListener
 {
 public:
     explicit WebEditor (BerlinAudioProcessor& processorToEdit);
@@ -37,13 +38,25 @@ public:
 
 private:
     void timerCallback() override;
+    void changeListenerCallback (juce::ChangeBroadcaster*) override;
+
+    BerlinAudioProcessor& engine() noexcept { return static_cast<BerlinAudioProcessor&> (processor); }
+
+    // Native dialogs (message thread). At most one is open at a time
+    // (`dialogOpen`); a second request resolves as busy.
+    void chooseExportFile (juce::WebBrowserComponent::NativeFunctionCompletion done);
+    void confirm (const juce::Array<juce::var>& args, juce::WebBrowserComponent::NativeFunctionCompletion done);
 
     // Member order matters: the browser is destroyed first (its native
-    // functions capture `bridge`).
-    BerlinAudioProcessor&                      owner;
+    // functions capture `bridge` and `this`).
     UiBridge                                   bridge;
     PlayheadChangeDetector                     detector;
+    PendingEventGate                           gate;
+    bool                                       dialogOpen   = false;
+    bool                                       shuttingDown = false;
     juce::Label                                fallbackLabel;
+    std::unique_ptr<juce::FileChooser>         exportChooser;
+    juce::ScopedMessageBox                     confirmBox;
     std::unique_ptr<juce::WebBrowserComponent> browser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WebEditor)
