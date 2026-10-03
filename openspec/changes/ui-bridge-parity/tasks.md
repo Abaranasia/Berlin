@@ -297,27 +297,27 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 
 Who: the user. Run flag-on in standalone `Berlin.exe` AND Cakewalk Sonar (`BerlinPlugin.vst3`). Compare each item against the legacy editor (explore.md section 1). Any failure blocks the Slice.
 
-- [ ] 23.1 **MANUAL** Export MIDI: native save dialog opens at `Documents/Berlin/berlin-export.mid`; file is written; cancel does nothing.
-- [ ] 23.2 **MANUAL** Synth and FX toggles.
-- [ ] 23.3 **MANUAL** Tempo (BPM -/+ and input); the synced delay recomputes.
-- [ ] 23.4 **MANUAL** Delay Sync (restores the last manual time), Division, Time (disabled in Sync), Feedback, Mix.
-- [ ] 23.5 **MANUAL** Delay recommendations label matches the legacy label at the same BPM.
-- [ ] 23.6 **MANUAL** Reverb Room, Damping, Wet, Dry; delay and reverb disabled while FX is off.
-- [ ] 23.7 **MANUAL** Seed (valid, invalid red message, large value).
-- [ ] 23.8 **MANUAL** Generate, Randomize (disabled with Lock), Mutate.
-- [ ] 23.9 **MANUAL** Lock Seed, Rhythm mode, Pulses, Rotation, Chance %.
-- [ ] 23.10 **MANUAL** Scale, Root, Range Lo/Hi (range clamps together).
-- [ ] 23.11 **MANUAL** Preset save (new name), overwrite prompt confirm and decline, load fills the name, load while busy shows `Busy, try again`.
-- [ ] 23.12 **MANUAL** Auto-Evolve and Rate; the UI follows evolution via `snapshot` events.
-- [ ] 23.13 **MANUAL** Waveform, Pulse Width, Cutoff, Resonance, ADSR, LFO Dest/Rate/Depth (skewed sliders feel like legacy).
-- [ ] 23.14 **MANUAL** Status line messages for each error path reachable by hand.
-- [ ] 23.15 **MANUAL** Play/Stop and the playhead row follow playback.
-- [ ] 23.16 **MANUAL** Master level slider.
-- [ ] 23.17 **MANUAL** Dialog close mid-flight: close the editor while the export chooser, then the overwrite confirm, is open; no crash, no stale callback. Confirm whether the Win32 teardown invokes the callback synchronously (design open question).
-- [ ] 23.18 **MANUAL** `snapshot` event on auto-evolve and on state restore (save the host project, reopen, UI shows restored values; auto-evolve updates the pattern live).
-- [ ] 23.19 **MANUAL** Slider drags do not re-parse presets (no stutter with a large preset folder).
-- [ ] 23.20 **MANUAL** Flag-off: rebuild with the flag off; the legacy editor is unchanged in standalone and Sonar, and the build works with pnpm absent from PATH.
-- [ ] 23.21 Record the parity result in the last PR description and in Engram.
+- [x] 23.1 **MANUAL** Export MIDI: native save dialog opens at `Documents/Berlin/berlin-export.mid`; file is written; cancel does nothing.
+- [x] 23.2 **MANUAL** Synth and FX toggles.
+- [x] 23.3 **MANUAL** Tempo (BPM -/+ and input); the synced delay recomputes.
+- [x] 23.4 **MANUAL** Delay Sync (restores the last manual time), Division, Time (disabled in Sync), Feedback, Mix.
+- [x] 23.5 **MANUAL** Delay recommendations label matches the legacy label at the same BPM.
+- [x] 23.6 **MANUAL** Reverb Room, Damping, Wet, Dry; delay and reverb disabled while FX is off.
+- [x] 23.7 **MANUAL** Seed (valid, invalid red message, large value).
+- [x] 23.8 **MANUAL** Generate, Randomize (disabled with Lock), Mutate.
+- [x] 23.9 **MANUAL** Lock Seed, Rhythm mode, Pulses, Rotation, Chance %.
+- [x] 23.10 **MANUAL** Scale, Root, Range Lo/Hi (range clamps together).
+- [x] 23.11 **MANUAL** Preset save (new name), overwrite prompt confirm and decline, load fills the name, load while busy shows `Busy, try again`.
+- [x] 23.12 **MANUAL** Auto-Evolve and Rate; the UI follows evolution via `snapshot` events.
+- [x] 23.13 **MANUAL** Waveform, Pulse Width, Cutoff, Resonance, ADSR, LFO Dest/Rate/Depth (skewed sliders feel like legacy).
+- [x] 23.14 **MANUAL** Status line messages for each error path reachable by hand.
+- [x] 23.15 **MANUAL** Play/Stop and the playhead row follow playback.
+- [x] 23.16 **MANUAL** Master level slider.
+- [x] 23.17 **MANUAL** Dialog close mid-flight: close the editor while the export chooser, then the overwrite confirm, is open; no crash, no stale callback. Confirm whether the Win32 teardown invokes the callback synchronously (design open question).
+- [x] 23.18 **MANUAL** `snapshot` event on auto-evolve and on state restore (save the host project, reopen, UI shows restored values; auto-evolve updates the pattern live).
+- [x] 23.19 **MANUAL** Slider drags do not re-parse presets (no stutter with a large preset folder).
+- [x] 23.20 **MANUAL** Flag-off: rebuild with the flag off; the legacy editor is unchanged in standalone and Sonar, and the build works with pnpm absent from PATH.
+- [x] 23.21 Record the parity result in the last PR description and in Engram.
 
 ## Delivery Notes
 

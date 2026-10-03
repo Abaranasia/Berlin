@@ -99,4 +99,4 @@ No migration is required. `BERLIN_WEB_UI` stays off by default. `PresetResult::b
 
 ## Open Questions
 
-- [ ] Does the Win32 `FileChooser` or `ScopedMessageBox` teardown invoke the callback synchronously? This is guarded by `shuttingDown` either way; confirm it manually.
+- [x] Does the Win32 `FileChooser` or `ScopedMessageBox` teardown invoke the callback synchronously? Resolved in manual check 23.17 (Sonar, debugger): no, both callbacks fire asynchronously after `~WebEditor`, so the `SafePointer` null check is the active guard and `shuttingDown` stays as defense in depth.
