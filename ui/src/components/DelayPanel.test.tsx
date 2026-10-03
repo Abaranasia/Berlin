@@ -2,7 +2,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { act } from 'react';
 import { DelayPanel } from './DelayPanel';
-import { change, click, field, render, settle } from '../testing/harness';
+import { createMockBridge } from '../bridge/mock';
+import { change, click, field, makeHarness, render, settle } from '../testing/harness';
 import { DELAY_DIVISIONS } from '../bridge/protocol';
 
 let unmount = () => {};
@@ -77,21 +78,36 @@ describe('DelayPanel', () => {
     expect(Number(field(host, 'Delay time').value)).toBeCloseTo(0.3, 6);
   });
 
-  it('Sync off with no remembered time (synced by the host, not by this panel) sends only delaySynced', async () => {
+  it('Sync off after the HOST synced restores the last unsynced time seen in snapshots (legacy seeds Free memory from loads)', async () => {
     const { host, dispatch } = await mount();
+    await change(field(host, 'Delay time'), '0.25');
     await act(async () => void (await dispatch({ name: 'setPatch', args: { delaySynced: true } })));
     dispatch.mockClear();
     await click(field(host, 'Delay sync'));
     await settle();
-    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setPatch', args: { delaySynced: false } });
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setPatch', args: { delaySynced: false, delayTimeSeconds: 0.25 } });
+  });
+
+  it('Sync off when the panel only ever saw a synced patch falls back to the default patch time 0.3 (kDefaultPatch)', async () => {
+    const base = createMockBridge();
+    const synced = { ...(await base.getSnapshot())! };
+    synced.patch = { ...synced.patch, delaySynced: true, delayTimeSeconds: 0.8 };
+    const harness = makeHarness({ getSnapshot: async () => synced });
+    const mounted = await render(<DelayPanel />, harness);
+    unmount = mounted.unmount;
+    expect(field(mounted.host, 'Delay sync').checked).toBe(true);
+    await click(field(mounted.host, 'Delay sync'));
+    await settle();
+    expect(harness.dispatch).toHaveBeenLastCalledWith({ name: 'setPatch', args: { delaySynced: false, delayTimeSeconds: 0.3 } });
   });
 
   it('shows the recommendations and updates them with the BPM', async () => {
     const { host, bridge } = await mount();
-    expect(recommendations(host)).toContain('1/4 = 500 ms');
-    expect(recommendations(host)).toContain('1/8T = 167 ms');
+    expect(recommendations(host)).toContain('1/4 500 ms');
+    expect(recommendations(host)).toContain('1/8T 167 ms | 1/16 125 ms');
     await act(async () => void (await bridge.dispatch({ name: 'setBpm', args: { bpm: 150 } })));
-    expect(recommendations(host)).toContain('1/4 = 400 ms');
+    expect(recommendations(host)).toContain('1/4 400 ms');
   });
 
   it('every delay control is disabled while FX is off, and enabled with FX on', async () => {

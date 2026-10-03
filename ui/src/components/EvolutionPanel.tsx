@@ -1,8 +1,10 @@
-import { AUTO_EVOLVE_RATE } from '../bridge/limits';
 import { useStore, useStoreApi } from '../store/context';
 import { useShown } from '../store/hooks';
-import { Slider } from './controls/Slider';
+import { Select } from './controls/Select';
 import { Toggle } from './controls/Toggle';
+
+// The legacy editor's ComboBox: every N loops, N in 1, 2, 4, 8, 16.
+const RATE_OPTIONS = [1, 2, 4, 8, 16].map((n) => ({ value: String(n), label: `Every ${n} loops` }));
 
 export function EvolutionPanel() {
   const store = useStoreApi();
@@ -13,13 +15,11 @@ export function EvolutionPanel() {
   return (
     <section>
       <Toggle label="Auto-Evolve" checked={enabled} onChange={(next) => store.send('autoEvolveEnabled', { name: 'setAutoEvolveEnabled', args: { enabled: next } }, next)} />{' '}
-      <Slider
+      <Select
         label="Evolve rate"
-        value={rate}
-        min={AUTO_EVOLVE_RATE.min}
-        max={AUTO_EVOLVE_RATE.max}
-        step={1}
-        onChange={(next) => store.send('autoEvolveRate', { name: 'setAutoEvolveRate', args: { rate: next } }, next)}
+        value={String(rate)}
+        options={RATE_OPTIONS}
+        onChange={(next) => store.send('autoEvolveRate', { name: 'setAutoEvolveRate', args: { rate: Number(next) } }, Number(next))}
       />{' '}
       <small>Mutations: {mutations}</small>
     </section>

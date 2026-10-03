@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { LIMITS } from '../bridge/limits';
 import { DELAY_DIVISIONS, type DelayDivision } from '../bridge/protocol';
 import { formatDelayRecommendations } from '../lib/delayRecs';
@@ -9,6 +10,7 @@ import { Slider } from './controls/Slider';
 import { Toggle } from './controls/Toggle';
 
 const DEFAULT_TIME = 0.5;
+const DEFAULT_PATCH_DELAY = 0.3; // kDefaultPatch.delayTimeSeconds (Source/synth/SynthPatch.h): the legacy Free-mode memory seed
 
 // Delay is part of the effects chain: every control is disabled while FX is off, and Time also while Sync is on.
 export function DelayPanel() {
@@ -21,6 +23,13 @@ export function DelayPanel() {
   const feedback = useShown('patch.delayFeedback', (s) => s.patch.delayFeedback, 0.3);
   const mix = useShown('patch.delayMix', (s) => s.patch.delayMix, 0.2);
 
+  // Legacy seeds its Free-mode memory from the default patch and from every loaded unsynced patch;
+  // the equivalent here is the last time shown while unsynced, starting at the default patch time.
+  const lastUnsynced = useRef(DEFAULT_PATCH_DELAY);
+  useEffect(() => {
+    if (!synced) lastUnsynced.current = time;
+  }, [synced, time]);
+
   // Sync on remembers the manual time; Sync off puts it back in the same command, so the host does not
   // overwrite it with a tempo-derived one first.
   const setSync = (next: boolean) => {
@@ -29,8 +38,8 @@ export function DelayPanel() {
       sendPatch(store, 'delaySynced', true);
       return;
     }
-    const { lastManualDelay } = store.getState().draft;
-    store.send('patch.delaySynced', { name: 'setPatch', args: { delaySynced: false, ...(lastManualDelay !== null && { delayTimeSeconds: lastManualDelay }) } }, false);
+    const restored = store.getState().draft.lastManualDelay ?? lastUnsynced.current;
+    store.send('patch.delaySynced', { name: 'setPatch', args: { delaySynced: false, delayTimeSeconds: restored } }, false);
   };
 
   return (

@@ -105,6 +105,26 @@ describe('GenerationPanel: seed field', () => {
     expect(status(host).textContent).toBe('');
   });
 
+  it('surrounding whitespace is trimmed first and the TRIMMED string is sent (legacy)', async () => {
+    const { host, dispatch } = await mount();
+    await change(field(host, 'Seed'), ' 5');
+    await pressEnter(field(host, 'Seed'));
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setSeed', args: { seed: '5' } });
+    expect(field(host, 'Seed').value).toBe('5');
+    await change(field(host, 'Seed'), ' -9223372036854770000  ');
+    await blur(field(host, 'Seed'));
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setSeed', args: { seed: '-9223372036854770000' } });
+  });
+
+  it('a blank seed is invalid after trimming', async () => {
+    const { host, dispatch } = await mount();
+    dispatch.mockClear();
+    await change(field(host, 'Seed'), '   ');
+    await pressEnter(field(host, 'Seed'));
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(status(host).textContent).toBe('Seed must be a whole number.');
+  });
+
   it('a valid seed does not clear an unrelated status message', async () => {
     const { host, store } = await mount();
     await act(async () => store.setStatus({ text: 'Mutated.', error: false }));

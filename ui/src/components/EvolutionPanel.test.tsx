@@ -27,11 +27,20 @@ describe('EvolutionPanel', () => {
     expect(field(host, 'Auto-Evolve').checked).toBe(true);
   });
 
-  it('Rate sends setAutoEvolveRate with the whole-number value', async () => {
+  it('Rate offers exactly the legacy choices 1, 2, 4, 8 and 16 loops', async () => {
+    const { host } = await mount();
+    const select = field<HTMLSelectElement>(host, 'Evolve rate');
+    expect([...select.options].map((o) => o.value)).toEqual(['1', '2', '4', '8', '16']);
+    expect([...select.options].map((o) => o.text)).toEqual(['Every 1 loops', 'Every 2 loops', 'Every 4 loops', 'Every 8 loops', 'Every 16 loops']);
+  });
+
+  it('Rate sends setAutoEvolveRate with the chosen whole number', async () => {
     const { host, dispatch } = await mount();
-    await change(field(host, 'Evolve rate'), '9');
-    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setAutoEvolveRate', args: { rate: 9 } });
-    expect(field(host, 'Evolve rate').value).toBe('9');
+    await change(field<HTMLSelectElement>(host, 'Evolve rate'), '8');
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setAutoEvolveRate', args: { rate: 8 } });
+    expect(field(host, 'Evolve rate').value).toBe('8');
+    await change(field<HTMLSelectElement>(host, 'Evolve rate'), '16');
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setAutoEvolveRate', args: { rate: 16 } });
   });
 
   it('Evolve updates the UI via a snapshot event (mutationCount)', async () => {

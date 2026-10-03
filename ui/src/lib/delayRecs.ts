@@ -18,5 +18,5 @@ export const delayRecommendations = (bpm: number): DelayRecommendation[] =>
 
 export const formatDelayRecommendations = (bpm: number): string =>
   delayRecommendations(bpm)
-    .map(({ label, ms }) => `${label} = ${ms} ms`)
-    .join(', ');
+    .map(({ label, ms }) => `${label} ${ms} ms`)
+    .join(' | '); // Source/core/TempoSync.cpp formatDelayRecommendations

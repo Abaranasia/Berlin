@@ -26,7 +26,8 @@ describe('delayRecommendations', () => {
 });
 
 describe('formatDelayRecommendations', () => {
-  it('joins label=ms pairs for display', () => {
-    expect(formatDelayRecommendations(120)).toBe('1/2 = 1000 ms, 1/4 = 500 ms, 1/8. = 375 ms, 1/8 = 250 ms, 1/8T = 167 ms, 1/16 = 125 ms');
+  it('matches Source/core/TempoSync.cpp: "<label> <ms> ms" joined with " | "', () => {
+    expect(formatDelayRecommendations(120)).toBe('1/2 1000 ms | 1/4 500 ms | 1/8. 375 ms | 1/8 250 ms | 1/8T 167 ms | 1/16 125 ms');
+    expect(formatDelayRecommendations(150)).toBe('1/2 800 ms | 1/4 400 ms | 1/8. 300 ms | 1/8 200 ms | 1/8T 133 ms | 1/16 100 ms');
   });
 });

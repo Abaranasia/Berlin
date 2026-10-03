@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { isValidSeed, SEED_ERROR } from '../lib/seed';
+import { isValidSeed, normalizeSeed, SEED_ERROR } from '../lib/seed';
 import { sendGen } from '../store/actions';
 import { useStoreApi } from '../store/context';
 import { useShown } from '../store/hooks';
@@ -14,13 +14,14 @@ export function GenerationPanel() {
 
   const commitSeed = () => {
     if (draft === null) return;
-    if (!isValidSeed(draft)) {
+    const trimmed = normalizeSeed(draft);
+    if (!isValidSeed(trimmed)) {
       store.setStatus({ text: SEED_ERROR, error: true }); // keep the draft so it can be corrected
       return;
     }
     if (store.getState().status?.text === SEED_ERROR) store.setStatus(null);
     setDraft(null);
-    store.send('seed', { name: 'setSeed', args: { seed: draft } }, draft); // always the raw string, never a Number
+    store.send('seed', { name: 'setSeed', args: { seed: trimmed } }, trimmed); // always the trimmed string, never a Number
   };
   const regenerate = (randomize: boolean) => store.send('regenerate', { name: 'regenerate', args: { randomize } }, randomize);
 

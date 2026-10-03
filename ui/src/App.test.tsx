@@ -127,7 +127,7 @@ describe('App: Controls B are all composed', () => {
 
   it('shows the delay recommendations for the snapshot BPM', async () => {
     const { host } = await mount();
-    expect(host.querySelector('[data-role="delay-recommendations"]')!.textContent).toContain('1/4 = 500 ms');
+    expect(host.querySelector('[data-role="delay-recommendations"]')!.textContent).toContain('1/4 500 ms');
   });
 
   it('turning FX off disables every delay and reverb control, and on enables them again', async () => {

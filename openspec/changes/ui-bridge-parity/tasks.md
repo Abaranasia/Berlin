@@ -286,6 +286,13 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 - [ ] 22.5 USER commits (e.g. `feat: add synth, delay, reverb and preset controls`) and pushes; verify git state yourself.
 - [ ] 22.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b` (merged PR3/PR4: the base is PR2b, not PR3). Final PR body: Chain Context, diagram (PR3 marked), `size:exception` note.
 
+## Phase 22b: Final-review parity follow-ups (lineage review-f89e70d4742c5bd1, approved; applied after HEAD 8d83912, uncommitted)
+
+- [x] 22b.1 REL-1: Evolve rate is a Select with exactly the legacy choices 1, 2, 4, 8, 16 (`Every N loops`, as the legacy ComboBox); the test that sent 9 now sends 8 and 16 and asserts the option list. `EvolutionPanel.tsx`. RED: 2 failed (range input, no options); GREEN 5/5.
+- [x] 22b.2 REL-2: seed is trimmed first (`normalizeSeed`), validated, and the TRIMMED string is sent and shown (legacy trims at editor line ~159). `seed.ts`, `GenerationPanel.tsx`; `' 5'` and `'5 '` moved from rejected to accepted-after-trim, blank stays invalid. RED: normalizeSeed missing + untrimmed send; GREEN 21/21 and 11/11.
+- [x] 22b.3 REL-3: `formatDelayRecommendations` matches `Source/core/TempoSync.cpp:29-47` exactly: `<label> <ms> ms` joined with ` | `. Updated delayRecs, DelayPanel and App assertions. RED: 3 failed on the old `=`/`, ` format.
+- [x] 22b.4 REL-4: Sync-to-Free restore no longer depends on the panel having turned Sync on. Order: `draft.lastManualDelay`, else the last time shown while unsynced (snapshots), else 0.3 (`kDefaultPatch.delayTimeSeconds`, `SynthPatch.h`); still one `setPatch {delaySynced:false, delayTimeSeconds}`. The old test "no remembered time sends only delaySynced" is replaced by two tests (host-synced restores the last unsynced time; synced-from-start falls back to 0.3). Note: the mock engine default delay time is 0.5, the C++ default is 0.3; the fallback uses the C++ value. `DelayPanel.tsx`.
+
 ## Phase 23: Manual parity checklist (HUMAN-ONLY, flag-on build)
 
 Who: the user. Run flag-on in standalone `Berlin.exe` AND Cakewalk Sonar (`BerlinPlugin.vst3`). Compare each item against the legacy editor (explore.md section 1). Any failure blocks the Slice.

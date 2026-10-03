@@ -2,4 +2,7 @@
 // validated textually and never passed through Number (spec "Seed Validation").
 export const SEED_ERROR = 'Seed must be a whole number.';
 
+// Legacy trims the field before validating and applying it (BerlinAudioProcessorEditor validateSeedField).
+export const normalizeSeed = (text: string): string => text.trim();
+
 export const isValidSeed = (text: string): boolean => /^-?\d+$/.test(text);
