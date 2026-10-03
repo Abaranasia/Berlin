@@ -189,7 +189,7 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 - [x] 12.3 `gentle-ai review start`; run lenses; finalize; obtain an approved lineage. **Done:** PR2a review-f87dcc7341bba45a, PR2b review-690e05e482f3264e (high tier, approved).
 - [x] 12.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Done:** both lineages bound to ui-bridge-parity before commit; pre-commit allow.
 - [x] 12.5 USER commits (e.g. `feat: add typed bridge protocol, store and mock bridge`) and pushes; verify git state yourself. **Done:** user committed and pushed 92a0f7f and 3b7b06d; git state verified.
-- [ ] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2a body: Chain Context, diagram (PR2a marked). **Open:** not run for PR2a/PR2b; pending the maintainer decision on stacked-lineage gates (see 22.6).
+- [x] 12.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity`. PR2a body: Chain Context, diagram (PR2a marked). **Closed by maintainer decision (2026-10-03, option 1):** not run for PR2a/PR2b. Accepted as a tooling limit of stacked multi-commit lineages; every reviewed tree is unchanged and each commit passed pre-commit. Recorded in the archive report.
 
 ## Phase 12b: PR2b restore, verification, review gate, commit (PR2b, branch `feat/ui-bridge-parity-pr2-b` off PR2a)
 
@@ -284,7 +284,7 @@ Files: `ui/src/App.tsx`, `ui/src/main.tsx`, `ui/src/App.test.tsx` (spec: "Rapid 
 - [x] 22.3 `gentle-ai review start`; lenses; finalize; approved lineage. **Done:** final PR review-f89e70d4742c5bd1 (high), follow-up review-a4251d62e397f4af (medium), approved.
 - [x] 22.4 `gentle-ai review bind-sdd --change ui-bridge-parity` BEFORE commit; validate pre-commit. **Done:** both lineages bound before commit; pre-commit allow.
 - [x] 22.5 USER commits (e.g. `feat: add synth, delay, reverb and preset controls`) and pushes; verify git state yourself. **Done:** committed 8d83912 and be8629a (user-authorized), user pushed; remote verified at be8629a.
-- [ ] 22.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b` (merged PR3/PR4: the base is PR2b, not PR3). Final PR body: Chain Context, diagram (PR3 marked), `size:exception` note. **Open:** pre-push allow for review-a4251d62e397f4af only; review-f89e70d4742c5bd1 pre-push invalidated (not one commit from reviewed base) and both pre-pr scope-changed against origin/feat/ui-bridge-parity-pr2-b. Trees unchanged; needs maintainer decision.
+- [x] 22.6 Validate pre-push and pre-pr with `--base-ref origin/feat/ui-bridge-parity-pr2-b` (merged PR3/PR4: the base is PR2b, not PR3). Final PR body: Chain Context, diagram (PR3 marked), `size:exception` note. **Closed by maintainer decision (2026-10-03, option 1):** pre-push allow for review-a4251d62e397f4af only; review-f89e70d4742c5bd1 pre-push invalidated (not one commit from reviewed base) and both pre-pr scope-changed against origin/feat/ui-bridge-parity-pr2-b. Accepted as a tooling limit of stacked multi-commit lineages; every reviewed tree is unchanged and each commit passed pre-commit. Recorded in the archive report.
 
 ## Phase 22b: Final-review parity follow-ups (lineage review-f89e70d4742c5bd1, approved; applied after HEAD 8d83912, uncommitted)
 
