@@ -2,43 +2,46 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { App } from './App';
+import { createStore } from './store/store';
+import type { Bridge } from './bridge/bridge';
+import type { Command, DispatchResult, PlayheadEvent, Snapshot } from './bridge/protocol';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-const native = vi.hoisted(() => ({
-  dispatch: vi.fn(),
-  getSnapshot: vi.fn(),
-  onPlayhead: vi.fn(),
-}));
-vi.mock('./bridge/native', () => native);
-
-import { App } from './App';
+const snapshotWith = (bpm: number) => ({ bpm, playing: false, playheadStep: 0 }) as Snapshot;
+const bpmOf = (c: Command) => (c.args as { bpm: number }).bpm;
 
 let host: HTMLDivElement;
 let root: Root;
-let emit: (e: { step: number; playing: boolean }) => void;
+let emitPlayhead: (e: PlayheadEvent) => void;
+let dispatch: ReturnType<typeof vi.fn<(c: Command) => Promise<DispatchResult>>>;
 
-const flush = () => act(async () => { await Promise.resolve(); });
 const mount = async () => {
-  await act(async () => { root.render(<App />); });
-  await flush();
+  const bridge: Bridge = {
+    dispatch,
+    getSnapshot: async () => snapshotWith(120),
+    onPlayhead: (l) => ((emitPlayhead = l), () => {}),
+    onSnapshot: () => () => {},
+    chooseExportFile: async () => ({ cancelled: true, path: '' }),
+    confirm: async () => false,
+  };
+  await act(async () => { root.render(<App store={createStore(bridge)} />); });
 };
 const button = (label: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === label)!;
-const activeSteps = () => [...host.querySelectorAll('[data-step]')].filter((e) => e.getAttribute('data-active') === 'true').map((e) => Number(e.getAttribute('data-step')));
+const activeSteps = () =>
+  [...host.querySelectorAll('[data-step]')].filter((e) => e.getAttribute('data-active') === 'true').map((e) => Number(e.getAttribute('data-step')));
 
 beforeEach(() => {
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
-  native.getSnapshot.mockResolvedValue({ bpm: 120, playing: false, playheadStep: 0 });
-  native.dispatch.mockImplementation(async (_c: string, a: { bpm: number }) => ({ ok: true, error: '', snapshot: { bpm: a.bpm, playing: false, playheadStep: 0 } }));
-  native.onPlayhead.mockImplementation((cb: typeof emit) => { emit = cb; return () => {}; });
+  dispatch = vi.fn(async (c) => ({ ok: true, error: '', snapshot: snapshotWith(bpmOf(c)) }));
 });
 
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
-  vi.clearAllMocks();
 });
 
 describe('App', () => {
@@ -49,22 +52,39 @@ describe('App', () => {
     expect(activeSteps()).toEqual([]);
   });
 
-  it('+ and - dispatch setBpm with bpm+1 and bpm-1', async () => {
+  it('+ and - send setBpm through the store with bpm+1 and bpm-1', async () => {
     await mount();
     await act(async () => { button('+').click(); });
-    expect(native.dispatch).toHaveBeenLastCalledWith('setBpm', { bpm: 121 });
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setBpm', args: { bpm: 121 } });
     expect(host.textContent).toContain('121');
     await act(async () => { button('-').click(); });
-    expect(native.dispatch).toHaveBeenLastCalledWith('setBpm', { bpm: 120 });
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setBpm', args: { bpm: 120 } });
+    expect(host.textContent).toContain('120');
+  });
+
+  it('rapid + presses coalesce and end at the last value (no stale closure)', async () => {
+    const resolvers: (() => void)[] = [];
+    dispatch.mockImplementation((c) => new Promise((resolve) => resolvers.push(() => resolve({ ok: true, error: '', snapshot: snapshotWith(bpmOf(c)) }))));
+    await mount();
+
+    await act(async () => { button('+').click(); button('+').click(); button('+').click(); });
+    expect(host.textContent).toContain('123'); // optimistic, before any response
+    expect(dispatch).toHaveBeenCalledTimes(1);
+
+    await act(async () => resolvers[0]());
+    expect(dispatch).toHaveBeenCalledTimes(2);
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setBpm', args: { bpm: 123 } });
+    await act(async () => resolvers[1]());
+    expect(host.textContent).toContain('123');
   });
 
   it('a playhead event moves the highlighted step', async () => {
     await mount();
-    await act(async () => { emit({ step: 5, playing: true }); });
+    await act(async () => { emitPlayhead({ step: 5, playing: true }); });
     expect(activeSteps()).toEqual([5]);
-    await act(async () => { emit({ step: 6, playing: true }); });
+    await act(async () => { emitPlayhead({ step: 6, playing: true }); });
     expect(activeSteps()).toEqual([6]);
-    await act(async () => { emit({ step: 6, playing: false }); });
+    await act(async () => { emitPlayhead({ step: 6, playing: false }); });
     expect(activeSteps()).toEqual([]);
   });
 });
