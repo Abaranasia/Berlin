@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { button, change, click, field, makeHarness, renderApp, settle } from './testing/harness';
 import { createMockBridge } from './bridge/mock';
@@ -9,7 +9,10 @@ import type { Command, DispatchResult, PlayheadEvent, Snapshot } from './bridge/
 const bpmOf = (c: Command) => (c.args as { bpm: number }).bpm;
 
 let unmount = () => {};
-afterEach(() => unmount());
+afterEach(() => {
+  unmount();
+  window.localStorage.clear();
+});
 
 // A full snapshot (the panels read every section); BPM starts at 120.
 const initialSnapshot = async (): Promise<Snapshot> => ({ ...(await createMockBridge().getSnapshot())!, bpm: 120 });
@@ -157,5 +160,96 @@ describe('App: disabled states and the status line', () => {
     const { host } = await mount({ dispatch: async () => ({ ok: false, error: 'busy' }) });
     await change(field(host, 'Pulses'), '9');
     expect(host.querySelector('[role="alert"]')!.textContent).toBe('Busy, try again');
+  });
+});
+
+const region = (host: HTMLElement, selector: string) => host.querySelector<HTMLElement>(selector)!;
+const synthToggle = (host: HTMLElement) => field<HTMLButtonElement>(host, 'Synth panel');
+const withSteps = (initial: Snapshot, patch: Record<number, { note: number; active: boolean }>): Snapshot => ({
+  ...initial,
+  steps: initial.steps.map((s, i) => patch[i] ?? s),
+});
+
+describe('App: shell regions', () => {
+  it('places each control in its region', async () => {
+    const { host } = await mount();
+    const top = region(host, 'header');
+    const main = region(host, 'main');
+    const drawer = region(host, '#synth-panel');
+    expect(top.contains(field(host, 'Master level'))).toBe(true);
+    expect(top.contains(field(host, 'BPM'))).toBe(true);
+    expect(main.querySelectorAll('[data-step]')).toHaveLength(16);
+    expect(main.contains(field(host, 'Pulses'))).toBe(true);
+    for (const label of ['FX', 'Cutoff', 'Delay mix', 'Room']) expect(drawer.contains(field(host, label))).toBe(true);
+  });
+
+  it('has a disabled Settings placeholder that dispatches nothing', async () => {
+    const { host, dispatch } = await mount();
+    const settings = button(host, 'Settings');
+    expect(settings.disabled).toBe(true);
+    await click(settings);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe('App: collapsible synth panel', () => {
+  it('is closed by default but its controls stay in the DOM', async () => {
+    const { host } = await mount();
+    expect(region(host, '#synth-panel').hidden).toBe(true);
+    expect(synthToggle(host).getAttribute('aria-expanded')).toBe('false');
+    expect(synthToggle(host).getAttribute('aria-controls')).toBe('synth-panel');
+    expect(field(host, 'Cutoff')).toBeTruthy();
+  });
+
+  it('opens on toggle and persists the choice', async () => {
+    const { host } = await mount();
+    await click(synthToggle(host));
+    expect(region(host, '#synth-panel').hidden).toBe(false);
+    expect(synthToggle(host).getAttribute('aria-expanded')).toBe('true');
+    expect(window.localStorage.getItem('berlin.ui.synthPanelOpen')).toBe('1');
+    await click(synthToggle(host));
+    expect(window.localStorage.getItem('berlin.ui.synthPanelOpen')).toBe('0');
+  });
+
+  it('starts open when the stored choice is open', async () => {
+    window.localStorage.setItem('berlin.ui.synthPanelOpen', '1');
+    const { host } = await mount();
+    expect(region(host, '#synth-panel').hidden).toBe(false);
+    expect(synthToggle(host).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('survives localStorage throwing: starts closed and toggles without an error', async () => {
+    const spy = vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    try {
+      const { host } = await mount();
+      expect(region(host, '#synth-panel').hidden).toBe(true);
+      await click(synthToggle(host));
+      expect(region(host, '#synth-panel').hidden).toBe(false);
+      expect(host.querySelector('[role="alert"]')).toBeNull();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe('App: step view', () => {
+  it('distinguishes gated steps (LED on, note name) from rests (LED off, dot)', async () => {
+    const { host, initial, emitSnapshot } = await mount();
+    await act(async () => { emitSnapshot(withSteps(initial, { 1: { note: 48, active: true }, 2: { note: 50, active: false } })); });
+    const gated = region(host, '[data-step="1"]');
+    const rest = region(host, '[data-step="2"]');
+    expect(gated.querySelector('.led')!.getAttribute('data-on')).toBe('true');
+    expect(gated.textContent).toContain('C3');
+    expect(rest.querySelector('.led')!.getAttribute('data-on')).toBe('false');
+    expect(rest.textContent).toContain('·');
+    expect(rest.textContent).not.toContain('D3');
+  });
+
+  it('highlights only the playhead step', async () => {
+    const { host, emitPlayhead } = await mount();
+    await act(async () => { emitPlayhead({ step: 4, playing: true }); });
+    expect(activeSteps(host)).toEqual([4]);
   });
 });

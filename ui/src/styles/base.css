@@ -1,0 +1,35 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Author display rules (grid/flex) would otherwise override the hidden attribute. */
+[hidden] { display: none !important; }
+
+button, select, input { font-family: inherit; font-size: inherit; color: inherit; }
+
+button, select, input:not([type='checkbox']):not([type='range']) {
+  min-height: 44px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+button { padding: 0 14px; border-radius: var(--radius-md); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled, select:disabled, input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--accent); }
+input[type='range'] { accent-color: var(--accent); min-height: 44px; }
+
+:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+
+h1, h2 { margin: 0; }

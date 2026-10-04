@@ -65,12 +65,24 @@ public:
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
+            auto* content = new MainComponent();
+            setContentOwned (content, true);
 
            #if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
            #else
-            setResizable (true, true);
+            // Resizable only when the editor is (WebEditor); the legacy editor stays fixed (design D13).
+            if (const auto* limits = content->getEditorConstrainer())
+            {
+                setResizable (true, false);
+                setResizeLimits (limits->getMinimumWidth(), limits->getMinimumHeight(),
+                                 limits->getMaximumWidth(), limits->getMaximumHeight());
+            }
+            else
+            {
+                setResizable (false, false);
+            }
+
             centreWithSize (getWidth(), getHeight());
            #endif
 
