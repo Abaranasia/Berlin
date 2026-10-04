@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { LIMITS } from '../bridge/limits';
 import { DELAY_DIVISIONS, type DelayDivision } from '../bridge/protocol';
-import { formatDelayRecommendations } from '../lib/delayRecs';
 import { sendPatch } from '../store/actions';
 import { useStoreApi } from '../store/context';
 import { shownNow, useShown } from '../store/hooks';
@@ -16,7 +15,6 @@ const DEFAULT_PATCH_DELAY = 0.3; // kDefaultPatch.delayTimeSeconds (Source/synth
 export function DelayPanel() {
   const store = useStoreApi();
   const fx = useShown('effectsEnabled', (s) => s.effectsEnabled, true);
-  const bpm = useShown('bpm', (s) => s.bpm, 120);
   const synced = useShown('patch.delaySynced', (s) => s.patch.delaySynced, false);
   const division = useShown('patch.delayDivision', (s) => s.patch.delayDivision, 'quarter');
   const time = useShown('patch.delayTimeSeconds', (s) => s.patch.delayTimeSeconds, DEFAULT_TIME);
@@ -49,7 +47,6 @@ export function DelayPanel() {
       <Knob label="Delay time" value={time} min={LIMITS.delayTimeSeconds.min} max={LIMITS.delayTimeSeconds.max} step={0.01} disabled={!fx || synced} onChange={(v) => sendPatch(store, 'delayTimeSeconds', v)} />{' '}
       <Knob label="Delay feedback" value={feedback} min={LIMITS.delayFeedback.min} max={LIMITS.delayFeedback.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'delayFeedback', v)} />{' '}
       <Knob label="Delay mix" value={mix} min={LIMITS.delayMix.min} max={LIMITS.delayMix.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'delayMix', v)} />
-      <small data-role="delay-recommendations">{formatDelayRecommendations(bpm)}</small>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from './components/Card';
+import { DelayTimesCard } from './components/DelayTimesCard';
 import { EvolutionPanel } from './components/EvolutionPanel';
 import { GenerationPanel } from './components/GenerationPanel';
 import { PitchPanel } from './components/PitchPanel';
@@ -39,6 +40,7 @@ function Shell() {
             <EvolutionPanel />
           </Card>
         </div>
+        <DelayTimesCard />
         <StatusLine />
       </main>
       <SynthDrawer open={synthOpen} />

@@ -128,9 +128,11 @@ describe('App: Controls B are all composed', () => {
     expect(button(host, label)).toBeTruthy();
   });
 
-  it('shows the delay recommendations for the snapshot BPM', async () => {
+  it('shows the delay recommendations for the snapshot BPM as copy buttons in the main area', async () => {
     const { host } = await mount();
-    expect(host.querySelector('[data-role="delay-recommendations"]')!.textContent).toContain('1/4 500 ms');
+    const chip = button(host, '1/4 500 ms');
+    expect(region(host, 'main').contains(chip)).toBe(true);
+    expect(host.querySelector('[data-role="delay-recommendations"]')).toBeNull();
   });
 
   it('turning FX off disables every delay and reverb control, and on enables them again', async () => {
