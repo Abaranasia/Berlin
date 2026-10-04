@@ -1,0 +1,63 @@
+/* Three regions: top bar (row 1), main area and synth drawer (row 2). */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 10px 20px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.main-area {
+  grid-row: 2;
+  grid-column: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.drawer {
+  grid-row: 2;
+  grid-column: 2;
+  width: 360px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface-1);
+  border-left: 1px solid var(--border);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+/* Below 1100 px the drawer overlays the main area instead of squeezing it. */
+@media (max-width: 1099.98px) {
+  .main-area { grid-column: 1 / -1; }
+  .drawer {
+    grid-column: 1 / -1;
+    justify-self: end;
+    width: min(420px, 100%);
+    z-index: 1;
+  }
+}

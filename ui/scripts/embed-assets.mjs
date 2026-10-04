@@ -52,7 +52,12 @@ const walk = (dir, base = dir) =>
     : [];
 
 const stampInputs = () => {
-  const inputs = [...walk(path.join(uiDir, 'src')), ...walk(path.join(uiDir, 'scripts'))];
+  const inputs = [
+    ...walk(path.join(uiDir, 'src')),
+    ...walk(path.join(uiDir, 'scripts')),
+    // public/ is copied into dist verbatim (fonts license), so edits there must re-embed.
+    ...walk(path.join(uiDir, 'public')).map((f) => ({ ...f, path: `public/${f.path}` })),
+  ];
   for (const name of fs.existsSync(uiDir) ? fs.readdirSync(uiDir) : []) {
     if (/^(index\.html|package\.json|pnpm-lock\.yaml|vite\.config\.ts|tsconfig.*\.json)$/.test(name)) {
       inputs.push({ path: name, data: fs.readFileSync(path.join(uiDir, name)) });
