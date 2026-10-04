@@ -72,11 +72,12 @@ public:
             setFullScreen (true);
            #else
             // Resizable only when the editor is (WebEditor); the legacy editor stays fixed (design D13).
-            if (const auto* limits = content->getEditorConstrainer())
+            editorLimits = content->getEditorConstrainer();
+
+            if (editorLimits != nullptr)
             {
                 setResizable (true, false);
-                setResizeLimits (limits->getMinimumWidth(), limits->getMinimumHeight(),
-                                 limits->getMaximumWidth(), limits->getMaximumHeight());
+                applyEditorLimits();   // provisional: the native frame size is unknown until the window is shown
             }
             else
             {
@@ -87,6 +88,14 @@ public:
            #endif
 
             setVisible (true);
+
+           #if ! (JUCE_IOS || JUCE_ANDROID)
+            // The native frame (title bar, borders) exists only once the peer does. The resize
+            // constrainer works on the whole window, so the limits must include the frame for the
+            // CONTENT to stay within the editor's limits.
+            if (editorLimits != nullptr)
+                applyEditorLimits();
+           #endif
         }
 
         void closeButtonPressed() override
@@ -105,6 +114,27 @@ public:
         */
 
     private:
+        // Window limits = editor (content) limits + window frame (native title bar and borders).
+        // Message thread only; the audio path is untouched.
+        void applyEditorLimits()
+        {
+            auto frame = getContentComponentBorder();
+
+            if (auto* peer = getPeer())
+            {
+                const auto native = peer->getFrameSize();
+                frame = juce::BorderSize<int> (frame.getTop() + native.getTop(), frame.getLeft() + native.getLeft(),
+                                               frame.getBottom() + native.getBottom(), frame.getRight() + native.getRight());
+            }
+
+            const auto extraW = frame.getLeftAndRight();
+            const auto extraH = frame.getTopAndBottom();
+            setResizeLimits (editorLimits->getMinimumWidth() + extraW, editorLimits->getMinimumHeight() + extraH,
+                             editorLimits->getMaximumWidth() + extraW, editorLimits->getMaximumHeight() + extraH);
+        }
+
+        const juce::ComponentBoundsConstrainer* editorLimits = nullptr;   // owned by the editor, which MainComponent owns
+
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 

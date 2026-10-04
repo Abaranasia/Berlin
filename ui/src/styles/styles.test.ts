@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 const read = (name: string) => readFileSync(new URL(`./${name}`, import.meta.url), 'utf8');
 
 const rootBlock = (css: string) => /:root\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-const declared = (block: string, token: string) => new RegExp(`${token}\s*:\s*([^;]+);`).exec(block)?.[1].trim();
+const declared = (block: string, token: string) => new RegExp(String.raw`${token}\s*:\s*([^;]+);`).exec(block)?.[1].trim();
 
 describe('tokens.css', () => {
   const root = rootBlock(read('tokens.css'));
@@ -13,6 +13,7 @@ describe('tokens.css', () => {
   it.each([
     '--ground', '--surface-1', '--surface-2', '--border', '--text', '--muted',
     '--accent-hover', '--on-accent', '--radius-sm', '--radius-md', '--radius-lg', '--focus-ring',
+    '--accent-active-bg', '--error',
   ])('defines %s on :root', (token) => {
     expect(declared(root, token)).toBeTruthy();
   });
@@ -23,6 +24,21 @@ describe('tokens.css', () => {
 
   it('uses the 6/8/12 px radii', () => {
     expect([declared(root, '--radius-sm'), declared(root, '--radius-md'), declared(root, '--radius-lg')]).toEqual(['6px', '8px', '12px']);
+  });
+});
+
+describe('declared()', () => {
+  it('tolerates whitespace before and after the colon', () => {
+    expect(declared('--x : 1px;', '--x')).toBe('1px');
+    expect(declared('--x\t:\n  2px;', '--x')).toBe('2px');
+    expect(declared('--x:3px;', '--x')).toBe('3px');
+    expect(declared('--y: 1px;', '--x')).toBeUndefined();
+  });
+});
+
+describe('components.css', () => {
+  it('takes every colour from a token (no raw hex literals)', () => {
+    expect(read('components.css').match(/#[0-9a-fA-F]{3,8}/g) ?? []).toEqual([]);
   });
 });
 

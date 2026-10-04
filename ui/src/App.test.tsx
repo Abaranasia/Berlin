@@ -200,7 +200,7 @@ describe('App: shell regions', () => {
 
   it('has a disabled Settings placeholder that dispatches nothing', async () => {
     const { host, dispatch } = await mount();
-    const settings = button(host, 'Settings');
+    const settings = field<HTMLButtonElement>(host, 'Settings');
     expect(settings.disabled).toBe(true);
     await click(settings);
     expect(dispatch).not.toHaveBeenCalled();

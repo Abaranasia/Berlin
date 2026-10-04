@@ -16,8 +16,9 @@ import type { Store } from './store/store';
 function Shell() {
   const [synthOpen, setSynthOpen] = useState(() => readSynthPanelOpen());
   const toggleSynth = () => {
-    writeSynthPanelOpen(!synthOpen);
-    setSynthOpen(!synthOpen);
+    const next = !synthOpen;
+    writeSynthPanelOpen(next);
+    setSynthOpen(next);
   };
   return (
     <div className="app">

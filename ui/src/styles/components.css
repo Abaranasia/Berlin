@@ -50,7 +50,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
-.step[data-active='true'] { border-color: var(--accent); background: #2a2418; }
+.step[data-active='true'] { border-color: var(--accent); background: var(--accent-active-bg); }
 .step-num { font: 10px var(--font-mono); color: var(--muted); }
 .step-note { font: 12px var(--font-mono); color: var(--muted); }
 .step[data-gate='true'] .step-note { color: var(--text); }
@@ -62,7 +62,7 @@
 
 /* Status */
 .status { position: sticky; bottom: 0; margin: 0; padding: 8px 0; min-height: 1.4em; background: var(--ground); color: var(--muted); }
-.status.error { color: #ff8a6b; }
+.status.error { color: var(--error); }
 
 /* Knob: the native range input stays underneath (keyboard, focus, forms) but is visually hidden;
    the SVG face takes the pointer. */
