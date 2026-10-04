@@ -1,5 +1,6 @@
 import { GENERATION_LIMITS } from '../bridge/limits';
 import { SCALE_TYPES, type ScaleType } from '../bridge/protocol';
+import { ROOT_NAMES } from '../lib/noteName';
 import { sendGen, sendRange } from '../store/actions';
 import { useStore, useStoreApi } from '../store/context';
 import { shownNow, useShown } from '../store/hooks';
@@ -7,7 +8,6 @@ import type { State } from '../store/store';
 import { Select } from './controls/Select';
 import { Slider } from './controls/Slider';
 
-const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const ROOTS = ROOT_NAMES.map((label, i) => ({ value: String(i), label }));
 const DEFAULT_RANGE: [number, number] = [36, 72];
 const { rangeLow: PITCH } = GENERATION_LIMITS; // rangeLow and rangeHigh share the 0..127 bounds

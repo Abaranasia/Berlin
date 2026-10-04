@@ -1,59 +1,48 @@
-import { useEffect } from 'react';
-import { DelayPanel } from './components/DelayPanel';
-import { EngineToggles } from './components/EngineToggles';
+import { useEffect, useState } from 'react';
+import { Card } from './components/Card';
 import { EvolutionPanel } from './components/EvolutionPanel';
-import { ExportButton } from './components/ExportButton';
 import { GenerationPanel } from './components/GenerationPanel';
 import { PitchPanel } from './components/PitchPanel';
-import { PresetPanel } from './components/PresetPanel';
-import { ReverbPanel } from './components/ReverbPanel';
 import { RhythmPanel } from './components/RhythmPanel';
 import { StatusLine } from './components/StatusLine';
-import { SynthPanel } from './components/SynthPanel';
-import { Transport } from './components/Transport';
-import { StoreProvider, useStore } from './store/context';
+import { StepView } from './components/StepView';
+import { SynthDrawer } from './components/SynthDrawer';
+import { TopBar } from './components/TopBar';
+import { readSynthPanelOpen, writeSynthPanelOpen } from './lib/panelState';
+import { StoreProvider } from './store/context';
 import type { Store } from './store/store';
-import { STEP_COUNT, stepRow } from './state/steps';
 
-// The pattern row: the playhead highlight plus each step's note and gate from the snapshot.
-function Steps() {
-  const playhead = useStore((s) => s.playhead);
-  const steps = useStore((s) => s.engine?.steps);
-  const row = stepRow(playhead.step, playhead.playing);
+function Shell() {
+  const [synthOpen, setSynthOpen] = useState(() => readSynthPanelOpen());
+  const toggleSynth = () => {
+    writeSynthPanelOpen(!synthOpen);
+    setSynthOpen(!synthOpen);
+  };
   return (
-    <div className="steps">
-      {Array.from({ length: STEP_COUNT }, (_, i) => (
-        <span
-          key={i}
-          className={row[i] ? 'step active' : 'step'}
-          data-step={i}
-          data-active={row[i]}
-          data-note={steps?.[i]?.note}
-          data-gate={steps?.[i]?.active}
-        />
-      ))}
+    <div className="app">
+      <TopBar synthOpen={synthOpen} onToggleSynth={toggleSynth} />
+      <main className="main-area">
+        <Card title="Sequence">
+          <StepView />
+        </Card>
+        <div className="card-grid">
+          <Card title="Generation">
+            <GenerationPanel />
+          </Card>
+          <Card title="Rhythm">
+            <RhythmPanel />
+          </Card>
+          <Card title="Pitch">
+            <PitchPanel />
+          </Card>
+          <Card title="Evolution">
+            <EvolutionPanel />
+          </Card>
+        </div>
+        <StatusLine />
+      </main>
+      <SynthDrawer open={synthOpen} />
     </div>
-  );
-}
-
-function Main() {
-  return (
-    <main>
-      <h1>Berlin</h1>
-      <Transport />
-      <EngineToggles />
-      <GenerationPanel />
-      <RhythmPanel />
-      <PitchPanel />
-      <EvolutionPanel />
-      <SynthPanel />
-      <DelayPanel />
-      <ReverbPanel />
-      <PresetPanel />
-      <ExportButton />
-      <Steps />
-      <StatusLine />
-    </main>
   );
 }
 
@@ -61,7 +50,7 @@ export function App({ store }: { store: Store }) {
   useEffect(() => store.start(), [store]);
   return (
     <StoreProvider store={store}>
-      <Main />
+      <Shell />
     </StoreProvider>
   );
 }
