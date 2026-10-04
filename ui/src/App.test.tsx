@@ -183,6 +183,19 @@ describe('App: shell regions', () => {
     for (const label of ['FX', 'Cutoff', 'Delay mix', 'Room']) expect(drawer.contains(field(host, label))).toBe(true);
   });
 
+  it('uses Knobs for every synth-panel range and keeps Sliders elsewhere', async () => {
+    const { host } = await mount();
+    const synthRanges = ['Pulse width', 'Cutoff', 'Resonance', 'Attack', 'Decay', 'Sustain', 'Release', 'LFO rate', 'LFO depth', 'Delay time', 'Delay feedback', 'Delay mix', 'Room', 'Damping', 'Wet', 'Dry'];
+    for (const label of synthRanges) {
+      const input = field(host, label);
+      expect(input.type).toBe('range');
+      expect(input.closest('[data-knob]')).not.toBeNull();
+      expect(region(host, '#synth-panel').contains(input)).toBe(true);
+    }
+    expect(field(host, 'Master level').type).toBe('range');
+    expect(field(host, 'Master level').closest('[data-knob]')).toBeNull();
+  });
+
   it('has a disabled Settings placeholder that dispatches nothing', async () => {
     const { host, dispatch } = await mount();
     const settings = button(host, 'Settings');

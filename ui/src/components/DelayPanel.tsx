@@ -6,7 +6,7 @@ import { sendPatch } from '../store/actions';
 import { useStoreApi } from '../store/context';
 import { shownNow, useShown } from '../store/hooks';
 import { Select } from './controls/Select';
-import { Slider } from './controls/Slider';
+import { Knob } from './controls/Knob';
 import { Toggle } from './controls/Toggle';
 
 const DEFAULT_TIME = 0.5;
@@ -46,9 +46,9 @@ export function DelayPanel() {
     <section>
       <Toggle label="Delay sync" checked={synced} disabled={!fx} onChange={setSync} />{' '}
       <Select label="Delay division" value={division} options={DELAY_DIVISIONS} disabled={!fx} onChange={(next) => sendPatch(store, 'delayDivision', next as DelayDivision)} />{' '}
-      <Slider label="Delay time" value={time} min={LIMITS.delayTimeSeconds.min} max={LIMITS.delayTimeSeconds.max} step={0.01} disabled={!fx || synced} onChange={(v) => sendPatch(store, 'delayTimeSeconds', v)} />{' '}
-      <Slider label="Delay feedback" value={feedback} min={LIMITS.delayFeedback.min} max={LIMITS.delayFeedback.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'delayFeedback', v)} />{' '}
-      <Slider label="Delay mix" value={mix} min={LIMITS.delayMix.min} max={LIMITS.delayMix.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'delayMix', v)} />{' '}
+      <Knob label="Delay time" value={time} min={LIMITS.delayTimeSeconds.min} max={LIMITS.delayTimeSeconds.max} step={0.01} disabled={!fx || synced} onChange={(v) => sendPatch(store, 'delayTimeSeconds', v)} />{' '}
+      <Knob label="Delay feedback" value={feedback} min={LIMITS.delayFeedback.min} max={LIMITS.delayFeedback.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'delayFeedback', v)} />{' '}
+      <Knob label="Delay mix" value={mix} min={LIMITS.delayMix.min} max={LIMITS.delayMix.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'delayMix', v)} />
       <small data-role="delay-recommendations">{formatDelayRecommendations(bpm)}</small>
     </section>
   );
