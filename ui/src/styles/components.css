@@ -50,7 +50,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
-.step[data-active='true'] { border-color: var(--accent); background: #2a2418; }
+.step[data-active='true'] { border-color: var(--accent); background: var(--accent-active-bg); }
 .step-num { font: 10px var(--font-mono); color: var(--muted); }
 .step-note { font: 12px var(--font-mono); color: var(--muted); }
 .step[data-gate='true'] .step-note { color: var(--text); }
@@ -62,4 +62,68 @@
 
 /* Status */
 .status { position: sticky; bottom: 0; margin: 0; padding: 8px 0; min-height: 1.4em; background: var(--ground); color: var(--muted); }
-.status.error { color: #ff8a6b; }
+.status.error { color: var(--error); }
+
+/* Knob: the native range input stays underneath (keyboard, focus, forms) but is visually hidden;
+   the SVG face takes the pointer. */
+.knob {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 72px;
+  user-select: none;
+}
+.knob svg { touch-action: none; cursor: ns-resize; }
+.knob-face { fill: var(--surface-2); stroke: var(--border); }
+.knob-track, .knob-arc { fill: none; stroke-width: 4; stroke-linecap: round; }
+.knob-track { stroke: var(--border); }
+.knob-arc { stroke: var(--accent); }
+.knob-pointer { stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+.knob output { font: 11px/14px var(--font-mono); }
+.knob-label {
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.knob-input {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.knob:focus-within svg { outline: var(--focus-ring); outline-offset: 2px; border-radius: 50%; }
+.knob.disabled { opacity: 0.4; }
+.knob.disabled svg { cursor: not-allowed; }
+.knob.disabled .knob-arc { stroke: var(--muted); }
+
+/* Delay-times card */
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 56px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent-hover); }
+.chip span:first-child { font-size: 12px; letter-spacing: 0.06em; }
+.chip span:last-child { font: 500 15px var(--font-mono); }

@@ -15,8 +15,3 @@ export interface DelayRecommendation {
 
 export const delayRecommendations = (bpm: number): DelayRecommendation[] =>
   DIVISIONS.map(({ label, factor }) => ({ label, ms: Math.round((60000 / bpm) * factor) }));
-
-export const formatDelayRecommendations = (bpm: number): string =>
-  delayRecommendations(bpm)
-    .map(({ label, ms }) => `${label} ${ms} ms`)
-    .join(' | '); // Source/core/TempoSync.cpp formatDelayRecommendations

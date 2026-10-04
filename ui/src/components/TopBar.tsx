@@ -16,7 +16,7 @@ export function TopBar({ synthOpen, onToggleSynth }: TopBarProps) {
       <Transport />
       <PresetPanel />
       <ExportButton />
-      <button type="button" disabled>
+      <button type="button" aria-label="Settings" disabled>
         Settings
       </button>
       <button type="button" aria-label="Synth panel" aria-expanded={synthOpen} aria-controls="synth-panel" onClick={onToggleSynth}>

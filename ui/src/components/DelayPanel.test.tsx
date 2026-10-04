@@ -14,7 +14,6 @@ const mount = async () => {
   return mounted;
 };
 const options = (select: HTMLSelectElement) => [...select.options].map((o) => o.value);
-const recommendations = (host: HTMLElement) => host.querySelector('[data-role="delay-recommendations"]')!.textContent;
 
 describe('DelayPanel', () => {
   it('fields reflect the snapshot', async () => {
@@ -100,14 +99,6 @@ describe('DelayPanel', () => {
     await click(field(mounted.host, 'Delay sync'));
     await settle();
     expect(harness.dispatch).toHaveBeenLastCalledWith({ name: 'setPatch', args: { delaySynced: false, delayTimeSeconds: 0.3 } });
-  });
-
-  it('shows the recommendations and updates them with the BPM', async () => {
-    const { host, bridge } = await mount();
-    expect(recommendations(host)).toContain('1/4 500 ms');
-    expect(recommendations(host)).toContain('1/8T 167 ms | 1/16 125 ms');
-    await act(async () => void (await bridge.dispatch({ name: 'setBpm', args: { bpm: 150 } })));
-    expect(recommendations(host)).toContain('1/4 400 ms');
   });
 
   it('every delay control is disabled while FX is off, and enabled with FX on', async () => {

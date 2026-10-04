@@ -16,6 +16,9 @@ namespace
 {
     constexpr int kEditorWidth  = 960;
     constexpr int kEditorHeight = 680;
+    // The min width must stay below every CSS breakpoint's narrow layout (ui/src/styles/layout.css
+    // 1100 px drawer overlay, ui/src/styles/components.css 900 px step grid): 720 px is the narrowest
+    // layout the CSS is designed and verified for. Change both sides together.
     constexpr int kMinWidth     = 720;
     constexpr int kMinHeight    = 520;
     constexpr int kMaxWidth     = 1920;

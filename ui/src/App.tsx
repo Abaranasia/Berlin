@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from './components/Card';
+import { DelayTimesCard } from './components/DelayTimesCard';
 import { EvolutionPanel } from './components/EvolutionPanel';
 import { GenerationPanel } from './components/GenerationPanel';
 import { PitchPanel } from './components/PitchPanel';
@@ -15,8 +16,9 @@ import type { Store } from './store/store';
 function Shell() {
   const [synthOpen, setSynthOpen] = useState(() => readSynthPanelOpen());
   const toggleSynth = () => {
-    writeSynthPanelOpen(!synthOpen);
-    setSynthOpen(!synthOpen);
+    const next = !synthOpen;
+    writeSynthPanelOpen(next);
+    setSynthOpen(next);
   };
   return (
     <div className="app">
@@ -39,6 +41,7 @@ function Shell() {
             <EvolutionPanel />
           </Card>
         </div>
+        <DelayTimesCard />
         <StatusLine />
       </main>
       <SynthDrawer open={synthOpen} />

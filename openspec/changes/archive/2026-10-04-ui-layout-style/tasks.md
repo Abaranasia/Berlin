@@ -86,24 +86,32 @@ SPLIT BOUNDARY: PR A = commits 1-3 (Phases 1-4). PR B = commits 4-5 (Phases 5-6)
 
 Files: `ui/src/lib/knob.ts` + `.test.ts`, `ui/src/components/controls/Knob.tsx` + `Knob.test.tsx`, `ui/src/components/controls/Slider.tsx`, `ui/src/components/{SynthPanel,DelayPanel,ReverbPanel}.tsx`, `ui/src/styles/components.css`. Specs: web-ui-layout "Knob Control"; web-ui-controls "Skewed Sliders".
 
-- [ ] 5.1 RED: `knob.test.ts`: linear and skewed `positionOf`/`valueAt` round trip; step snapping; clamping; `dragToPosition(0.5, 100)` = 1.0 (clamped) and 200 px up from min gives max; negative drag; `knobGeometry` at 0 and 1; `rangeAttrs` shape. Confirm fails. Satisfies: Drag math [V]; web-ui-controls Round trip and endpoints.
-- [ ] 5.2 GREEN: `knob.ts` per the design contract (`KNOB_TRAVEL_PX = 200`, `rangeAttrs`, `positionOf`, `valueAt`, `dragToPosition`, `knobGeometry`). Refactor `Slider.tsx` to use `rangeAttrs`; existing Slider tests stay green.
-- [ ] 5.3 RED: `Knob.test.tsx`: aria-label, min/max/step, skewed 0..1/`any`; cutoff Knob at midpoint maps to 1000 Hz via `SKEWS` (Skewed knob [V]; web-ui-controls Midpoint for all six skewed controls: cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2); input change -> `onChange` (skew `toValue`); ArrowRight dispatches `setPatch` with the next step (Keyboard [V]); `.disabled` input disabled and pointer drag dispatches nothing (Disabled [V]); pointer drag via `MouseEvent('pointerdown'/'pointermove')` -> expected value; wheel and double-click leave the value unchanged (No wheel or reset [V]). Confirm fails.
-- [ ] 5.4 GREEN: `Knob.tsx` per D6/D7 (`<label class="knob">` with SVG face `aria-hidden`, visually hidden `<input type=range>`, `<output>`, label text; drag state in `useRef`; `setPointerCapture?.()`; focus input on `pointerdown`; `pointerup`/`pointercancel` clear drag; no wheel or double-click handlers).
-- [ ] 5.5 Swap `Slider` for `Knob` in `SynthPanel`, `DelayPanel`, `ReverbPanel` (synth region only; main-area ranges stay Sliders). Existing panel tests pass unchanged. Satisfies: Parity preserved [V].
-- [ ] 5.6 Knob CSS in `components.css` (visually hidden input, `touch-action:none`, `.disabled` state, focus ring on the face via `:focus-within`). Satisfies: Pointer feel [M] (verified in Phase 9).
-- [ ] 5.7 `pnpm --dir ui test`, `typecheck`, `build` (no mock chunk). Commit 4: `feat: add vertical-drag Knob control for synth panel`.
+- [x] 5.1 RED: `knob.test.ts`: linear and skewed `positionOf`/`valueAt` round trip; step snapping; clamping; `dragToPosition(0.5, 100)` = 1.0 (clamped) and 200 px up from min gives max; negative drag; `knobGeometry` at 0 and 1; `rangeAttrs` shape. Confirm fails. Satisfies: Drag math [V]; web-ui-controls Round trip and endpoints.
+- [x] 5.2 GREEN: `knob.ts` per the design contract (`KNOB_TRAVEL_PX = 200`, `rangeAttrs`, `positionOf`, `valueAt`, `dragToPosition`, `knobGeometry`). Refactor `Slider.tsx` to use `rangeAttrs`; existing Slider tests stay green.
+- [x] 5.3 RED: `Knob.test.tsx`: aria-label, min/max/step, skewed 0..1/`any`; cutoff Knob at midpoint maps to 1000 Hz via `SKEWS` (Skewed knob [V]; web-ui-controls Midpoint for all six skewed controls: cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2); input change -> `onChange` (skew `toValue`); ArrowRight dispatches `setPatch` with the next step (Keyboard [V]); `.disabled` input disabled and pointer drag dispatches nothing (Disabled [V]); pointer drag via `MouseEvent('pointerdown'/'pointermove')` -> expected value; wheel and double-click leave the value unchanged (No wheel or reset [V]). Confirm fails.
+- [x] 5.4 GREEN: `Knob.tsx` per D6/D7 (`<label class="knob">` with SVG face `aria-hidden`, visually hidden `<input type=range>`, `<output>`, label text; drag state in `useRef`; `setPointerCapture?.()`; focus input on `pointerdown`; `pointerup`/`pointercancel` clear drag; no wheel or double-click handlers).
+- [x] 5.5 Swap `Slider` for `Knob` in `SynthPanel`, `DelayPanel`, `ReverbPanel` (synth region only; main-area ranges stay Sliders). Existing panel tests pass unchanged. Satisfies: Parity preserved [V].
+- [x] 5.6 Knob CSS in `components.css` (visually hidden input, `touch-action:none`, `.disabled` state, focus ring on the face via `:focus-within`). Satisfies: Pointer feel [M] (verified in Phase 9).
+- [x] 5.7 `pnpm --dir ui test`, `typecheck`, `build` (no mock chunk). Commit 4: `feat: add vertical-drag Knob control for synth panel` (commit left to the orchestrator; Vitest 462 passing after PR B).
 
 ## Phase 6: Delay-times card (commit 5, ~170 lines, strict TDD)
 
 Files: `ui/src/lib/clipboard.ts` (no unit test, covered via card), `ui/src/components/DelayTimesCard.tsx` + `DelayTimesCard.test.tsx`, `ui/src/lib/delayRecs.ts` + `.test.ts`, `ui/src/components/DelayPanel.tsx`, `ui/src/components/DelayPanel.test.tsx`, `ui/src/App.tsx`, `ui/src/styles/components.css`. Specs: web-ui-layout "Delay-Times Card"; web-ui-controls "Delay Recommendations".
 
-- [ ] 6.1 RED: `DelayTimesCard.test.tsx`: six buttons at 120 BPM with `textContent` exactly `"1/2 1000 ms"`, `"1/4 500 ms"`, `"1/8. 375 ms"`, `"1/8 250 ms"`, `"1/8T 167 ms"`, `"1/16 125 ms"` (At 120 BPM; Rendered as buttons [V]); chips follow BPM, `1/4` = `400 ms` at 150 BPM (Updates with BPM); click -> injected `copy("500")` called and status "Copied 500 ms" (Copy success [V]); `copy` rejecting and `copy` throwing synchronously -> alert "Copy failed", no `unhandledrejection` (Copy failure [V]); missing `navigator.clipboard` -> "Copy failed" with the default `copy`. Confirm fails.
-- [ ] 6.2 GREEN: `clipboard.ts` (`copyText = (t) => Promise.resolve().then(() => navigator.clipboard.writeText(t))`, type `CopyText`, D8); `DelayTimesCard.tsx` (optional `copy` prop defaulting to `copyText`, chip markup `<button><span>1/4</span> <span>500 ms</span></button>`, success/error status via store `setStatus`). Mount it in the MainArea in `App.tsx`.
-- [ ] 6.3 RED then GREEN: in `App.test.tsx` replace the `data-role="delay-recommendations"` assertion with `button(host,'1/4 500 ms')` and assert no `data-role="delay-recommendations"` remains (Rendered as buttons [V]); in `DelayPanel.test.tsx` drop the recommendation assertions. Remove the recommendations text and `data-role` from `DelayPanel.tsx`; remove the now-unused `formatDelayRecommendations` (and its test cases) from `delayRecs.ts`/`.test.ts`, keeping the pure computation tests (At 120 BPM, Updates with BPM).
-- [ ] 6.4 Chip CSS in `components.css`.
-- [ ] 6.5 `pnpm --dir ui test`, `typecheck`, `build` (no mock chunk). Commit 5: `feat: add delay-times card with copy-to-clipboard chips`.
+- [x] 6.1 RED: `DelayTimesCard.test.tsx`: six buttons at 120 BPM with `textContent` exactly `"1/2 1000 ms"`, `"1/4 500 ms"`, `"1/8. 375 ms"`, `"1/8 250 ms"`, `"1/8T 167 ms"`, `"1/16 125 ms"` (At 120 BPM; Rendered as buttons [V]); chips follow BPM, `1/4` = `400 ms` at 150 BPM (Updates with BPM); click -> injected `copy("500")` called and status "Copied 500 ms" (Copy success [V]); `copy` rejecting and `copy` throwing synchronously -> alert "Copy failed", no `unhandledrejection` (Copy failure [V]); missing `navigator.clipboard` -> "Copy failed" with the default `copy`. Confirm fails.
+- [x] 6.2 GREEN: `clipboard.ts` (`copyText = (t) => Promise.resolve().then(() => navigator.clipboard.writeText(t))`, type `CopyText`, D8); `DelayTimesCard.tsx` (optional `copy` prop defaulting to `copyText`, chip markup `<button><span>1/4</span> <span>500 ms</span></button>`, success/error status via store `setStatus`). Mount it in the MainArea in `App.tsx`.
+- [x] 6.3 RED then GREEN: in `App.test.tsx` replace the `data-role="delay-recommendations"` assertion with `button(host,'1/4 500 ms')` and assert no `data-role="delay-recommendations"` remains (Rendered as buttons [V]); in `DelayPanel.test.tsx` drop the recommendation assertions. Remove the recommendations text and `data-role` from `DelayPanel.tsx`; remove the now-unused `formatDelayRecommendations` (and its test cases) from `delayRecs.ts`/`.test.ts`, keeping the pure computation tests (At 120 BPM, Updates with BPM).
+- [x] 6.4 Chip CSS in `components.css`.
+- [x] 6.5 `pnpm --dir ui test`, `typecheck`, `build` (no mock chunk). Commit 5: `feat: add delay-times card with copy-to-clipboard chips`.
 
+## PR A review follow-ups (applied in PR B)
+
+- [x] R.1 RES-001/REL-001 (C++, build-verified): `Source/Main.cpp` `MainWindow::applyEditorLimits()` adds the window frame (`getContentComponentBorder()` plus the native peer `getFrameSize()` once the window is visible) to the editor limits, so the CONTENT stays within 720x520..1920x1200; flag-off stays fixed 800x952. Message thread only.
+- [x] R.2 READ-001/REL-003: `styles.test.ts` `declared()` uses `String.raw`; new test proves whitespace around ':' is tolerated.
+- [x] R.3 READ-002: `#2a2418` and `#ff8a6b` moved to `--accent-active-bg` and `--error` in `tokens.css`; tests assert both tokens and that `components.css` has no raw hex.
+- [x] R.4 READ-003: `App.tsx` `toggleSynth` computes `const next = !synthOpen` once.
+- [x] R.5 READ-004: comments in `Source/ui/WebEditor.cpp` (kMinWidth) and `layout.css` tie the 720 px minimum to the 1100/900 px breakpoints.
+- [x] R.6 REL-002: Settings placeholder has `aria-label="Settings"`; `App.test.tsx` finds it through the aria-label lookup.
 ## Phase 7: Build and test commands (run before each commit and again at the end)
 
 - [x] 7.1 `pnpm --dir ui test` (all Vitest green; compare the count with the Phase 0 baseline plus new tests). (PR A: 422 tests, 32 files)
@@ -121,22 +129,37 @@ Files: `ui/src/lib/clipboard.ts` (no unit test, covered via card), `ui/src/compo
 
 Run on a flag-ON standalone build and in Cakewalk Sonar (flag-ON plugin) unless noted.
 
-- [ ] 9.1 Initial size and limits (web-editor): editor opens 960x680, resizable, limits 720x520 to 1920x1200 (standalone and Sonar).
-- [ ] 9.2 Resize in host (web-editor): resize within and beyond the limits in standalone and Sonar; the view follows within limits; if the host ignores resize, the layout stays usable at its size.
-- [ ] 9.3 Flag on standalone shell (plugin-host-integration): `WebEditor` hosted, window clamped to 720x520-1920x1200, audio and OS MIDI output still work.
-- [ ] 9.4 Content follows window (plugin-host-integration): resize the flag-on standalone window; the editor fills the content area.
-- [ ] 9.5 Focus ring visible (web-ui-layout): tab through every control; an accent focus ring shows on each.
-- [ ] 9.6 Offline rendering (web-ui-layout): disconnect the network, load the editor, confirm IBM Plex renders and no font network requests occur.
-- [ ] 9.7 Wide viewport (web-ui-layout): at 1200 px wide with the panel open, the panel is beside the main area, not covering it.
-- [ ] 9.8 Narrow viewport (web-ui-layout): at 960 px wide with the panel open, the panel overlays the main area.
-- [ ] 9.9 Minimum size usable (web-ui-layout): at 720x520 every control is reachable by scroll or focus, panel open then closed.
-- [ ] 9.10 Pointer feel (web-ui-layout): drag knobs in the WebView2 editor in standalone and Sonar; tracking is smooth, keyboard arrows also work.
-- [ ] 9.11 Clipboard in DAW (web-ui-layout): in Sonar click a delay chip; the ms value pastes elsewhere or "Copy failed" shows. Repeat in standalone.
-- [ ] 9.12 Panel state survives a reopen: open the panel, close and reopen the app and the Sonar editor; the panel is still open.
-- [ ] 9.13 Mockup fidelity: compare against the mockup (TopBar, MainArea, drawer, step view, cards).
-- [ ] 9.14 Flag off, full legacy editor (plugin-host-integration): flag-OFF standalone launches at 800x952, non-resizable, no clipping; audio, OS MIDI and UI behave as before.
-- [ ] 9.15 Flag off, plugin editor unchanged (web-editor Flag off keeps legacy editor; plugin-host-integration): flag-OFF plugin editor in a host has its original size, is non-resizable, and no WebView2 is used.
-- [ ] 9.16 Record all results and the test counts in the apply-progress; hand off to `sdd-verify`.
+- [x] 9.1 Initial size and limits (web-editor): editor opens 960x680, resizable, limits 720x520 to 1920x1200 (standalone and Sonar).
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.2 Resize in host (web-editor): resize within and beyond the limits in standalone and Sonar; the view follows within limits; if the host ignores resize, the layout stays usable at its size.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.3 Flag on standalone shell (plugin-host-integration): `WebEditor` hosted, window clamped to 720x520-1920x1200, audio and OS MIDI output still work.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.4 Content follows window (plugin-host-integration): resize the flag-on standalone window; the editor fills the content area.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.5 Focus ring visible (web-ui-layout): tab through every control; an accent focus ring shows on each.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.6 Offline rendering (web-ui-layout): disconnect the network, load the editor, confirm IBM Plex renders and no font network requests occur.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.7 Wide viewport (web-ui-layout): at 1200 px wide with the panel open, the panel is beside the main area, not covering it.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.8 Narrow viewport (web-ui-layout): at 960 px wide with the panel open, the panel overlays the main area.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.9 Minimum size usable (web-ui-layout): at 720x520 every control is reachable by scroll or focus, panel open then closed.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.10 Pointer feel (web-ui-layout): drag knobs in the WebView2 editor in standalone and Sonar; tracking is smooth, keyboard arrows also work.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.11 Clipboard in DAW (web-ui-layout): in Sonar click a delay chip; the ms value pastes elsewhere or "Copy failed" shows. Repeat in standalone.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.12 Panel state survives a reopen: open the panel, close and reopen the app and the Sonar editor; the panel is still open.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.13 Mockup fidelity: compare against the mockup (TopBar, MainArea, drawer, step view, cards).
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.14 Flag off, full legacy editor (plugin-host-integration): flag-OFF standalone launches at 800x952, non-resizable, no clipping; audio, OS MIDI and UI behave as before.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.15 Flag off, plugin editor unchanged (web-editor Flag off keeps legacy editor; plugin-host-integration): flag-OFF plugin editor in a host has its original size, is non-resizable, and no WebView2 is used.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.16 Record all results and the test counts in the apply-progress; hand off to `sdd-verify`. (recorded; sdd-verify 2026-10-04: PASS WITH WARNINGS, Vitest 462, BerlinTests 379)
 
 ## Spec Scenario Coverage Map
 

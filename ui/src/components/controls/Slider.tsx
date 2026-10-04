@@ -1,10 +1,12 @@
+import { rangeAttrs } from '../../lib/knob';
+
 // A skewed slider moves over a 0..1 position; `skew` converts between that position and the real value.
 export interface Skew {
   toPosition(value: number): number;
   toValue(position: number): number;
 }
 
-interface SliderProps {
+export interface SliderProps {
   label: string;
   value: number;
   min: number;
@@ -16,7 +18,7 @@ interface SliderProps {
 }
 
 export function Slider({ label, value, min, max, step, disabled, skew, onChange }: SliderProps) {
-  const range = skew ? { min: 0, max: 1, step: 'any', value: skew.toPosition(value) } : { min, max, step, value };
+  const range = rangeAttrs(value, min, max, step, skew);
   return (
     <label>
       {label}{' '}

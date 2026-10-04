@@ -8,6 +8,8 @@
   --accent: #f0a238;
   --accent-hover: #ffc46b;
   --on-accent: #1a1206;
+  --accent-active-bg: #2a2418;
+  --error: #ff8a6b;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;

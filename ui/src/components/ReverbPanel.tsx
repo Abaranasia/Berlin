@@ -2,7 +2,7 @@ import { LIMITS } from '../bridge/limits';
 import { sendPatch } from '../store/actions';
 import { useStoreApi } from '../store/context';
 import { useShown } from '../store/hooks';
-import { Slider } from './controls/Slider';
+import { Knob } from './controls/Knob';
 
 // Reverb is part of the effects chain: every control is disabled while FX is off.
 export function ReverbPanel() {
@@ -15,10 +15,10 @@ export function ReverbPanel() {
 
   return (
     <section>
-      <Slider label="Room" value={room} min={LIMITS.reverbRoomSize.min} max={LIMITS.reverbRoomSize.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbRoomSize', v)} />{' '}
-      <Slider label="Damping" value={damping} min={LIMITS.reverbDamping.min} max={LIMITS.reverbDamping.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbDamping', v)} />{' '}
-      <Slider label="Wet" value={wet} min={LIMITS.reverbWetLevel.min} max={LIMITS.reverbWetLevel.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbWetLevel', v)} />{' '}
-      <Slider label="Dry" value={dry} min={LIMITS.reverbDryLevel.min} max={LIMITS.reverbDryLevel.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbDryLevel', v)} />
+      <Knob label="Room" value={room} min={LIMITS.reverbRoomSize.min} max={LIMITS.reverbRoomSize.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbRoomSize', v)} />{' '}
+      <Knob label="Damping" value={damping} min={LIMITS.reverbDamping.min} max={LIMITS.reverbDamping.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbDamping', v)} />{' '}
+      <Knob label="Wet" value={wet} min={LIMITS.reverbWetLevel.min} max={LIMITS.reverbWetLevel.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbWetLevel', v)} />{' '}
+      <Knob label="Dry" value={dry} min={LIMITS.reverbDryLevel.min} max={LIMITS.reverbDryLevel.max} step={0.01} disabled={!fx} onChange={(v) => sendPatch(store, 'reverbDryLevel', v)} />
     </section>
   );
 }

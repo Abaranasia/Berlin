@@ -128,9 +128,11 @@ describe('App: Controls B are all composed', () => {
     expect(button(host, label)).toBeTruthy();
   });
 
-  it('shows the delay recommendations for the snapshot BPM', async () => {
+  it('shows the delay recommendations for the snapshot BPM as copy buttons in the main area', async () => {
     const { host } = await mount();
-    expect(host.querySelector('[data-role="delay-recommendations"]')!.textContent).toContain('1/4 500 ms');
+    const chip = button(host, '1/4 500 ms');
+    expect(region(host, 'main').contains(chip)).toBe(true);
+    expect(host.querySelector('[data-role="delay-recommendations"]')).toBeNull();
   });
 
   it('turning FX off disables every delay and reverb control, and on enables them again', async () => {
@@ -183,9 +185,22 @@ describe('App: shell regions', () => {
     for (const label of ['FX', 'Cutoff', 'Delay mix', 'Room']) expect(drawer.contains(field(host, label))).toBe(true);
   });
 
+  it('uses Knobs for every synth-panel range and keeps Sliders elsewhere', async () => {
+    const { host } = await mount();
+    const synthRanges = ['Pulse width', 'Cutoff', 'Resonance', 'Attack', 'Decay', 'Sustain', 'Release', 'LFO rate', 'LFO depth', 'Delay time', 'Delay feedback', 'Delay mix', 'Room', 'Damping', 'Wet', 'Dry'];
+    for (const label of synthRanges) {
+      const input = field(host, label);
+      expect(input.type).toBe('range');
+      expect(input.closest('[data-knob]')).not.toBeNull();
+      expect(region(host, '#synth-panel').contains(input)).toBe(true);
+    }
+    expect(field(host, 'Master level').type).toBe('range');
+    expect(field(host, 'Master level').closest('[data-knob]')).toBeNull();
+  });
+
   it('has a disabled Settings placeholder that dispatches nothing', async () => {
     const { host, dispatch } = await mount();
-    const settings = button(host, 'Settings');
+    const settings = field<HTMLButtonElement>(host, 'Settings');
     expect(settings.disabled).toBe(true);
     await click(settings);
     expect(dispatch).not.toHaveBeenCalled();
