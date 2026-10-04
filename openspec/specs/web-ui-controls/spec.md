@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The React UI (`ui/src`) gives full legacy-editor parity through `UiBridge` only: typed protocol, bridge abstraction, store, and plain unstyled controls. Styling is out of scope.
+The React UI (`ui/src`) gives full legacy-editor parity through `UiBridge` only: typed protocol, bridge abstraction, store, and plain unstyled controls. Styling is defined by web-ui-layout.
 
 ## Requirements
 
@@ -243,10 +243,10 @@ The UI MUST provide via `setPatch`: Waveform, Pulse Width, Cutoff, Resonance, At
 
 ### Requirement: Skewed Sliders
 
-Cutoff, Resonance, Attack, Decay, Release and LFO Rate sliders MUST use skewed mappings whose slider midpoint maps to the legacy values: cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2. Endpoints MUST map to the protocol limits and the mapping MUST round-trip.
+Cutoff, Resonance, Attack, Decay, Release and LFO Rate controls (rendered as sliders or as Knobs) MUST use skewed mappings whose midpoint maps to the legacy values: cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2. Endpoints MUST map to the protocol limits and the mapping MUST round-trip.
 
 #### Scenario: Midpoint
-- GIVEN the cutoff slider position 0.5
+- GIVEN the cutoff control position 0.5
 - WHEN mapped to a value
 - THEN it is 1000 (likewise resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2)
 
@@ -271,7 +271,7 @@ The UI MUST provide Delay Sync, Division, Time, Feedback and Mix (`setPatch`). D
 
 ### Requirement: Delay Recommendations
 
-The UI MUST compute delay recommendations in TS from BPM: beat ms = 60000/bpm; factors 2, 1, 0.75, 0.5, 1/3, 0.25 with labels `1/2, 1/4, 1/8., 1/8, 1/8T, 1/16`; each value rounded to whole ms.
+The UI MUST compute delay recommendations in TS from BPM: beat ms = 60000/bpm; factors 2, 1, 0.75, 0.5, 1/3, 0.25 with labels `1/2, 1/4, 1/8., 1/8, 1/8T, 1/16`; each value rounded to whole ms. Each recommendation MUST be shown as a clickable button labelled `<label> <ms> ms` that copies its ms value, as specified by capability `web-ui-layout` (Delay-Times Card).
 
 #### Scenario: At 120 BPM
 - GIVEN BPM 120
@@ -282,6 +282,11 @@ The UI MUST compute delay recommendations in TS from BPM: beat ms = 60000/bpm; f
 - GIVEN BPM changes to 150
 - WHEN recomputed
 - THEN 1/4 shows 400 ms
+
+#### Scenario: Rendered as buttons [V]
+- GIVEN BPM 120
+- WHEN the card renders
+- THEN six buttons exist, including "1/4 500 ms", and no `data-role="delay-recommendations"` text remains
 
 ### Requirement: Reverb Controls
 

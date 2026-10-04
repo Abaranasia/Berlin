@@ -129,22 +129,37 @@ Files: `ui/src/lib/clipboard.ts` (no unit test, covered via card), `ui/src/compo
 
 Run on a flag-ON standalone build and in Cakewalk Sonar (flag-ON plugin) unless noted.
 
-- [ ] 9.1 Initial size and limits (web-editor): editor opens 960x680, resizable, limits 720x520 to 1920x1200 (standalone and Sonar).
-- [ ] 9.2 Resize in host (web-editor): resize within and beyond the limits in standalone and Sonar; the view follows within limits; if the host ignores resize, the layout stays usable at its size.
-- [ ] 9.3 Flag on standalone shell (plugin-host-integration): `WebEditor` hosted, window clamped to 720x520-1920x1200, audio and OS MIDI output still work.
-- [ ] 9.4 Content follows window (plugin-host-integration): resize the flag-on standalone window; the editor fills the content area.
-- [ ] 9.5 Focus ring visible (web-ui-layout): tab through every control; an accent focus ring shows on each.
-- [ ] 9.6 Offline rendering (web-ui-layout): disconnect the network, load the editor, confirm IBM Plex renders and no font network requests occur.
-- [ ] 9.7 Wide viewport (web-ui-layout): at 1200 px wide with the panel open, the panel is beside the main area, not covering it.
-- [ ] 9.8 Narrow viewport (web-ui-layout): at 960 px wide with the panel open, the panel overlays the main area.
-- [ ] 9.9 Minimum size usable (web-ui-layout): at 720x520 every control is reachable by scroll or focus, panel open then closed.
-- [ ] 9.10 Pointer feel (web-ui-layout): drag knobs in the WebView2 editor in standalone and Sonar; tracking is smooth, keyboard arrows also work.
-- [ ] 9.11 Clipboard in DAW (web-ui-layout): in Sonar click a delay chip; the ms value pastes elsewhere or "Copy failed" shows. Repeat in standalone.
-- [ ] 9.12 Panel state survives a reopen: open the panel, close and reopen the app and the Sonar editor; the panel is still open.
-- [ ] 9.13 Mockup fidelity: compare against the mockup (TopBar, MainArea, drawer, step view, cards).
-- [ ] 9.14 Flag off, full legacy editor (plugin-host-integration): flag-OFF standalone launches at 800x952, non-resizable, no clipping; audio, OS MIDI and UI behave as before.
-- [ ] 9.15 Flag off, plugin editor unchanged (web-editor Flag off keeps legacy editor; plugin-host-integration): flag-OFF plugin editor in a host has its original size, is non-resizable, and no WebView2 is used.
-- [ ] 9.16 Record all results and the test counts in the apply-progress; hand off to `sdd-verify`.
+- [x] 9.1 Initial size and limits (web-editor): editor opens 960x680, resizable, limits 720x520 to 1920x1200 (standalone and Sonar).
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.2 Resize in host (web-editor): resize within and beyond the limits in standalone and Sonar; the view follows within limits; if the host ignores resize, the layout stays usable at its size.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.3 Flag on standalone shell (plugin-host-integration): `WebEditor` hosted, window clamped to 720x520-1920x1200, audio and OS MIDI output still work.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.4 Content follows window (plugin-host-integration): resize the flag-on standalone window; the editor fills the content area.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.5 Focus ring visible (web-ui-layout): tab through every control; an accent focus ring shows on each.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.6 Offline rendering (web-ui-layout): disconnect the network, load the editor, confirm IBM Plex renders and no font network requests occur.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.7 Wide viewport (web-ui-layout): at 1200 px wide with the panel open, the panel is beside the main area, not covering it.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.8 Narrow viewport (web-ui-layout): at 960 px wide with the panel open, the panel overlays the main area.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.9 Minimum size usable (web-ui-layout): at 720x520 every control is reachable by scroll or focus, panel open then closed.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.10 Pointer feel (web-ui-layout): drag knobs in the WebView2 editor in standalone and Sonar; tracking is smooth, keyboard arrows also work.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.11 Clipboard in DAW (web-ui-layout): in Sonar click a delay chip; the ms value pastes elsewhere or "Copy failed" shows. Repeat in standalone.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.12 Panel state survives a reopen: open the panel, close and reopen the app and the Sonar editor; the panel is still open.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.13 Mockup fidelity: compare against the mockup (TopBar, MainArea, drawer, step view, cards).
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.14 Flag off, full legacy editor (plugin-host-integration): flag-OFF standalone launches at 800x952, non-resizable, no clipping; audio, OS MIDI and UI behave as before.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.15 Flag off, plugin editor unchanged (web-editor Flag off keeps legacy editor; plugin-host-integration): flag-OFF plugin editor in a host has its original size, is non-resizable, and no WebView2 is used.
+ PASS (2026-10-04, user, standalone + Sonar, flag-on Debug build of cf3a7c8; flag-off build for 9.14-9.15)
+- [x] 9.16 Record all results and the test counts in the apply-progress; hand off to `sdd-verify`. (recorded; sdd-verify 2026-10-04: PASS WITH WARNINGS, Vitest 462, BerlinTests 379)
 
 ## Spec Scenario Coverage Map
 
