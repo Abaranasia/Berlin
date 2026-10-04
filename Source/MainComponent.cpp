@@ -6,7 +6,7 @@ MainComponent::MainComponent()
       midiSink (berlin::kMidiChannel)
 {
     addAndMakeVisible (*editor);
-    setSize (800, 680);
+    setSize (editor->getWidth(), editor->getHeight());
 
     midiSink.openFirstAvailableDevice();   // return ignored: false is the valid silent state
 
@@ -70,6 +70,11 @@ void MainComponent::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+}
+
+const juce::ComponentBoundsConstrainer* MainComponent::getEditorConstrainer() const noexcept
+{
+    return editor->isResizable() ? editor->getConstrainer() : nullptr;
 }
 
 void MainComponent::resized()

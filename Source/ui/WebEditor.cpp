@@ -14,8 +14,12 @@ namespace berlin
 
 namespace
 {
-    constexpr int kEditorWidth  = 800;
+    constexpr int kEditorWidth  = 960;
     constexpr int kEditorHeight = 680;
+    constexpr int kMinWidth     = 720;
+    constexpr int kMinHeight    = 520;
+    constexpr int kMaxWidth     = 1920;
+    constexpr int kMaxHeight    = 1200;
     constexpr int kPlayheadHz   = 30;
     constexpr int kConfirmOkResult = 1;   // OK/Cancel box: button[0] (OK) returns 1
 
@@ -33,6 +37,9 @@ WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit)
     : juce::AudioProcessorEditor (processorToEdit),
       bridge (processorToEdit)
 {
+    // Host-resizable with limits (design D12): the order matters, limits before size.
+    setResizable (true, false);
+    setResizeLimits (kMinWidth, kMinHeight, kMaxWidth, kMaxHeight);
     setSize (kEditorWidth, kEditorHeight);
     engine().addChangeListener (this);
 

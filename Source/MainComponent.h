@@ -32,12 +32,16 @@ public:
     void paint (juce::Graphics& g) override;
     void resized() override;
 
+    //==============================================================================
+    // The editor's size limits, or nullptr when the editor is fixed-size.
+    const juce::ComponentBoundsConstrainer* getEditorConstrainer() const noexcept;
+
 private:
     //==============================================================================
     static constexpr int kMidiBufferBytes = 1024;
 
     berlin::BerlinAudioProcessor       processor;   // MUST precede `editor` - editor takes a reference to it
-    std::unique_ptr<juce::Component>   editor;      // legacy editor or WebEditor (berlin::createBerlinEditor)
+    std::unique_ptr<juce::AudioProcessorEditor> editor;     // legacy editor or WebEditor (berlin::createBerlinEditor)
     berlin::MidiOutputSink             midiSink;
     juce::MidiBuffer                   midiBlock;
 
