@@ -109,3 +109,79 @@ describe('nativeBridge without a host', () => {
     expect(() => nativeBridge.onSnapshot(() => {})()).not.toThrow();
   });
 });
+
+describe('nativeBridge.settings (standalone capability)', () => {
+  const SETTINGS_FUNCTIONS = [...FUNCTIONS, 'getAudioSettings', 'applyAudioSettings'];
+  const AUDIO = {
+    deviceTypes: ['Windows Audio'], deviceType: 'Windows Audio', devices: ['Speakers'], device: 'Speakers',
+    sampleRates: [44100, 48000], sampleRate: 48000, bufferSizes: [256, 512], bufferSize: 512,
+    midiPorts: [{ id: '', name: 'None' }, { id: 'a', name: 'Port A' }], midiPortId: '', midiChannel: 1,
+  };
+
+  it('is present when getAudioSettings is registered', async () => {
+    installHost(SETTINGS_FUNCTIONS);
+    const { nativeBridge } = await load();
+    expect(nativeBridge.settings).toBeDefined();
+  });
+
+  it('is absent when only the plugin functions are registered', async () => {
+    installHost();
+    const { nativeBridge } = await load();
+    expect(nativeBridge.settings).toBeUndefined();
+  });
+
+  it('is absent without throwing when there is no host', async () => {
+    const { nativeBridge } = await load();
+    expect(nativeBridge.settings).toBeUndefined();
+  });
+
+  it('get() without a query calls the native function with no arguments and returns the payload unchanged', async () => {
+    const posted = installHost(SETTINGS_FUNCTIONS);
+    const { nativeBridge } = await load();
+    const pending = nativeBridge.settings!.get();
+    const call = callOf(posted, 'getAudioSettings');
+    expect(call.params).toEqual([]);
+    reply(call.resultId, AUDIO);
+    await expect(pending).resolves.toEqual(AUDIO);
+    expect(await pending).not.toHaveProperty('volume');
+  });
+
+  it('get(query) forwards the device query', async () => {
+    const posted = installHost(SETTINGS_FUNCTIONS);
+    const { nativeBridge } = await load();
+    const query = { deviceType: 'ASIO', device: 'Focusrite' };
+    const pending = nativeBridge.settings!.get(query);
+    const call = callOf(posted, 'getAudioSettings');
+    expect(call.params).toEqual([query]);
+    reply(call.resultId, AUDIO);
+    await pending;
+  });
+
+  it('apply() forwards the request and returns {ok:true} without a snapshot', async () => {
+    const posted = installHost(SETTINGS_FUNCTIONS);
+    const { nativeBridge } = await load();
+    const request = { deviceType: 'Windows Audio', device: 'Speakers', sampleRate: 48000, bufferSize: 512, midiPortId: '', midiChannel: 5 };
+    const pending = nativeBridge.settings!.apply(request);
+    const call = callOf(posted, 'applyAudioSettings');
+    expect(call.params).toEqual([request]);
+    reply(call.resultId, { ok: true });
+    const result = await pending;
+    expect(result).toEqual({ ok: true });
+    expect(result).not.toHaveProperty('snapshot');
+  });
+
+  it('apply() exposes error tokens unchanged', async () => {
+    const posted = installHost(SETTINGS_FUNCTIONS);
+    const { nativeBridge } = await load();
+    const pending = nativeBridge.settings!.apply({ deviceType: 'x', device: 'y', sampleRate: 1, bufferSize: 1, midiPortId: '', midiChannel: 1 });
+    reply(callOf(posted, 'applyAudioSettings').resultId, { ok: false, error: 'device-unavailable' });
+    await expect(pending).resolves.toEqual({ ok: false, error: 'device-unavailable' });
+  });
+
+  it('keeps the dispatch command surface at exactly the 15 existing commands', async () => {
+    const { COMMAND_NAMES } = await import('./protocol');
+    expect(COMMAND_NAMES).toHaveLength(15);
+    expect(COMMAND_NAMES).not.toContain('getAudioSettings');
+    expect(COMMAND_NAMES).not.toContain('applyAudioSettings');
+  });
+});

@@ -4,7 +4,7 @@ import type { Bridge } from './bridge';
 import { AUTO_EVOLVE_RATE, GENERATION_LIMITS, LIMITS, type Range } from './limits';
 import {
   DELAY_DIVISIONS, LFO_DESTINATIONS, RHYTHM_MODES, SCALE_TYPES, WAVEFORMS,
-  type Command, type DispatchResult, type PlayheadEvent, type Snapshot,
+  type ApplyAudioSettingsResult, type AudioSettings, type Command, type DispatchResult, type PlayheadEvent, type SettingsBridge, type Snapshot,
 } from './protocol';
 
 const initial = (): Snapshot => ({
@@ -96,7 +96,22 @@ function merge(target: object, args: Record<string, unknown>, ranges: Record<str
   Object.assign(target, next);
 }
 
-export function createMockBridge({ busy = false }: { busy?: boolean } = {}): Bridge {
+const mockAudioSettings = (): AudioSettings => ({
+  deviceTypes: ['Windows Audio', 'ASIO'], deviceType: 'Windows Audio',
+  devices: ['Speakers', 'Headphones'], device: 'Speakers',
+  sampleRates: [44100, 48000, 96000], sampleRate: 48000,
+  bufferSizes: [128, 256, 512, 1024], bufferSize: 512,
+  midiPorts: [{ id: '', name: 'None' }, { id: 'mock-a', name: 'Mock Port A' }, { id: 'mock-b', name: 'Mock Port B' }],
+  midiPortId: 'mock-a', midiChannel: 1,
+});
+
+interface MockOptions {
+  busy?: boolean;
+  standalone?: boolean; // provides the standalone-only `settings` bridge
+  applyResult?: ApplyAudioSettingsResult;
+}
+
+export function createMockBridge({ busy = false, standalone = false, applyResult = { ok: true } }: MockOptions = {}): Bridge {
   const state = initial();
   const snapshotListeners = new Set<(s: Snapshot) => void>();
   const playheadListeners = new Set<(e: PlayheadEvent) => void>();
@@ -158,7 +173,13 @@ export function createMockBridge({ busy = false }: { busy?: boolean } = {}): Bri
     }
   };
 
+  const settings: SettingsBridge = {
+    get: async () => mockAudioSettings(),
+    apply: async () => applyResult,
+  };
+
   return {
+    ...(standalone ? { settings } : {}),
     async dispatch(command) {
       try {
         apply(command);

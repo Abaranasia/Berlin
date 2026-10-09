@@ -147,3 +147,22 @@ describe('mock bridge dialogs', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('mock bridge settings', () => {
+  it('is absent by default and present with {standalone: true}', () => {
+    expect(createMockBridge().settings).toBeUndefined();
+    expect(createMockBridge({ standalone: true }).settings).toBeDefined();
+  });
+
+  it('lists None first and no volume field', async () => {
+    const audio = await createMockBridge({ standalone: true }).settings!.get();
+    expect(audio.midiPorts[0]).toEqual({ id: '', name: 'None' });
+    expect(audio).not.toHaveProperty('volume');
+  });
+
+  it('apply succeeds by default and can be configured to fail', async () => {
+    const request = { deviceType: 'a', device: 'b', sampleRate: 48000, bufferSize: 512, midiPortId: '', midiChannel: 1 };
+    await expect(createMockBridge({ standalone: true }).settings!.apply(request)).resolves.toEqual({ ok: true });
+    await expect(createMockBridge({ standalone: true, applyResult: { ok: false, error: 'busy' } }).settings!.apply(request)).resolves.toEqual({ ok: false, error: 'busy' });
+  });
+});

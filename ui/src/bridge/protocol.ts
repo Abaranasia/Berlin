@@ -109,3 +109,36 @@ export interface ChooseExportResult {
   path: string;
   error?: 'busy';
 }
+
+// Standalone-only settings contract (native functions getAudioSettings / applyAudioSettings).
+export type SettingsError =
+  | 'invalid-request' | 'device-unavailable' | 'sample-rate-unsupported' | 'buffer-size-unsupported'
+  | 'midi-port-unavailable' | 'busy';
+
+export interface MidiPortInfo {
+  id: string; // "" is the None choice
+  name: string;
+}
+
+export interface AudioSettings {
+  deviceTypes: string[];
+  deviceType: string;
+  devices: string[];
+  device: string;
+  sampleRates: number[];
+  sampleRate: number;
+  bufferSizes: number[];
+  bufferSize: number;
+  midiPorts: MidiPortInfo[];
+  midiPortId: string;
+  midiChannel: number;
+}
+
+export type AudioSettingsQuery = Pick<AudioSettings, 'deviceType' | 'device'>;
+export type ApplyAudioSettingsRequest = Pick<AudioSettings, 'deviceType' | 'device' | 'sampleRate' | 'bufferSize' | 'midiPortId' | 'midiChannel'>;
+export type ApplyAudioSettingsResult = { ok: true } | { ok: false; error: SettingsError };
+
+export interface SettingsBridge {
+  get(query?: AudioSettingsQuery): Promise<AudioSettings>;
+  apply(request: ApplyAudioSettingsRequest): Promise<ApplyAudioSettingsResult>;
+}
