@@ -4,6 +4,7 @@
 #include "midi/MidiChannel.h"
 #include "midi/MidiOutputSink.h"
 #include "plugin/BerlinAudioProcessor.h"
+#include "settings/StandaloneSettings.h"
 #include "ui/EditorFactory.h"
 #include "ui/StandaloneHost.h"
 
@@ -61,6 +62,7 @@ private:
     // into this host) is destroyed before everything the host uses.
     berlin::BerlinAudioProcessor       processor;   // MUST precede `editor` - editor takes a reference to it
     berlin::MidiOutputSink             midiSink;
+    berlin::MidiPortChoice             midiPreference;      // remembered choice, persisted when no port is open
     juce::String                       currentMidiPortId;   // "" = None / no device open
     bool                               applying = false;     // reentrancy guard for applyAudioSettings
     std::unique_ptr<juce::AudioProcessorEditor> editor;     // legacy editor or WebEditor (berlin::createBerlinEditor)

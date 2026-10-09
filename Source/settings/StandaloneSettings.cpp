@@ -194,6 +194,25 @@ juce::String resolveMidiPort (const MidiPortChoice& saved, const juce::Array<Mid
     return ports.getFirst().id;
 }
 
+MidiPortChoice chosenPortChoice (const juce::String& portId, const juce::Array<MidiPort>& ports)
+{
+    MidiPortChoice choice;
+    choice.none = portId.isEmpty();
+    choice.id   = portId;
+
+    for (const auto& p : ports)
+        if (p.id == portId)
+            choice.name = p.name;
+
+    return choice;
+}
+
+MidiPortChoice portToPersist (const juce::String& openPortId, const MidiPortChoice& preference,
+                              const juce::Array<MidiPort>& ports)
+{
+    return openPortId.isNotEmpty() ? chosenPortChoice (openPortId, ports) : preference;
+}
+
 //==============================================================================
 juce::var audioSettingsToVar (const AudioSettingsView& view)
 {

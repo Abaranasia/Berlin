@@ -101,6 +101,14 @@ bool                              writeSettingsFile (const juce::File& file, con
 // The port id to open at launch: "" means None.
 juce::String resolveMidiPort (const MidiPortChoice& saved, const juce::Array<MidiPort>& ports);
 
+// The preference a chosen port id represents: "" is an explicit None, else the id and its name.
+MidiPortChoice chosenPortChoice (const juce::String& portId, const juce::Array<MidiPort>& ports);
+
+// What to persist: the open port, else the remembered preference (a saved port that was
+// unavailable stays remembered; None only when it was explicitly chosen).
+MidiPortChoice portToPersist (const juce::String& openPortId, const MidiPortChoice& preference,
+                              const juce::Array<MidiPort>& ports);
+
 // ---- JSON payloads ----
 struct AudioSettingsView
 {

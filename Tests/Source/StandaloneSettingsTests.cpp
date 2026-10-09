@@ -75,6 +75,7 @@ public:
         testValidate();
         testXml();
         testResolve();
+        testPortToPersist();
         testPayloads();
         testWriteFailure();
     }
@@ -307,6 +308,31 @@ private:
         {
             expectEquals (resolveMidiPort ({}, ports), juce::String ("p1"));
             expectEquals (resolveMidiPort ({ false, "p1", "Synth A" }, {}), juce::String());
+        }
+    }
+
+    void testPortToPersist()
+    {
+        juce::Array<MidiPort> ports;
+        ports.add ({ "p1", "Synth A" });
+
+        beginTest ("portToPersist: an unavailable saved port stays the preference, not None");
+        {
+            const auto c = portToPersist ({}, { false, "gone", "Old Synth" }, ports);
+            expect (! c.none);
+            expectEquals (c.id, juce::String ("gone"));
+            expectEquals (c.name, juce::String ("Old Synth"));
+        }
+
+        beginTest ("portToPersist: an explicit None stays None");
+        expect (portToPersist ({}, chosenPortChoice ({}, ports), ports).none);
+
+        beginTest ("portToPersist: an open port is persisted with its name");
+        {
+            const auto c = portToPersist ("p1", { true, {}, {} }, ports);
+            expect (! c.none);
+            expectEquals (c.id, juce::String ("p1"));
+            expectEquals (c.name, juce::String ("Synth A"));
         }
     }
 

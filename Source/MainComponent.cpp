@@ -107,6 +107,7 @@ MainComponent::MainComponent()
     auto saved = berlin::loadSettingsFile (settingsFilePath());
 
     midiSink.setChannel (saved.channel);
+    midiPreference    = saved.port;   // stays remembered even when that port is unavailable now
     currentMidiPortId = berlin::resolveMidiPort (saved.port, availableMidiPorts());
 
     if (! midiSink.openDevice (currentMidiPortId))   // false is the valid silent state (None / failed open)
@@ -182,18 +183,7 @@ bool MainComponent::saveSettings()
     settings.audioState = deviceManager.createStateXml();
     settings.channel    = midiSink.getChannel();
 
-    if (currentMidiPortId.isEmpty())
-    {
-        settings.port.none = true;
-    }
-    else
-    {
-        settings.port.id = currentMidiPortId;
-
-        for (const auto& port : availableMidiPorts())
-            if (port.id == currentMidiPortId)
-                settings.port.name = port.name;
-    }
+    settings.port = berlin::portToPersist (currentMidiPortId, midiPreference, availableMidiPorts());
 
     return berlin::writeSettingsFile (settingsFilePath(), settings);
 }
@@ -349,6 +339,7 @@ juce::var MainComponent::applyAudioSettings (const juce::var& requestVar)
                                            : berlin::settingsError::midiPortUnavailable);
     }
 
+    midiPreference = berlin::chosenPortChoice (request.midiPortId, availableMidiPorts());
     saveSettings();   // a failed write is silent: the apply itself succeeded (D7)
     return berlin::okResult();
 }
