@@ -351,9 +351,11 @@ void MainComponent::paint (juce::Graphics& g)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
 }
 
-const juce::ComponentBoundsConstrainer* MainComponent::getEditorConstrainer() const noexcept
+const juce::ComponentBoundsConstrainer& MainComponent::getEditorConstrainer() const noexcept
 {
-    return editor->isResizable() ? editor->getConstrainer() : nullptr;
+    auto* constrainer = editor->getConstrainer();
+    jassert (constrainer != nullptr);   // the WebEditor always installs its size limits
+    return *constrainer;
 }
 
 void MainComponent::resized()

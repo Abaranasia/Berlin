@@ -13,8 +13,8 @@
     Standalone shell (roadmap Phase 11 / vst3-au-plugin, plugin-host-integration
     spec's "Standalone Shell Preserves Today's Observable Behavior"
     requirement, design.md's standalone sub-buffer view). All engine/GUI logic
-    now lives in berlin::BerlinAudioProcessor / berlin::BerlinAudioProcessorEditor
-    - this class owns exactly one of each, plus the standalone-only
+    now lives in berlin::BerlinAudioProcessor / the WebEditor (created through
+    berlin::createBerlinEditor) - this class owns exactly one of each, plus the standalone-only
     MidiOutputSink (BerlinAudioProcessor never references it - see
     MidiOutputSink.h), and forwards the three AudioAppComponent callbacks.
 
@@ -43,8 +43,8 @@ public:
     void resized() override;
 
     //==============================================================================
-    // The editor's size limits, or nullptr when the editor is fixed-size.
-    const juce::ComponentBoundsConstrainer* getEditorConstrainer() const noexcept;
+    // The editor's size limits (the WebEditor is always resizable). Owned by the editor.
+    const juce::ComponentBoundsConstrainer& getEditorConstrainer() const noexcept;
 
     //==============================================================================
     // berlin::StandaloneHost (message thread only)
@@ -65,7 +65,7 @@ private:
     berlin::MidiPortChoice             midiPreference;      // remembered choice, persisted when no port is open
     juce::String                       currentMidiPortId;   // "" = None / no device open
     bool                               applying = false;     // reentrancy guard for applyAudioSettings
-    std::unique_ptr<juce::AudioProcessorEditor> editor;     // legacy editor or WebEditor (berlin::createBerlinEditor)
+    std::unique_ptr<juce::AudioProcessorEditor> editor;     // WebEditor (berlin::createBerlinEditor)
     juce::MidiBuffer                   midiBlock;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

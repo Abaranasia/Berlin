@@ -1,14 +1,12 @@
 #include "ui/WebEditor.h"
 
-#if BERLIN_WEB_UI
-
 #include "settings/StandaloneSettings.h"
 #include "ui/WebAssets.h"
 #include "ui/generated/EmbeddedAssets.h"
 
-// A flag-on build must embed the real UI, never the empty stub (design D2).
+// The build must embed the real UI, never a stale empty stub header (design D2).
 static_assert (BERLIN_EMBEDDED_ASSETS_FULL == 1,
-               "BERLIN_WEB_UI is on but the embedded assets are the stub: run the pre-build with pnpm available");
+               "embedded assets are the empty stub: re-run the pre-build (node and pnpm required)");
 
 namespace berlin
 {
@@ -235,5 +233,3 @@ void WebEditor::confirm (const juce::Array<juce::var>& args, juce::WebBrowserCom
 }
 
 } // namespace berlin
-
-#endif // BERLIN_WEB_UI
