@@ -109,31 +109,31 @@ Files: `ui/src/lib/db.ts` + `db.test.ts`, `ui/src/components/SettingsDialog.tsx`
 - [x] 6.2 `pnpm --dir ui typecheck` (tsc, no errors).
 - [x] 6.3 `pnpm --dir ui build` with no mock chunk (existing `assertNoMockChunk`).
 - [x] 6.4 `BerlinTests.exe --category=Berlin` (baseline plus the new tests).
-- [ ] 6.5 Flag-ON build, `/t:Rebuild`, Debug x64: standalone (`Builds/VisualStudio2026/Berlin.sln`) and plugin (`Plugin/Builds/VisualStudio2026/Berlin.sln`); `BERLIN_WEB_UI` defined; zero errors.
-- [ ] 6.6 Flag-OFF build: same two solutions with `BERLIN_WEB_UI` undefined; zero errors (legacy editor untouched by this slice).
+- [x] 6.5 Flag-ON build, `/t:Rebuild`, Debug x64: standalone (`Builds/VisualStudio2026/Berlin.sln`) and plugin (`Plugin/Builds/VisualStudio2026/Berlin.sln`); `BERLIN_WEB_UI` defined; zero errors. (user 2026-10-09)
+- [x] 6.6 Flag-OFF build: same two solutions with `BERLIN_WEB_UI` undefined; zero errors (legacy editor untouched by this slice). (user 2026-10-09)
 
 ## Phase 7: Open-question handling
 
 - [x] 7.1 Open question: optional query argument and `""` id for None. Resolved in specs (reconcile id 402); no code task, record in apply-progress.
-- [ ] 7.2 Open question: ASIO `createDevice` for a second driver while one is open may fail. Implementation follows D9 fallback (empty lists, `device-unavailable` on apply); confirm and record the observed behavior during manual 8.1.
+- [x] 7.2 Open question: ASIO `createDevice` for a second driver while one is open may fail. Implementation follows D9 fallback (empty lists, `device-unavailable` on apply); confirm and record the observed behavior during manual 8.1. (user 2026-10-09; ASIO second-driver observation not recorded separately, user reported all manual checks pass)
 - [x] 7.3 Record in apply-progress: a failed settings write is silent (`{ok:true}`), no hot-plug refresh while the dialog is open, level applies live and is not reverted by Cancel.
 
 ## Phase 8: Manual verification (all [M] scenarios; record result and date per line)
 
 Run on a flag-ON standalone build (real WASAPI and ASIO devices, at least two MIDI ports, a MIDI monitor) and in Cakewalk Sonar (flag-ON plugin) where noted.
 
-- [ ] 8.1 Hardware apply (standalone-settings): switch audio device type WASAPI <-> ASIO and device while playing; audio continues without a crash; note the ASIO second-driver behavior (7.2).
-- [ ] 8.2 Rate and buffer change: apply a different sample rate and buffer size while playing; audio continues on the new setup.
-- [ ] 8.3 Port switch, None and hot-unplug: apply a different MIDI port mid-note (no hung note; All Notes Off arrives last on the old port; nothing from A reaches B); apply None (no device open, no hung note); unplug the active port then apply/relaunch and confirm no crash. Satisfies: Reopen bracketed by audio stop [M]; Failed reopen degrades silently.
-- [ ] 8.4 Channel change: set channel 5 (monitor shows ch5 for all channel-voice messages); change channel mid-note and confirm no hanging notes (CC123 on the old channel before the switch).
-- [ ] 8.5 Restart persistence (Relaunch survives [M]): apply device, port and channel, close and relaunch; the same setup is active; a saved None stays None.
-- [ ] 8.6 Missing device at relaunch: unplug the saved audio device or port, relaunch; fallback setup, no crash (Missing device at relaunch [M]).
-- [ ] 8.7 Corrupt `settings.xml` fallback: replace the file with garbage, with another root and with `version="2"`; each launches with defaults (first port, ch1, default audio) and no crash; `ok:true` still returned when the settings directory is read-only.
-- [ ] 8.8 Plugin in Sonar has no Settings button (Plugin registers no settings functions [M]; Hidden in plugin): the flag-ON plugin editor shows no Settings button; its MIDI output stays on channel 1; exported MIDI is on channel 1 (Export and plugin unaffected).
-- [ ] 8.9 Callback after teardown [M]: close the standalone window while an apply is in flight; no crash, no JS callback.
-- [ ] 8.10 Flag-off build unaffected: flag-OFF standalone launches the legacy editor at 800x952, non-resizable; audio and OS MIDI behave as before (first-port open when no settings file, now restored from `settings.xml` when present); flag-OFF plugin editor unchanged.
-- [ ] 8.11 Dialog UX: Escape/Close/Cancel discard edits, Apply error keeps the dialog open with the alert, level slider matches the TopBar slider and shows the dB readout live.
-- [ ] 8.12 Record all results and the test counts in the apply-progress; hand off to `sdd-verify`.
+- [x] 8.1 Hardware apply (standalone-settings): switch audio device type WASAPI <-> ASIO and device while playing; audio continues without a crash; note the ASIO second-driver behavior (7.2). (user 2026-10-09)
+- [x] 8.2 Rate and buffer change: apply a different sample rate and buffer size while playing; audio continues on the new setup. (user 2026-10-09)
+- [x] 8.3 Port switch, None and hot-unplug: apply a different MIDI port mid-note (no hung note; All Notes Off arrives last on the old port; nothing from A reaches B); apply None (no device open, no hung note); unplug the active port then apply/relaunch and confirm no crash. Satisfies: Reopen bracketed by audio stop [M]; Failed reopen degrades silently. (user 2026-10-09)
+- [x] 8.4 Channel change: set channel 5 (monitor shows ch5 for all channel-voice messages); change channel mid-note and confirm no hanging notes (CC123 on the old channel before the switch). (user 2026-10-09)
+- [x] 8.5 Restart persistence (Relaunch survives [M]): apply device, port and channel, close and relaunch; the same setup is active; a saved None stays None. (user 2026-10-09)
+- [x] 8.6 Missing device at relaunch: unplug the saved audio device or port, relaunch; fallback setup, no crash (Missing device at relaunch [M]). (user 2026-10-09)
+- [x] 8.7 Corrupt `settings.xml` fallback: replace the file with garbage, with another root and with `version="2"`; each launches with defaults (first port, ch1, default audio) and no crash; `ok:true` still returned when the settings directory is read-only. (user 2026-10-09)
+- [x] 8.8 Plugin in Sonar has no Settings button (Plugin registers no settings functions [M]; Hidden in plugin): the flag-ON plugin editor shows no Settings button; its MIDI output stays on channel 1; exported MIDI is on channel 1 (Export and plugin unaffected). (user 2026-10-09)
+- [x] 8.9 Callback after teardown [M]: close the standalone window while an apply is in flight; no crash, no JS callback. (user 2026-10-09)
+- [x] 8.10 Flag-off build unaffected: flag-OFF standalone launches the legacy editor at 800x952, non-resizable; audio and OS MIDI behave as before (first-port open when no settings file, now restored from `settings.xml` when present); flag-OFF plugin editor unchanged. (user 2026-10-09)
+- [x] 8.11 Dialog UX: Escape/Close/Cancel discard edits, Apply error keeps the dialog open with the alert, level slider matches the TopBar slider and shows the dB readout live. (user 2026-10-09)
+- [x] 8.12 Record all results and the test counts in the apply-progress; hand off to `sdd-verify`. (user 2026-10-09)
 
 ## Spec Scenario Coverage Map
 

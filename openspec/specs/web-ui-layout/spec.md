@@ -38,7 +38,7 @@ IBM Plex Sans Condensed and IBM Plex Mono (latin subset) MUST be bundled in the 
 
 ### Requirement: Shell Regions
 
-`App` MUST render three regions. TopBar: wordmark, Play/Stop, BPM, preset select/name/Load/Save, Export MIDI, master level, synth-panel toggle, settings placeholder. MainArea: step view, Generation, Rhythm, Pitch, Evolution and the delay-times card. SynthPanel: Sound/FX toggles, oscillator, filter and envelope, LFO, delay, reverb. All existing controls MUST keep their labels and dispatches.
+`App` MUST render three regions. TopBar: wordmark, Play/Stop, BPM, preset select/name/Load/Save, Export MIDI, master level, synth-panel toggle, settings button. MainArea: step view, Generation, Rhythm, Pitch, Evolution and the delay-times card. SynthPanel: Sound/FX toggles, oscillator, filter and envelope, LFO, delay, reverb. All existing controls MUST keep their labels and dispatches.
 
 #### Scenario: Controls in regions [V]
 - GIVEN the app is rendered
@@ -50,14 +50,24 @@ IBM Plex Sans Condensed and IBM Plex Mono (latin subset) MUST be bundled in the 
 - WHEN run against the shell
 - THEN they pass with unchanged labels and dispatches
 
-### Requirement: Settings Placeholder
+### Requirement: Settings Button
 
-TopBar MUST contain a disabled button with aria-label "Settings". It MUST NOT dispatch anything.
+TopBar MUST show a button with aria-label "Settings" only when the host is standalone (capability detection per `ui-bridge`). In standalone it MUST be enabled and pressing it MUST open the Settings dialog (see `standalone-settings`) without dispatching any command. In the plugin the button MUST NOT be rendered. The shell region list MUST read "settings button" where it previously read "settings placeholder".
 
-#### Scenario: Disabled placeholder [V]
-- GIVEN the app is rendered
+#### Scenario: Enabled in standalone [V]
+- GIVEN `__juce__functions` includes `getAudioSettings`
 - WHEN the "Settings" button is queried
-- THEN it is disabled and clicking it dispatches nothing
+- THEN it is enabled and pressing it opens the dialog with no `dispatch` call
+
+#### Scenario: Hidden in plugin [V]
+- GIVEN `__juce__functions` lacks `getAudioSettings`
+- WHEN the app is rendered
+- THEN no element with aria-label "Settings" exists
+
+#### Scenario: Dialog keyboard access [V]
+- GIVEN the dialog is open
+- WHEN Escape is pressed
+- THEN the dialog closes as Cancel and focus returns to the Settings button
 
 ### Requirement: Collapsible Synth Panel With Persistence
 
