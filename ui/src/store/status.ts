@@ -1,4 +1,4 @@
-// Status line wording (design "Status Messages"). Preset/export text is copied from the legacy editor.
+// Status line wording (design "Status Messages"). Preset/export text is copied from the original JUCE editor.
 import type { Command } from '../bridge/protocol';
 
 export interface Status {

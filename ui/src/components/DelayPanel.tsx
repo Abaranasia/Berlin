@@ -9,7 +9,7 @@ import { Knob } from './controls/Knob';
 import { Toggle } from './controls/Toggle';
 
 const DEFAULT_TIME = 0.5;
-const DEFAULT_PATCH_DELAY = 0.3; // kDefaultPatch.delayTimeSeconds (Source/synth/SynthPatch.h): the legacy Free-mode memory seed
+const DEFAULT_PATCH_DELAY = 0.3; // kDefaultPatch.delayTimeSeconds (Source/synth/SynthPatch.h): the original JUCE editor's Free-mode memory seed
 
 // Delay is part of the effects chain: every control is disabled while FX is off, and Time also while Sync is on.
 export function DelayPanel() {
@@ -21,7 +21,7 @@ export function DelayPanel() {
   const feedback = useShown('patch.delayFeedback', (s) => s.patch.delayFeedback, 0.3);
   const mix = useShown('patch.delayMix', (s) => s.patch.delayMix, 0.2);
 
-  // Legacy seeds its Free-mode memory from the default patch and from every loaded unsynced patch;
+  // The original JUCE editor seeds its Free-mode memory from the default patch and from every loaded unsynced patch;
   // the equivalent here is the last time shown while unsynced, starting at the default patch time.
   const lastUnsynced = useRef(DEFAULT_PATCH_DELAY);
   useEffect(() => {

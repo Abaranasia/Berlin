@@ -1,7 +1,7 @@
 // JUCE NormalisableRange skew from a midpoint (setSkewForCentre): a slider position in 0..1 maps to
 // start + (end - start) * position^(1 / skew), with skew = log(0.5) / log((centre - start) / (end - start)).
 import { LIMITS } from '../bridge/limits';
-import type { Skew } from '../components/controls/Slider';
+import type { Skew } from './knob';
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 
@@ -13,7 +13,7 @@ export function makeSkew(min: number, max: number, midpoint: number): Skew {
   };
 }
 
-// Legacy slider midpoints (spec "Skewed Sliders"); endpoints are the protocol limits.
+// The original JUCE editor's slider midpoints (spec "Skewed Sliders"); endpoints are the protocol limits.
 export const SKEWS = {
   cutoffHz: makeSkew(LIMITS.cutoffHz.min, LIMITS.cutoffHz.max, 1000),
   resonance: makeSkew(LIMITS.resonance.min, LIMITS.resonance.max, 2),

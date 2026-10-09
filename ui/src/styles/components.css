@@ -49,13 +49,16 @@
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  /* Interactive cells: a drag changes the note, so the browser must not pan or select; the accent focus ring
+     comes from the global :focus-visible rule in base.css. */
+  min-height: 44px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
 }
 .step[data-active='true'] { border-color: var(--accent); background: var(--accent-active-bg); }
 .step-num { font: 10px var(--font-mono); color: var(--muted); }
 .step-note { font: 12px var(--font-mono); color: var(--muted); }
-/* Interactive cells: a drag changes the note, so the browser must not pan or select; the accent focus ring
-   comes from the global :focus-visible rule in base.css. */
-.step { min-height: 44px; cursor: ns-resize; touch-action: none; user-select: none; }
 .step[data-gate='true'] .step-note { color: var(--text); }
 .step[data-gate='false'] .step-note { opacity: 0.5; }
 .step-view { display: flex; flex-direction: column; gap: 8px; }

@@ -3,7 +3,7 @@ import { useShown } from '../store/hooks';
 import { Select } from './controls/Select';
 import { Toggle } from './controls/Toggle';
 
-// The legacy editor's ComboBox: every N loops, N in 1, 2, 4, 8, 16.
+// The original JUCE editor's ComboBox: every N loops, N in 1, 2, 4, 8, 16.
 const RATE_OPTIONS = [1, 2, 4, 8, 16].map((n) => ({ value: String(n), label: `Every ${n} loops` }));
 
 export function EvolutionPanel() {

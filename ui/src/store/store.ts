@@ -144,6 +144,13 @@ export function createStore(
     };
     // A busy retryable command ends this run silently: the key stays in flight with its overlay, so newer sends
     // land in `pending`. After the delay the latest pending value runs, otherwise the same command again.
+    // Lifecycle notes:
+    // (a) A replaced command's `onSettled` is never called, which deviates from `Settled`'s "called once"
+    //     contract. That is safe today because no `setStep` caller passes it (actions.ts).
+    // (b) The retry budget restarts for the new value.
+    // (c) Worst-case latency is `busyRetryLimit * busyRetryDelayMs`, not `settleTimeoutMs`.
+    // (d) Once the budget is exhausted, the busy result is reported normally.
+    // (e) The retry timeout is not tracked or cancelled.
     const retryLater = () => {
       settled = true;
       clearTimeout(timer);
