@@ -1019,6 +1019,210 @@ public:
             expect (! processor.getCurrentSequence()[2].active);   // the edited sequence was not replaced
         }
 
+        // ---- cleanup-followups: a busy restore is retried by the tick until it publishes.
+        // Helpers: `state` comes from a source processor seeded 1234; a busy restore is made by
+        // editStep() (publish pending) right before setStateInformation().
+
+        beginTest ("busy restore publishes on a later retry: sequence reseeded, edited cleared, flag and timer released");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());   // busy
+            expect (processor.isRestorePending());
+            expect (processor.isEdited());
+            expect (processor.isTickTimerRunning());   // auto-evolve is off, the retry alone keeps it alive
+            expect (processor.getSeed() == 1234);
+
+            processor.runAutoEvolveTick();   // still unadopted: stays busy
+            expect (processor.isRestorePending());
+            expect (processor.isEdited());
+            expect (! processor.getCurrentSequence()[2].active);
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();   // retry succeeds
+            expect (! processor.isRestorePending());
+            expect (! processor.isEdited());
+            expect (! processor.isTickTimerRunning());
+            expect (processor.getCurrentSequence() == berlin::buildSeededSequence (processor.getSeed(), processor.getGenerationParams()));
+        }
+
+        beginTest ("restore that publishes at once sets no pending flag and starts no timer");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            expect (! processor.isRestorePending());
+            expect (! processor.isTickTimerRunning());
+        }
+
+        beginTest ("restore retry survives auto-evolve being switched off");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setAutoEvolveEnabled (true);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            processor.setAutoEvolveEnabled (false);
+            expect (processor.isRestorePending());
+            expect (processor.isTickTimerRunning());
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();
+            expect (! processor.isRestorePending());
+            expect (! processor.isTickTimerRunning());
+        }
+
+        beginTest ("restore retry with auto-evolve on keeps the timer running afterwards");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            processor.setAutoEvolveEnabled (true);
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);
+            processor.runAutoEvolveTick();
+            expect (! processor.isRestorePending());
+            expect (processor.isTickTimerRunning());
+            processor.setAutoEvolveEnabled (false);
+            expect (! processor.isTickTimerRunning());
+        }
+
+        beginTest ("pending restore blocks a due mutation; its publish restarts the schedule (no back-to-back mutation)");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+            processor.setAutoEvolveRate (1);
+            processor.setAutoEvolveEnabled (true);   // baseline at loop count 0
+
+            juce::AudioBuffer<float> longBuffer (2, 17 * 5513);   // completes one loop: a mutation is due
+            juce::MidiBuffer midi;
+            processor.processBlock (longBuffer, midi);
+            expect (processor.getLoopCount() >= 1);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());   // busy
+            expect (processor.isRestorePending());
+
+            processor.runAutoEvolveTick();   // retry still busy: nothing else this tick
+            expectEquals (processor.getMutationCount(), 0);
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();   // retry publishes; schedule restarts
+            expect (! processor.isRestorePending());
+            expectEquals (processor.getMutationCount(), 0);
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();   // a full rate period has not elapsed since the restore
+            expectEquals (processor.getMutationCount(), 0);
+
+            processor.setAutoEvolveEnabled (false);
+        }
+
+        beginTest ("mutate() returns false while a restore is pending, then works once it publishes");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);   // no publish pending any more, but the restore is
+            expect (processor.isRestorePending());
+
+            const auto before = processor.getCurrentSequence();
+            expect (! processor.mutate());
+            expectEquals (processor.getMutationCount(), 0);
+            expect (processor.getCurrentSequence() == before);
+
+            processor.runAutoEvolveTick();   // retry publishes
+            adoptPending (processor);
+            expect (processor.mutate());
+            expectEquals (processor.getMutationCount(), 1);
+        }
+
+        beginTest ("editStep() is busy while a restore is pending; validation still comes first");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);
+            expect (processor.isRestorePending());
+
+            const auto before = processor.getCurrentSequence();
+            expect (processor.editStep (16, 41, true) == berlin::StepEditResult::stepOutOfRange);
+            expect (processor.editStep (2, 37, true) == berlin::StepEditResult::noteOutOfScale);
+            expect (processor.editStep (2, 41, true) == berlin::StepEditResult::busy);
+            expect (processor.getCurrentSequence() == before);
+
+            processor.runAutoEvolveTick();   // release the restore
+            expect (! processor.isRestorePending());
+        }
+
+        beginTest ("a successful regenerate or loadPreset clears a pending restore; a busy regenerate leaves it set");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor source, processor (temp.dir);
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+            expect (processor.save ("Restore Clear") == berlin::PresetResult::ok);
+
+            for (int mode = 0; mode < 3; ++mode)
+            {
+                expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+                processor.setStateInformation (state.getData(), (int) state.getSize());
+                expect (processor.isRestorePending());
+
+                if (mode == 0)
+                {
+                    expect (! processor.regenerate (false));   // publish still pending: busy
+                    expect (processor.isRestorePending());
+                    expect (processor.isTickTimerRunning());
+                    adoptPending (processor);
+                    expect (processor.regenerate (false));
+                }
+                else
+                {
+                    adoptPending (processor);
+                    if (mode == 1)
+                        expect (processor.regenerate (true));
+                    else
+                        expect (processor.loadPreset ("Restore Clear") == berlin::PresetResult::ok);
+                }
+
+                expect (! processor.isRestorePending());
+                expect (! processor.isTickTimerRunning());
+                adoptPending (processor);
+            }
+        }
+
         beginTest ("editStep() while a publish is pending fails busy with sequence and edited unchanged");
         {
             berlin::BerlinAudioProcessor processor;

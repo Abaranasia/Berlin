@@ -168,9 +168,11 @@ void BerlinAudioProcessor::setStateInformation (const void* data, int sizeInByte
             generationParams.rangeHigh      = preset.rangeHigh;
 
             // re-derive the sequence from the restored seed; does NOT replay mutation history (D4).
-            // If busy, the edited sequence keeps playing and `edited` stays true: the restored
-            // seed does not reproduce what is playing.
-            regenerate (false);
+            // If busy, the edited sequence keeps playing and `edited` stays true until the
+            // restore is retried: restorePending keeps the tick timer running, and the tick
+            // calls regenerate (false) again until the publish goes through.
+            restorePending = ! regenerate (false);
+            updateTimer();
             sendChangeMessage();
         }
     }
@@ -207,6 +209,12 @@ bool BerlinAudioProcessor::regenerate (bool drawNewSeed)
     sequenceSeed = currentSeed;
     mutationCount = 0;
     edited = false;   // covers regenerate, randomize, loadPreset and setStateInformation
+
+    // Any successful regenerate supersedes a busy restore: the sequence now matches the
+    // current seed and params (the restored ones, or newer). One choke point for the tick
+    // retry, an explicit regenerate and loadPreset.
+    restorePending = false;
+    updateTimer();
     return true;
 }
 
@@ -220,7 +228,8 @@ StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active)
         case StepEditError::none:           break;
     }
 
-    if (player.isPublishPending())
+    // A pending restore also counts as busy: an edit now would be overwritten by the retry.
+    if (restorePending || player.isPublishPending())
         return StepEditResult::busy;
 
     auto next = currentSequence;
@@ -240,6 +249,9 @@ StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active)
 
 bool BerlinAudioProcessor::mutate()
 {
+    if (restorePending)
+        return false;   // busy: the restored sequence has not been published yet (UiBridge reports "busy")
+
     DeterministicRandom rng (MutationEngine::mutationSeed (sequenceSeed, mutationCount + 1));
     auto next = MutationEngine::applyRandomTransform (currentSequence, rng);
 
@@ -407,9 +419,18 @@ void BerlinAudioProcessor::setAutoEvolveEnabled (bool shouldBeEnabled)
     autoEvolveEnabled = shouldBeEnabled;
 
     if (shouldBeEnabled)
-    {
         autoEvolveSchedule.reset (player.getLoopCount());
-        startTimerHz (60);
+
+    updateTimer();
+}
+
+void BerlinAudioProcessor::updateTimer()
+{
+    // The tick runs while auto-evolve is on or a busy restore still needs its retry.
+    if (autoEvolveEnabled || restorePending)
+    {
+        if (! isTimerRunning())
+            startTimerHz (60);
     }
     else
     {
@@ -424,6 +445,22 @@ void BerlinAudioProcessor::timerCallback()
 
 void BerlinAudioProcessor::runAutoEvolveTick()
 {
+    if (restorePending)
+    {
+        // Retry the restore first; nothing else this tick. regenerate() clears the flag on
+        // success. A mutation that was due while pending is discarded: the schedule restarts
+        // from the current loop so the restored sequence gets a full rate period.
+        if (regenerate (false))
+        {
+            autoEvolveSchedule.reset (player.getLoopCount());
+            sendChangeMessage();
+        }
+        return;
+    }
+
+    if (! autoEvolveEnabled)
+        return;   // the timer can run for a restore retry alone
+
     const int loops = player.getLoopCount();
     autoEvolveSchedule.checkDue (loops, autoEvolveRate);
 
