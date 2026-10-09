@@ -111,22 +111,22 @@ Files: `ui/src/lib/stepEdit.ts` + `stepEdit.test.ts`, `ui/src/components/StepVie
 
 - [x] 7.1 Open question: D4 order (validation before busy) matches the spec scenarios (the "Validation precedes busy" scenario is in `step-editing`). Resolved; record in apply-progress.
 - [x] 7.2 Open question: the mock keeps a fixed `scaleNotes` fixture and does not recompute on `setGenerationParams`. Accepted for tests and dev only; record in apply-progress.
-- [ ] 7.3 Archive note for `sdd-archive`: the ui-bridge main spec's Purpose line ("Exactly 15 commands") must become 16 when the delta is merged (the delta only modifies requirement bodies, not Purpose). Diff the merged result and verify the archive output (folder duplication, dropped files).
+- [x] 7.3 Archive note for `sdd-archive`: the ui-bridge main spec's Purpose line ("Exactly 15 commands") must become 16 when the delta is merged (the delta only modifies requirement bodies, not Purpose). Diff the merged result and verify the archive output (folder duplication, dropped files).
 
 ## Phase 8: Manual verification [M] (record result and date per line)
 
 Run in the flag-ON standalone app and in the VST3 inside Cakewalk Sonar (WebView2) with auto-evolve on where noted.
 
-- [ ] 8.1 The loop keeps its position while editing during playback (standalone and VST3). Satisfies: Playhead continues after edit; WebView2 input [M].
-- [ ] 8.2 No hung notes when muting or retuning the sounding step (internal synth and external MIDI).
-- [ ] 8.3 The mouse wheel over the steps does not scroll the page. Satisfies: Wheel steps and prevents scroll; WebView2 input [M].
-- [ ] 8.4 Keyboard focus and keys work: Space toggles, Up/Down change the note, Left/Right/Home/End move focus, accent focus ring visible. Satisfies: Focus ring on cells [M].
-- [ ] 8.5 Drag changes the note and click toggles mute; a fast wheel ends on the last note.
-- [ ] 8.6 Muted steps show their note dimmed.
-- [ ] 8.7 The "edited" indicator appears after an edit and clears on Generate, Randomize and Load preset.
-- [ ] 8.8 MIDI export includes the edits (muted step produces no note, retuned step has the new note).
-- [ ] 8.9 Auto-evolve keeps running on an edited pattern and the next mutation builds on the edits; the indicator stays on. Satisfies: Edit while evolve is on (manual) [M].
-- [ ] 8.10 Record all results and the final test counts in apply-progress; hand off to `sdd-verify`.
+- [x] 8.1 The loop keeps its position while editing during playback (standalone and VST3). Satisfies: Playhead continues after edit; WebView2 input [M]. (user 2026-10-09)
+- [x] 8.2 No hung notes when muting or retuning the sounding step (internal synth and external MIDI). (user 2026-10-09)
+- [x] 8.3 The mouse wheel over the steps does not scroll the page. Satisfies: Wheel steps and prevents scroll; WebView2 input [M]. (user 2026-10-09)
+- [x] 8.4 Keyboard focus and keys work: Space toggles, Up/Down change the note, Left/Right/Home/End move focus, accent focus ring visible. Satisfies: Focus ring on cells [M]. (user 2026-10-09)
+- [x] 8.5 Drag changes the note and click toggles mute; a fast wheel ends on the last note. (user 2026-10-09)
+- [x] 8.6 Muted steps show their note dimmed. (user 2026-10-09)
+- [x] 8.7 The "edited" indicator appears after an edit and clears on Generate, Randomize and Load preset. (user 2026-10-09)
+- [x] 8.8 MIDI export includes the edits (muted step produces no note, retuned step has the new note). (user 2026-10-09)
+- [x] 8.9 Auto-evolve keeps running on an edited pattern and the next mutation builds on the edits; the indicator stays on. Satisfies: Edit while evolve is on (manual) [M]. (user 2026-10-09)
+- [x] 8.10 Record all results and the final test counts in apply-progress; hand off to `sdd-verify`. (user 2026-10-09)
 
 ## Spec Scenario Coverage Map
 
