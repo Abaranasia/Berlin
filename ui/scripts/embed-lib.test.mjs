@@ -147,7 +147,7 @@ describe('runPipeline', () => {
 describe('runPipeline pnpm timeout (BRL006)', () => {
   const io = () => ({
     stampInputs: () => [],
-    collectAssets: () => [],
+    collectAssets: () => [{ path: 'index.html', data: Buffer.from('x') }],
     read: () => null,
     writeIfChanged: () => true,
   });
@@ -237,7 +237,7 @@ describe('runPipeline concurrency', () => {
     return {
       files,
       stampInputs: () => [{ path: 'package.json', data: Buffer.from('p') }],
-      collectAssets: () => [],
+      collectAssets: () => [{ path: 'index.html', data: Buffer.from('x') }],
       read: (n) => (n in files ? files[n] : null),
       writeIfChanged: (n, c) => ((files[n] = c), true),
     };
@@ -299,6 +299,20 @@ describe('renameWithRetry', () => {
     let n = 0;
     expect(() => renameWithRetry({ rename: () => { n++; throw err('EACCES'); }, sleep: () => {} }, 'a', 'b', 5)).toThrow('EACCES');
     expect(n).toBe(1);
+  });
+});
+
+describe('empty build output (BRL008)', () => {
+  it('fails when the build has no index.html and writes neither files nor stamp', () => {
+    const files = {};
+    const io = {
+      stampInputs: () => [],
+      collectAssets: () => [],
+      read: () => null,
+      writeIfChanged: (n, c) => ((files[n] = c), true),
+    };
+    expect(() => runPipeline({ spawn: () => ({ status: 0 }), io })).toThrow(/BRL008.*no index\.html/);
+    expect(files).toEqual({});
   });
 });
 

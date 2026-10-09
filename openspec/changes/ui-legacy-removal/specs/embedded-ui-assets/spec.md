@@ -66,6 +66,11 @@ A gui-free helper (`juce_core` only) MUST resolve a request path against the emb
 - WHEN the pre-build runs
 - THEN the embed step is not run and the build fails
 
+#### Scenario: Empty build output fails [V]
+- GIVEN `pnpm run build` succeeds but its output contains no `index.html`
+- WHEN the pre-build runs
+- THEN it fails with the BRL008 "ui build produced no index.html" diagnostic and writes neither the generated files nor the stamp
+
 #### Scenario: Generated files untracked [B]
 - GIVEN a completed build
 - WHEN `git status` is run

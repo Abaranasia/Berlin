@@ -34,7 +34,7 @@ The system MUST have exactly one editor implementation, `WebEditor`. `createBerl
 
 ### Requirement: Missing Runtime Fallback
 
-`WebEditor` MUST check the WebView2 runtime with `areOptionsSupported` before creating the browser. If it is unsupported, or if the WebView2 user data folder cannot be created, it MUST show only the existing centered fallback text label, MUST NOT create the browser, and MUST NOT crash. No other native fallback editor exists.
+`WebEditor` MUST check the WebView2 runtime with `areOptionsSupported` before creating the browser. If it is unsupported, or if the WebView2 user data folder cannot be created, it MUST show only the existing centered fallback text label, MUST NOT create the browser, and MUST NOT crash. The label text MUST name the actual cause: one message when the WebView2 runtime is unavailable, a different message (including the user data folder path) when that folder cannot be created. No other native fallback editor exists.
 
 (Previously: only the unsupported-runtime case, shown as "a native fallback message component"; the user-data-folder failure case was not specified.)
 

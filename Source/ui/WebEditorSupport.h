@@ -70,4 +70,8 @@ juce::var busyChooserResult();
 // Accepts only http://localhost:<port> or http://127.0.0.1:<port>.
 std::optional<juce::String> devServerOrigin (const juce::String& env);
 
+// Text for the WebEditor fallback label. Empty when the browser can be created;
+// otherwise names the actual cause (folder creation failed vs runtime missing).
+juce::String webViewFallbackMessage (bool dataFolderCreated, bool runtimeSupported, const juce::File& dataFolder);
+
 } // namespace berlin

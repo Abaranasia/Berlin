@@ -28,6 +28,7 @@ changed. If a tool is missing, the build fails with a clear diagnostic:
 |---|---|
 | `BRL001` | `node` was not found on `PATH` |
 | `BRL002` | `pnpm` was not found on `PATH` |
+| `BRL008` | the UI build produced no `index.html` (nothing is embedded) |
 
 ## Building
 

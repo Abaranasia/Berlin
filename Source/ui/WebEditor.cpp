@@ -112,10 +112,13 @@ WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit, StandaloneHost* sta
                                  });
     }
 
-    if (! dataFolder.createDirectory().wasOk() || ! juce::WebBrowserComponent::areOptionsSupported (options))
+    const auto folderCreated = dataFolder.createDirectory().wasOk();
+    const auto fallbackText = berlin::webViewFallbackMessage (
+        folderCreated, juce::WebBrowserComponent::areOptionsSupported (options), dataFolder);
+
+    if (fallbackText.isNotEmpty())
     {
-        fallbackLabel.setText ("The Microsoft WebView2 runtime is not available, so the web interface cannot be shown.",
-                               juce::dontSendNotification);
+        fallbackLabel.setText (fallbackText, juce::dontSendNotification);
         fallbackLabel.setJustificationType (juce::Justification::centred);
         addAndMakeVisible (fallbackLabel);
         resized();
