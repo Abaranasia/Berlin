@@ -15,6 +15,15 @@
    setAudioChannels, close after shutdownAudio() - design.md Decision 6).
    dispatch()'s device == nullptr early-return is the ZERO-DEVICES / FAILED-
    OPEN degraded state, not a race guard - no lock/atomic protects `device`.
+   The Settings dialog (ui-settings D4) reopens/switches the port only through
+   openDevice(), which closes the old device first via the ordered sequence
+   below, with the audio callback stopped by the caller.
+
+   Output channel (ui-settings D5/D6): an atomic int, default 1, written on the
+   message thread (setChannel) and read relaxed on the audio thread. Events are
+   authored on channel 1 by the processor; dispatch()/sendImmediately() rewrite
+   the channel-voice status bytes in place (MidiChannelRemap.h) right before the
+   bytes go to the device. The CC123 close guard uses the CURRENT channel.
 
    closeDevice() runs, in this EXACT order (design.md Decision 4):
      (1) device->clearAllPendingMessages()
@@ -41,6 +50,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -55,7 +65,13 @@ public:
     ~MidiOutputSink();   // calls closeDevice()
 
     // ---- MESSAGE THREAD ONLY, audio callback provably stopped ----
-    bool openFirstAvailableDevice();   // false = none available / open failed (valid degraded state)
+    // Closes the open device first (ordered close sequence), then opens `deviceId`.
+    // "" means None (nothing is opened). false = None or open failed (valid degraded state).
+    bool openDevice (const juce::String& deviceId);
+    // Output channel 1-16. If a device is open, discards queued messages and sends
+    // CC123 on the OLD channel before switching, so no note hangs across the change.
+    void setChannel (int newChannel) noexcept;
+    int  getChannel() const noexcept;
     void closeDevice() noexcept;       // Decision 4 sequence; idempotent
     bool isDeviceOpen() const noexcept;
     juce::String getOpenDeviceName() const;   // manual gate / Phase 7 readout; NEVER from the callback
@@ -64,14 +80,15 @@ public:
     void prepare (double sampleRateToUse) noexcept;
 
     // ---- AUDIO THREAD ----
-    void dispatch (const juce::MidiBuffer& buffer, int numSamples) noexcept;
+    // Non-const: remaps the channel of the buffer's events in place (no allocation).
+    void dispatch (juce::MidiBuffer& buffer, int numSamples) noexcept;
 
     // ---- releaseResources / shutdown; NOT the audio callback ----
-    void sendImmediately (const juce::MidiBuffer& buffer) noexcept;
+    void sendImmediately (juce::MidiBuffer& buffer) noexcept;
 
 private:
     std::unique_ptr<juce::MidiOutput> device;
-    const int channel;
+    std::atomic<int> channel;
     double    sampleRate     { 0.0 };
     double    startMs        { 0.0 };
     long long elapsedSamples { 0 };

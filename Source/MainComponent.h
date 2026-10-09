@@ -4,7 +4,9 @@
 #include "midi/MidiChannel.h"
 #include "midi/MidiOutputSink.h"
 #include "plugin/BerlinAudioProcessor.h"
+#include "settings/StandaloneSettings.h"
 #include "ui/EditorFactory.h"
+#include "ui/StandaloneHost.h"
 
 //==============================================================================
 /*
@@ -15,8 +17,16 @@
     - this class owns exactly one of each, plus the standalone-only
     MidiOutputSink (BerlinAudioProcessor never references it - see
     MidiOutputSink.h), and forwards the three AudioAppComponent callbacks.
+
+    It is also the StandaloneHost (ui-settings D1): the Settings dialog reads
+    and applies the audio device, sample rate, buffer size, MIDI port and MIDI
+    channel through it, and the chosen setup is persisted to settings.xml and
+    restored at launch. The decidable logic (parse, validate, XML, port
+    resolution, JSON shapes) is in settings/StandaloneSettings; this class is
+    only the JUCE glue (device enumeration, the stopped-audio bracket, file I/O).
 */
-class MainComponent  : public juce::AudioAppComponent
+class MainComponent  : public juce::AudioAppComponent,
+                       public berlin::StandaloneHost
 {
 public:
     //==============================================================================
@@ -36,13 +46,26 @@ public:
     // The editor's size limits, or nullptr when the editor is fixed-size.
     const juce::ComponentBoundsConstrainer* getEditorConstrainer() const noexcept;
 
+    //==============================================================================
+    // berlin::StandaloneHost (message thread only)
+    juce::var getAudioSettings (const juce::var& query) override;
+    juce::var applyAudioSettings (const juce::var& request) override;
+
 private:
     //==============================================================================
     static constexpr int kMidiBufferBytes = 1024;
 
+    juce::File settingsFilePath() const;
+    bool       saveSettings();   // false = write failed (never fatal)
+
+    // Member order matters (ui-settings D2): the editor (whose browser lambdas call back
+    // into this host) is destroyed before everything the host uses.
     berlin::BerlinAudioProcessor       processor;   // MUST precede `editor` - editor takes a reference to it
-    std::unique_ptr<juce::AudioProcessorEditor> editor;     // legacy editor or WebEditor (berlin::createBerlinEditor)
     berlin::MidiOutputSink             midiSink;
+    berlin::MidiPortChoice             midiPreference;      // remembered choice, persisted when no port is open
+    juce::String                       currentMidiPortId;   // "" = None / no device open
+    bool                               applying = false;     // reentrancy guard for applyAudioSettings
+    std::unique_ptr<juce::AudioProcessorEditor> editor;     // legacy editor or WebEditor (berlin::createBerlinEditor)
     juce::MidiBuffer                   midiBlock;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

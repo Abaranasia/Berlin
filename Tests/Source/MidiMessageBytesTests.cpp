@@ -30,6 +30,8 @@ static_assert (std::is_aggregate_v<berlin::MidiMessageBytes>);
 static_assert (berlin::makeNoteOn (1, 60, 100) == berlin::MidiMessageBytes { 0x90, 60, 100 });
 static_assert (berlin::makeNoteOff (1, 60) == berlin::MidiMessageBytes { 0x80, 60, 0 });
 static_assert (berlin::makeAllNotesOff (1) == berlin::MidiMessageBytes { 0xB0, 123, 0 });
+static_assert (berlin::remapChannelStatus (0x90, 5) == 0x94);
+static_assert (berlin::remapChannelStatus (0xF8, 5) == 0xF8);
 
 class MidiMessageBytesTests final : public juce::UnitTest
 {
@@ -86,6 +88,26 @@ public:
             expect (berlin::makeNoteOn (0, 200, -5) == berlin::MidiMessageBytes { 0x90, 127, 0 });
             expect (berlin::makeNoteOff (17, -10) == berlin::MidiMessageBytes { 0x8F, 0, 0 });
             expect (berlin::makeAllNotesOff (0) == berlin::MidiMessageBytes { 0xB0, 123, 0 });
+        }
+
+        beginTest ("remapChannelStatus rewrites the channel nibble of channel-voice statuses only (ui-settings D6)");
+        {
+            expectEquals (berlin::remapChannelStatus (0x90, 5), static_cast<unsigned char> (0x94));
+            expectEquals (berlin::remapChannelStatus (0x90, 16), static_cast<unsigned char> (0x9F));
+            expectEquals (berlin::remapChannelStatus (0x9A, 1), static_cast<unsigned char> (0x90));   // any source channel is rewritten
+            expectEquals (berlin::remapChannelStatus (0xB3, 7), static_cast<unsigned char> (0xB6));
+
+            for (int status = 0x80; status <= 0xEF; ++status)   // every channel-voice status is remapped, keeping its high nibble
+                expectEquals (berlin::remapChannelStatus (static_cast<unsigned char> (status), 5),
+                              static_cast<unsigned char> ((status & 0xF0) | 4));
+
+            expectEquals (berlin::remapChannelStatus (0xF8, 5), static_cast<unsigned char> (0xF8));   // realtime clock untouched
+            expectEquals (berlin::remapChannelStatus (0xF0, 5), static_cast<unsigned char> (0xF0));   // SysEx start untouched
+            expectEquals (berlin::remapChannelStatus (0xFF, 5), static_cast<unsigned char> (0xFF));
+            expectEquals (berlin::remapChannelStatus (0x40, 5), static_cast<unsigned char> (0x40));   // data byte untouched
+            expectEquals (berlin::remapChannelStatus (0x93, 1), static_cast<unsigned char> (0x90));   // channel 1 target is the default
+            expectEquals (berlin::remapChannelStatus (0x90, 0), static_cast<unsigned char> (0x90));   // clamped like the other helpers
+            expectEquals (berlin::remapChannelStatus (0x90, 99), static_cast<unsigned char> (0x9F));
         }
     }
 };

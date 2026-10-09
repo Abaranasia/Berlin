@@ -47,6 +47,7 @@
     <GROUP id="{3F7A9C2D-6E4B-481A-B5C3-7D9E1F0A4B26}" name="midi">
       <FILE id="mdChnH" name="MidiChannel.h" compile="0" resource="0" file="Source/midi/MidiChannel.h"/>
       <FILE id="mdMsgH" name="MidiMessageBytes.h" compile="0" resource="0" file="Source/midi/MidiMessageBytes.h"/>
+      <FILE id="mdRmpH" name="MidiChannelRemap.h" compile="0" resource="0" file="Source/midi/MidiChannelRemap.h"/>
       <FILE id="mdTrnH" name="MidiEventTranslator.h" compile="0" resource="0" file="Source/midi/MidiEventTranslator.h"/>
       <FILE id="mdTrnC" name="MidiEventTranslator.cpp" compile="1" resource="0" file="Source/midi/MidiEventTranslator.cpp"/>
       <FILE id="mdSnkH" name="MidiOutputSink.h" compile="0" resource="0" file="Source/midi/MidiOutputSink.h"/>
@@ -87,6 +88,7 @@
     <GROUP id="{B3D5F7A9-1C2E-4B6D-8F0A-2E4C6A8D0B13}" name="ui">
       <FILE id="uiEdfH" name="EditorFactory.h" compile="0" resource="0" file="Source/ui/EditorFactory.h"/>
       <FILE id="uiEdfC" name="EditorFactory.cpp" compile="1" resource="0" file="Source/ui/EditorFactory.cpp"/>
+      <FILE id="uiHstH" name="StandaloneHost.h" compile="0" resource="0" file="Source/ui/StandaloneHost.h"/>
       <FILE id="uiWedH" name="WebEditor.h" compile="0" resource="0" file="Source/ui/WebEditor.h"/>
       <FILE id="uiWedC" name="WebEditor.cpp" compile="1" resource="0" file="Source/ui/WebEditor.cpp"/>
       <FILE id="uiWasH" name="WebAssets.h" compile="0" resource="0" file="Source/ui/WebAssets.h"/>
@@ -99,6 +101,10 @@
             file="Source/ui/generated/EmbeddedAssets.h"/>
       <FILE id="uiEmaC" name="EmbeddedAssets.cpp" compile="1" resource="0"
             file="Source/ui/generated/EmbeddedAssets.cpp"/>
+    </GROUP>
+    <GROUP id="{D4E6F8A0-2B3C-4D5E-9F1A-3B5C7D9E1F24}" name="settings">
+      <FILE id="stgSetH" name="StandaloneSettings.h" compile="0" resource="0" file="Source/settings/StandaloneSettings.h"/>
+      <FILE id="stgSetC" name="StandaloneSettings.cpp" compile="1" resource="0" file="Source/settings/StandaloneSettings.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

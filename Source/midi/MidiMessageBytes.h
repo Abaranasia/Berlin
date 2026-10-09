@@ -54,6 +54,17 @@ constexpr int clampMidiData (int value) noexcept
     return value < 0 ? 0 : (value > 127 ? 127 : value);
 }
 
+// Rewrites the channel nibble of a channel-voice status (0x80-0xEF) to
+// `channel` (clamped to 1-16); every other byte (SysEx 0xF0, realtime 0xF8+,
+// data bytes) is returned unchanged. Used by the standalone-only output
+// channel remap (ui-settings D6).
+constexpr unsigned char remapChannelStatus (unsigned char status, int channel) noexcept
+{
+    return (status >= 0x80 && status <= 0xEF)
+               ? static_cast<unsigned char> ((status & 0xF0) | (clampMidiChannel (channel) - 1))
+               : status;
+}
+
 constexpr MidiMessageBytes makeNoteOn (int channel, int note, int velocity) noexcept
 {
     return { static_cast<unsigned char> (0x90 | (clampMidiChannel (channel) - 1)),

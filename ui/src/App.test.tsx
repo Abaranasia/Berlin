@@ -198,12 +198,40 @@ describe('App: shell regions', () => {
     expect(field(host, 'Master level').closest('[data-knob]')).toBeNull();
   });
 
-  it('has a disabled Settings placeholder that dispatches nothing', async () => {
-    const { host, dispatch } = await mount();
+  it('has no Settings button without the settings capability (plugin)', async () => {
+    const { host } = await mount();
+    expect(host.querySelector('[aria-label="Settings"]')).toBeNull();
+  });
+});
+
+describe('App: Settings dialog (standalone)', () => {
+  const standalone = () => ({ settings: createMockBridge({ standalone: true }).settings });
+
+  it('shows an enabled Settings button that opens the dialog without dispatching', async () => {
+    const { host, dispatch } = await mount(standalone());
     const settings = field<HTMLButtonElement>(host, 'Settings');
-    expect(settings.disabled).toBe(true);
+    expect(settings.disabled).toBe(false);
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
     await click(settings);
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it('closes on Escape and returns focus to the Settings button', async () => {
+    const { host } = await mount(standalone());
+    const settings = field<HTMLButtonElement>(host, 'Settings');
+    await click(settings);
+    await act(async () => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(settings);
+  });
+
+  it('shares the output level with the TopBar slider', async () => {
+    const { host } = await mount({ ...standalone(), dispatch: undefined }); // the dev mock engine applies setMasterLevel
+    await click(field<HTMLButtonElement>(host, 'Settings'));
+    await change(field(host, 'Output level'), '0.25');
+    await settle();
+    expect(field(host, 'Master level').value).toBe('0.25');
   });
 });
 

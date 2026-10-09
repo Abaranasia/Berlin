@@ -18,8 +18,13 @@ namespace berlin
 {
 
 class BerlinAudioProcessor;
+class StandaloneHost;
 
 // WebEditor when BERLIN_WEB_UI is defined, otherwise the legacy editor.
-std::unique_ptr<juce::AudioProcessorEditor> createBerlinEditor (BerlinAudioProcessor& processor);
+// `host` is the standalone shell (ui-settings D1); nullptr in the plugin. The
+// WebEditor registers the settings native functions only when it is non-null;
+// the legacy editor ignores it.
+std::unique_ptr<juce::AudioProcessorEditor> createBerlinEditor (BerlinAudioProcessor& processor,
+                                                                StandaloneHost* host = nullptr);
 
 } // namespace berlin

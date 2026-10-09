@@ -2,6 +2,7 @@
 
 #if BERLIN_WEB_UI
 
+#include "settings/StandaloneSettings.h"
 #include "ui/WebAssets.h"
 #include "ui/generated/EmbeddedAssets.h"
 
@@ -36,8 +37,9 @@ namespace
     }
 }
 
-WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit)
+WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit, StandaloneHost* standaloneHost)
     : juce::AudioProcessorEditor (processorToEdit),
+      host (standaloneHost),
       bridge (processorToEdit)
 {
     // Host-resizable with limits (design D12): the order matters, limits before size.
@@ -82,6 +84,35 @@ WebEditor::WebEditor (BerlinAudioProcessor& processorToEdit)
                                    return juce::WebBrowserComponent::Resource { std::move (asset->data), std::move (asset->mimeType) };
                                },
                                devOrigin);
+
+    // Settings functions exist only with a standalone host (ui-settings D1, D2): the plugin
+    // never sees them. Both run on the message thread and answer `busy` once teardown began.
+    if (host != nullptr)
+    {
+        options = options
+            .withNativeFunction ("getAudioSettings",
+                                 [this] (const juce::Array<juce::var>& args, juce::WebBrowserComponent::NativeFunctionCompletion done)
+                                 {
+                                     if (shuttingDown)
+                                     {
+                                         done (errorResult (settingsError::busy));
+                                         return;
+                                     }
+
+                                     done (host->getAudioSettings (args.isEmpty() ? juce::var() : args[0]));
+                                 })
+            .withNativeFunction ("applyAudioSettings",
+                                 [this] (const juce::Array<juce::var>& args, juce::WebBrowserComponent::NativeFunctionCompletion done)
+                                 {
+                                     if (shuttingDown)
+                                     {
+                                         done (errorResult (settingsError::busy));
+                                         return;
+                                     }
+
+                                     done (host->applyAudioSettings (args.isEmpty() ? juce::var() : args[0]));
+                                 });
+    }
 
     if (! dataFolder.createDirectory().wasOk() || ! juce::WebBrowserComponent::areOptionsSupported (options))
     {

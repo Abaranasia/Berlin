@@ -32,6 +32,9 @@
     <Filter Include="Berlin\ui">
       <UniqueIdentifier>{C9837735-E270-65F7-F50C-8BA93D1ADC66}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Berlin\settings">
+      <UniqueIdentifier>{32E327A9-380E-7739-4116-EBBF4DF3A0C2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Berlin">
       <UniqueIdentifier>{2C7F36C9-FB65-E0B9-E190-E768929CF18B}</UniqueIdentifier>
     </Filter>
@@ -897,6 +900,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\ui\generated\EmbeddedAssets.cpp">
       <Filter>Berlin\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\settings\StandaloneSettings.cpp">
+      <Filter>Berlin\settings</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -3891,11 +3897,17 @@
     <ClInclude Include="..\..\..\Source\ui\WebAssets.h">
       <Filter>Berlin\ui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\ui\StandaloneHost.h">
+      <Filter>Berlin\ui</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Source\ui\WebEditorSupport.h">
       <Filter>Berlin\ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ui\generated\EmbeddedAssets.h">
       <Filter>Berlin\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\settings\StandaloneSettings.h">
+      <Filter>Berlin\settings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>

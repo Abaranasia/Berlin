@@ -165,6 +165,8 @@
     <ClCompile Include="..\..\Source\PlaybackTimingTests.cpp"/>
     <ClCompile Include="..\..\Source\SequencePlayerStopTests.cpp"/>
     <ClCompile Include="..\..\Source\SequencePlayerHandoffTests.cpp"/>
+    <ClCompile Include="..\..\Source\StandaloneSettingsTests.cpp"/>
+    <ClCompile Include="..\..\Source\MidiChannelRemapTests.cpp"/>
     <ClCompile Include="..\..\Source\MidiMessageBytesTests.cpp"/>
     <ClCompile Include="..\..\Source\MidiExportTimelineTests.cpp"/>
     <ClCompile Include="..\..\Source\DspLinkSmokeTests.cpp"/>
@@ -206,6 +208,7 @@
     <ClCompile Include="..\..\..\Source\bridge\UiBridge.cpp"/>
     <ClCompile Include="..\..\..\Source\ui\WebAssets.cpp"/>
     <ClCompile Include="..\..\..\Source\ui\WebEditorSupport.cpp"/>
+    <ClCompile Include="..\..\..\Source\settings\StandaloneSettings.cpp"/>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -1501,6 +1504,7 @@
     <ClInclude Include="..\..\..\Source\playback\SequencePlayer.h"/>
     <ClInclude Include="..\..\..\Source\midi\MidiChannel.h"/>
     <ClInclude Include="..\..\..\Source\midi\MidiMessageBytes.h"/>
+    <ClInclude Include="..\..\..\Source\midi\MidiChannelRemap.h"/>
     <ClInclude Include="..\..\..\Source\midi\MidiEventTranslator.h"/>
     <ClInclude Include="..\..\..\Source\export\MidiExportTimeline.h"/>
     <ClInclude Include="..\..\..\Source\export\MidiFileWriter.h"/>
@@ -1515,6 +1519,7 @@
     <ClInclude Include="..\..\..\Source\bridge\UiBridge.h"/>
     <ClInclude Include="..\..\..\Source\ui\WebAssets.h"/>
     <ClInclude Include="..\..\..\Source\ui\WebEditorSupport.h"/>
+    <ClInclude Include="..\..\..\Source\settings\StandaloneSettings.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>

@@ -12,7 +12,7 @@ import { createStore, type Store } from '../store/store';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // `over` replaces individual Bridge members; `dispatch` stays a spy either way.
-export function makeHarness(over: Partial<Bridge> = {}, options: { busy?: boolean } = {}) {
+export function makeHarness(over: Partial<Bridge> = {}, options: { busy?: boolean; standalone?: boolean; applyResult?: import('../bridge/protocol').ApplyAudioSettingsResult } = {}) {
   const base = createMockBridge(options);
   const dispatch = vi.fn((command: Command) => (over.dispatch ?? base.dispatch)(command));
   const bridge: Bridge = { ...base, ...over, dispatch };

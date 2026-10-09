@@ -185,6 +185,7 @@
     <ClCompile Include="..\..\Source\ui\WebAssets.cpp"/>
     <ClCompile Include="..\..\Source\ui\WebEditorSupport.cpp"/>
     <ClCompile Include="..\..\Source\ui\generated\EmbeddedAssets.cpp"/>
+    <ClCompile Include="..\..\Source\settings\StandaloneSettings.cpp"/>
     <ClCompile Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -3253,6 +3254,7 @@
     <ClInclude Include="..\..\Source\playback\SequencePlayer.h"/>
     <ClInclude Include="..\..\Source\midi\MidiChannel.h"/>
     <ClInclude Include="..\..\Source\midi\MidiMessageBytes.h"/>
+    <ClInclude Include="..\..\Source\midi\MidiChannelRemap.h"/>
     <ClInclude Include="..\..\Source\midi\MidiEventTranslator.h"/>
     <ClInclude Include="..\..\Source\midi\MidiOutputSink.h"/>
     <ClInclude Include="..\..\Source\export\MidiExportTimeline.h"/>
@@ -3268,10 +3270,12 @@
     <ClInclude Include="..\..\Source\plugin\BerlinAudioProcessorEditor.h"/>
     <ClInclude Include="..\..\Source\bridge\UiBridge.h"/>
     <ClInclude Include="..\..\Source\ui\EditorFactory.h"/>
+    <ClInclude Include="..\..\Source\ui\StandaloneHost.h"/>
     <ClInclude Include="..\..\Source\ui\WebEditor.h"/>
     <ClInclude Include="..\..\Source\ui\WebAssets.h"/>
     <ClInclude Include="..\..\Source\ui\WebEditorSupport.h"/>
     <ClInclude Include="..\..\Source\ui\generated\EmbeddedAssets.h"/>
+    <ClInclude Include="..\..\Source\settings\StandaloneSettings.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioChannelSet.h"/>
     <ClInclude Include="..\..\..\..\Projucer\modules\juce_audio_basics\buffers\juce_AudioDataConverters.h"/>
