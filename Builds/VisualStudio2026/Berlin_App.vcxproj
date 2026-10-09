@@ -99,7 +99,7 @@
     </Bscmake>
     <Lib/>
     <PreBuildEvent>
-      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\ui\scripts\embed-assets.mjs --jucer ..\..\Berlin.jucer || exit /b 1
+      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\ui\scripts\embed-assets.mjs || exit /b 1
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -149,7 +149,7 @@
     </Bscmake>
     <Lib/>
     <PreBuildEvent>
-      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\ui\scripts\embed-assets.mjs --jucer ..\..\Berlin.jucer || exit /b 1
+      <Command>where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\ui\scripts\embed-assets.mjs || exit /b 1
 </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
