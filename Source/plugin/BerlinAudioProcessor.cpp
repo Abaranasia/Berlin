@@ -18,6 +18,7 @@
 #include "generation/MutationEngine.h"
 #include "generation/DeterministicRandom.h"
 #include "generation/SequenceBuilder.h"
+#include "generation/StepEdit.h"
 
 namespace berlin
 {
@@ -202,7 +203,36 @@ bool BerlinAudioProcessor::regenerate (bool drawNewSeed)
     currentSequence = std::move (next);
     sequenceSeed = currentSeed;
     mutationCount = 0;
+    edited = false;   // covers regenerate, randomize, loadPreset and setStateInformation
     return true;
+}
+
+StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active)
+{
+    // Validate first (index, then note), then busy: neither touches state.
+    switch (validateStepEdit (currentSequence, scaleNotesFor (generationParams), index, note))
+    {
+        case StepEditError::stepOutOfRange: return StepEditResult::stepOutOfRange;
+        case StepEditError::noteOutOfScale: return StepEditResult::noteOutOfScale;
+        case StepEditError::none:           break;
+    }
+
+    if (player.isPublishPending())
+        return StepEditResult::busy;
+
+    auto next = currentSequence;
+    next[index] = Step { note, active };
+
+    // publishSequence swaps through its argument, so publish a COPY (same
+    // reasoning as regenerate()).
+    auto forPlayer = next;
+
+    if (! player.publishSequence (forPlayer, PublishMode::keepPosition))
+        return StepEditResult::busy;   // defensive second guard
+
+    currentSequence = std::move (next);
+    edited = true;
+    return StepEditResult::ok;
 }
 
 bool BerlinAudioProcessor::mutate()
@@ -385,6 +415,11 @@ void BerlinAudioProcessor::setAutoEvolveEnabled (bool shouldBeEnabled)
 }
 
 void BerlinAudioProcessor::timerCallback()
+{
+    runAutoEvolveTick();
+}
+
+void BerlinAudioProcessor::runAutoEvolveTick()
 {
     const int loops = player.getLoopCount();
     autoEvolveSchedule.checkDue (loops, autoEvolveRate);

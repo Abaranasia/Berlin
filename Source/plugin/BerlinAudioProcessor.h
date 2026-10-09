@@ -73,6 +73,8 @@
 namespace berlin
 {
 
+enum class StepEditResult { ok, busy, stepOutOfRange, noteOutOfScale };
+
 class BerlinAudioProcessor final : public juce::AudioProcessor,
                                     public juce::ChangeBroadcaster,
                                     private juce::Timer
@@ -116,6 +118,19 @@ public:
     // ---- Commands: MESSAGE THREAD ONLY (MutationEngine allocates) ----
     bool regenerate (bool drawNewSeed);
     bool mutate();
+
+    // step-editing design D4. Sets one step to absolute {note, active}: validates
+    // the index, then the note against scaleNotesFor (generationParams), then
+    // refuses with busy while a publish is pending (so a busy retry only re-sends
+    // edits that can succeed). On ok it publishes with PublishMode::keepPosition
+    // (no restart), commits currentSequence and sets `edited`.
+    StepEditResult editStep (int index, int note, bool active);
+    bool isEdited() const { return edited; }
+
+    // The auto-evolve Timer's body, public so tests can drive one tick without a
+    // message loop (the headless test build has no modal dispatch loop).
+    void runAutoEvolveTick();
+
     PresetResult save (const juce::String& name);
     PresetResult loadPreset (const juce::String& name);
     bool presetExists (const juce::String& name) const;
@@ -198,6 +213,7 @@ private:
 
     juce::int64 sequenceSeed;
     int         mutationCount { 0 };
+    bool        edited { false };   // set by a successful editStep; cleared by a successful regenerate (design D4)
 
     SequencePlayer      player;
     StepEventBuffer     blockEvents;

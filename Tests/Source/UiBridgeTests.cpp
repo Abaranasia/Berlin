@@ -628,6 +628,185 @@ public:
             expect (static_cast<bool> (result["ok"]));
             expect (bridge.snapshot()["patch"]["waveform"].toString() == "saw");
         }
+
+        // ---- setStep command, snapshot edited/scaleNotes (step-editing spec, design D5).
+        // Default fixture: C minor 36..72, so 50 (D) is in scale and 49 is not.
+
+        beginTest ("setStep valid edit: ok, snapshot.steps[2] is {50,true}, snapshot.edited is true");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+            expect (! static_cast<bool> (bridge.snapshot()["edited"]));
+
+            auto args = new juce::DynamicObject();
+            args->setProperty ("index", 2);
+            args->setProperty ("note", 50);
+            args->setProperty ("active", true);
+            const auto result = bridge.dispatch ("setStep", juce::var (args));
+
+            expect (static_cast<bool> (result["ok"]));
+            expect (result["error"].toString().isEmpty());
+            expectEquals (static_cast<int> (result["snapshot"]["steps"][2]["note"]), 50);
+            expect (static_cast<bool> (result["snapshot"]["steps"][2]["active"]));
+            expect (static_cast<bool> (result["snapshot"]["edited"]));
+        }
+
+        beginTest ("setStep errors: step-out-of-range, note-out-of-scale, busy (no snapshot); state unchanged");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+
+            auto setStep = [&] (double index, double note, bool active)
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", index);
+                args->setProperty ("note", note);
+                args->setProperty ("active", active);
+                return bridge.dispatch ("setStep", juce::var (args));
+            };
+
+            const auto before = snapshotText (bridge);
+
+            auto result = setStep (16, 50, true);
+            expect (! static_cast<bool> (result["ok"]));
+            expect (result["error"].toString() == "step-out-of-range");
+            expect (! result.hasProperty ("snapshot"));
+
+            result = setStep (2, 49, true);
+            expect (result["error"].toString() == "note-out-of-scale");
+
+            // Out-of-int-range values fail as range errors, not as cast garbage.
+            result = setStep (1e12, 50, true);
+            expect (result["error"].toString() == "step-out-of-range");
+            result = setStep (-1e12, 50, true);
+            expect (result["error"].toString() == "step-out-of-range");
+            result = setStep (2, 1e12, true);
+            expect (result["error"].toString() == "note-out-of-scale");
+
+            expect (snapshotText (bridge) == before);
+
+            expect (processor.regenerate (false));   // publish pending
+            const auto pendingState = snapshotText (bridge);
+            result = setStep (2, 50, true);
+            expect (! static_cast<bool> (result["ok"]));
+            expect (result["error"].toString() == "busy");
+            expect (! result.hasProperty ("snapshot"));
+            expect (snapshotText (bridge) == pendingState);
+        }
+
+        beginTest ("setStep malformed args use the existing missing/invalid type/non-finite tokens and leave state unchanged");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+
+            auto check = [&] (juce::DynamicObject::Ptr args, const char* expectedError)
+            {
+                const auto before = snapshotText (bridge);
+                const auto result = bridge.dispatch ("setStep", juce::var (args.get()));
+
+                expect (! static_cast<bool> (result["ok"]));
+                expect (result["error"].toString() == juce::String (expectedError),
+                        juce::String ("expected \"") + expectedError + "\" got \"" + result["error"].toString() + "\"");
+                expect (! result.hasProperty ("snapshot"));
+                expect (snapshotText (bridge) == before);
+            };
+
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", 1);
+                args->setProperty ("note", 50);
+                check (args, "missing arg: active");
+            }
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", "1");
+                args->setProperty ("note", 50);
+                args->setProperty ("active", true);
+                check (args, "invalid type: index");
+            }
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", 2.5);
+                args->setProperty ("note", 50);
+                args->setProperty ("active", true);
+                check (args, "invalid type: index");
+            }
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", 2);
+                args->setProperty ("note", 50.5);
+                args->setProperty ("active", true);
+                check (args, "invalid type: note");
+            }
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", 2);
+                args->setProperty ("note", std::numeric_limits<double>::quiet_NaN());
+                args->setProperty ("active", true);
+                check (args, "non-finite: note");
+            }
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", std::numeric_limits<double>::infinity());
+                args->setProperty ("note", 50);
+                args->setProperty ("active", true);
+                check (args, "non-finite: index");
+            }
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", 2);
+                args->setProperty ("note", 50);
+                args->setProperty ("active", 1);   // not a bool
+                check (args, "invalid type: active");
+            }
+        }
+
+        beginTest ("dispatch surface is exactly 16 commands; settings functions are not dispatch commands");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+
+            for (auto* name : { "setPlaying", "setBpm", "setSeed", "setPatch", "setGenerationParams", "regenerate",
+                                "mutate", "setSynthEnabled", "setEffectsEnabled", "setMasterLevel",
+                                "setAutoEvolveEnabled", "setAutoEvolveRate", "savePreset", "loadPreset",
+                                "exportMidi", "setStep" })
+            {
+                const auto result = bridge.dispatch (name, juce::var (new juce::DynamicObject()));
+                expect (! result["error"].toString().startsWith ("unknown command"), juce::String (name) + " must be a command");
+            }
+
+            for (auto* name : { "getAudioSettings", "applyAudioSettings" })
+            {
+                const auto result = bridge.dispatch (name, juce::var (new juce::DynamicObject()));
+                expect (result["error"].toString() == juce::String ("unknown command: ") + name);
+            }
+        }
+
+        beginTest ("snapshot carries edited and scaleNotes, and scaleNotes tracks setGenerationParams");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+
+            auto snap = bridge.snapshot();
+            expect (snap.hasProperty ("edited"));
+            expect (snap.hasProperty ("scaleNotes"));
+            expect (snap["scaleNotes"].isArray());
+            expectEquals (snap["scaleNotes"].size(), 22);   // C minor 36..72
+
+            auto args = new juce::DynamicObject();
+            args->setProperty ("scaleType", "major");
+            args->setProperty ("rootPitchClass", 0);
+            args->setProperty ("rangeLow", 48);
+            args->setProperty ("rangeHigh", 60);
+            expect (static_cast<bool> (bridge.dispatch ("setGenerationParams", juce::var (args))["ok"]));
+
+            const int expected[] = { 48, 50, 52, 53, 55, 57, 59, 60 };
+            snap = bridge.snapshot();
+            expectEquals (snap["scaleNotes"].size(), 8);
+
+            for (int i = 0; i < 8; ++i)
+                expectEquals (static_cast<int> (snap["scaleNotes"][i]), expected[i]);
+        }
     }
 };
 

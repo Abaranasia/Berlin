@@ -4,7 +4,7 @@
    UiBridge - a single validated command surface (ui-bridge spec, design.md
    D9-D13) that lets a UI (present or future, e.g. a WebView) drive the
    engine without touching BerlinAudioProcessor internals directly. Exactly
-   15 commands, MESSAGE THREAD ONLY.
+   16 commands, MESSAGE THREAD ONLY.
 
    Headless-safe: only forward-declares BerlinAudioProcessor, so this header
    is reachable from the juce_core-only test target the same way
