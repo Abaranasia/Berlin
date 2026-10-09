@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Defines the `BerlinAudioProcessor`/`BerlinAudioProcessorEditor` pair that lets Berlin run as a VST3/AU plugin: engine ownership, the `processBlock` contract reusing `SequencePlayer`/`SynthEngine` unchanged, MIDI emission into the host's buffer instead of an OS device, editor attach/detach independent of engine lifetime, and the standalone shell that keeps today's behavior.
+Defines the `BerlinAudioProcessor`/`WebEditor` pair that lets Berlin run as a VST3/AU plugin: engine ownership, the `processBlock` contract reusing `SequencePlayer`/`SynthEngine` unchanged, MIDI emission into the host's buffer instead of an OS device, editor attach/detach independent of engine lifetime, and the standalone shell that keeps today's behavior.
 
 ## Requirements
 
 ### Requirement: Processor Owns All Engine State Independent Of The Editor
 
-The system MUST have `BerlinAudioProcessor` own `SequencePlayer`, `Transport`, `SynthEngine`, `MidiEventTranslator`, `PresetManager`, the current sequence/seed/mutation state, generation parameters, and the auto-evolve `Timer`. The auto-evolve `Timer` MUST keep running whether or not a `BerlinAudioProcessorEditor` is currently attached.
+The system MUST have `BerlinAudioProcessor` own `SequencePlayer`, `Transport`, `SynthEngine`, `MidiEventTranslator`, `PresetManager`, the current sequence/seed/mutation state, generation parameters, and the auto-evolve `Timer`. The auto-evolve `Timer` MUST keep running whether or not a `WebEditor` is currently attached.
 
 #### Scenario: Auto-evolve continues with no editor open
 
@@ -62,7 +62,7 @@ The system MUST write `MidiEventTranslator` output for the current block into `p
 
 ### Requirement: Editor Attach/Detach Does Not Affect Engine State
 
-Creating or destroying an editor MUST NOT alter the processor's sequence, transport position, mutation state, or auto-evolve timer. This applies to both compile-time-selected editors: `BerlinAudioProcessorEditor` (flag off) and `WebEditor` (`BERLIN_WEB_UI` on). Widget and native-function callbacks MUST forward to the processor/`UiBridge` rather than holding independent state.
+Creating or destroying the editor MUST NOT alter the processor's sequence, transport position, mutation state, or auto-evolve timer. The editor is always a `WebEditor`, created by `createBerlinEditor`, which the standalone calls with its `StandaloneHost` and the plugin calls with none. Native-function callbacks MUST forward to the processor/`UiBridge` rather than holding independent state.
 
 #### Scenario: Closing and reopening the editor loses no state
 
@@ -76,30 +76,30 @@ Creating or destroying an editor MUST NOT alter the processor's sequence, transp
 - WHEN it is destroyed
 - THEN its playhead timer stops and the engine and auto-evolve timer are unaffected
 
+#### Scenario: Plugin editor has no host settings [M]
+
+- GIVEN the plugin editor created with no `StandaloneHost`
+- WHEN it opens in Cakewalk Sonar
+- THEN it is the resizable `WebEditor` and the Settings controls are not available
+
 ### Requirement: Standalone Shell Preserves Today's Observable Behavior
 
-`MainComponent` MUST be an `AudioAppComponent` shell owning one processor and one editor, held as `std::unique_ptr<juce::AudioProcessorEditor>`, forwarding `prepareToPlay`/`getNextAudioBlock`/`releaseResources`, and MUST keep feeding `MidiOutputSink` for OS MIDI output. `MainComponent` MUST size itself to its editor on both paths. With `BERLIN_WEB_UI` off, audio, MIDI and UI behavior MUST be unchanged and the window MUST be 800x952, fixed, showing the full legacy editor. With it on, the window MUST be resizable within the `WebEditor` limits (min 720x520, max 1920x1200). `MainWindow` resize limits MUST follow the content component's editor.
+`MainComponent` MUST be an `AudioAppComponent` shell owning one processor and one editor, held as `std::unique_ptr<juce::AudioProcessorEditor>`, forwarding `prepareToPlay`/`getNextAudioBlock`/`releaseResources`, and MUST keep feeding `MidiOutputSink` for OS MIDI output. `MainComponent` MUST size itself to its editor. The editor is always the `WebEditor`, so the standalone window MUST always be resizable: initial size 960x680, minimum 720x520, maximum 1920x1200, with the native frame included. `MainWindow` resize limits MUST always follow the content component's editor; there MUST be no fixed-size window path. Audio and OS MIDI output behavior MUST be unchanged.
 
-#### Scenario: Flag off, full legacy editor [M]
+#### Scenario: Standalone window resizable [M]
 
-- GIVEN the standalone app built with the flag off
-- WHEN launched
-- THEN audio, OS MIDI and UI behave as before and the window is 800x952, non-resizable, with no clipping
-
-#### Scenario: Flag off, plugin editor unchanged [M]
-
-- GIVEN the flag-off plugin build
-- WHEN the editor opens in a host
-- THEN its size is as before this change and it is non-resizable
-
-#### Scenario: Flag on standalone shell (MANUAL)
-
-- GIVEN the standalone app built with the flag on
+- GIVEN the standalone app
 - WHEN launched and resized
-- THEN `WebEditor` is hosted, the window stays within 720x520 to 1920x1200, and audio and MIDI output still work
+- THEN `WebEditor` is hosted, the initial size is 960x680, the window stays within 720x520 to 1920x1200 including the native frame, and audio and MIDI output still work
+
+#### Scenario: No fixed-size window [M]
+
+- GIVEN the standalone app
+- WHEN the user drags the window edge
+- THEN the window resizes; it is never locked to 800x952
 
 #### Scenario: Content follows window [M]
 
-- GIVEN the flag-on standalone window
+- GIVEN the standalone window
 - WHEN it is resized
 - THEN the editor fills the content area
