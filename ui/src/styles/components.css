@@ -1,0 +1,244 @@
+/* Top bar */
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.wordmark small {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+.topbar > section { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* Cards */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.card > h2 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.card > section { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+
+.drawer > section { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+
+/* Step view: styled through the data-* attributes the cells carry. */
+.steps { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 6px; }
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.step[data-active='true'] { border-color: var(--accent); background: var(--accent-active-bg); }
+.step-num { font: 10px var(--font-mono); color: var(--muted); }
+.step-note { font: 12px var(--font-mono); color: var(--muted); }
+.step[data-gate='true'] .step-note { color: var(--text); }
+.led { width: 12px; height: 12px; border-radius: 50%; background: var(--border); }
+.led[data-on='true'] { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+@media (max-width: 899.98px) {
+  .steps { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+
+/* Status */
+.status { position: sticky; bottom: 0; margin: 0; padding: 8px 0; min-height: 1.4em; background: var(--ground); color: var(--muted); }
+.status.error { color: var(--error); }
+
+/* Knob: the native range input stays underneath (keyboard, focus, forms) but is visually hidden;
+   the SVG face takes the pointer. */
+.knob {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 72px;
+  user-select: none;
+}
+.knob svg { touch-action: none; cursor: ns-resize; }
+.knob-face { fill: var(--surface-2); stroke: var(--border); }
+.knob-track, .knob-arc { fill: none; stroke-width: 4; stroke-linecap: round; }
+.knob-track { stroke: var(--border); }
+.knob-arc { stroke: var(--accent); }
+.knob-pointer { stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+.knob output { font: 11px/14px var(--font-mono); }
+.knob-label {
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.knob-input {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.knob:focus-within svg { outline: var(--focus-ring); outline-offset: 2px; border-radius: 50%; }
+.knob.disabled { opacity: 0.4; }
+.knob.disabled svg { cursor: not-allowed; }
+.knob.disabled .knob-arc { stroke: var(--muted); }
+
+/* Delay-times card */
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 56px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent-hover); }
+.chip span:first-child { font-size: 12px; letter-spacing: 0.06em; }
+.chip span:last-child { font: 500 15px var(--font-mono); }
+
+/* Settings dialog (standalone only) */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.6);
+}
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: 560px;
+  max-width: 100%;
+  max-height: 100%;
+  background: var(--surface-1);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.dialog:focus { outline: none; }
+.dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.dialog-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.dialog-badge {
+  padding: 3px 6px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.dialog-close {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.dialog-close:hover { color: var(--text); }
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+.dialog-section { display: flex; flex-direction: column; gap: 10px; }
+.dialog-section h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dialog-section label {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  font-size: 14px;
+}
+.dialog-section select,
+.dialog-section input[type='range'] { height: 44px; min-width: 0; margin: 0; accent-color: var(--accent); }
+.dialog-section select {
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.dialog-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.dialog-pair label { grid-template-columns: 100px minmax(0, 1fr); }
+.dialog-section label:has(input[type='range']) { grid-template-columns: 140px minmax(0, 1fr) 84px; }
+.dialog-section output { font: 13px var(--font-mono); text-align: right; }
+.dialog-error { margin: 0; color: var(--error); }
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+.dialog-foot button {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.dialog-foot button.primary { font-weight: 600; color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.dialog-foot button.primary:hover { background: var(--accent-hover); }
+.dialog-foot button:disabled { opacity: 0.5; cursor: not-allowed; }
+.dialog button:focus-visible,
+.dialog select:focus-visible,
+.dialog input:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
