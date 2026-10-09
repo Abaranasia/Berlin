@@ -59,12 +59,13 @@ void SequencePlayer::reset() noexcept
     playhead.store (0, std::memory_order_relaxed);
 }
 
-bool SequencePlayer::publishSequence (Sequence& incoming) noexcept
+bool SequencePlayer::publishSequence (Sequence& incoming, PublishMode mode) noexcept
 {
     if (sequencePending.load (std::memory_order_acquire))
         return false;   // previous publish still unadopted: nothing published, incoming unmodified
 
     pendingSequence.swap (incoming);   // O(1): no alloc, no free, no lock
+    pendingMode = mode;                // ordered before the release store below
     sequencePending.store (true, std::memory_order_release);
     return true;
 }
@@ -80,14 +81,33 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
 
     if (sequencePending.load (std::memory_order_acquire))
     {
-        if (pendingNote >= 0)
-            out.push ({ 0, pendingStep, pendingNote, false });   // swap-edge note-off, offset 0, FIRST
+        if (pendingMode == PublishMode::keepPosition)
+        {
+            // Step edit: no transport/playhead reset, loopCount untouched. Evaluate
+            // the sounding step against the ADOPTED content (design D2).
+            sequence.swap (pendingSequence);   // O(1) pointer swap: no alloc, no free, no lock
 
-        sequence.swap (pendingSequence);   // O(1) pointer swap: no alloc, no free, no lock
-        pendingNote = -1;
-        pendingStep = 0;
-        transport.reset();                 // restart from step 0 (preserves running state)
-        playhead.store (0, std::memory_order_relaxed);
+            if (pendingNote >= 0
+                && (pendingStep >= sequence.size()
+                    || ! sequence[pendingStep].active
+                    || sequence[pendingStep].note != pendingNote))
+            {
+                out.push ({ 0, pendingStep, pendingNote, false });   // offset 0, FIRST
+                pendingNote = -1;
+            }
+        }
+        else
+        {
+            if (pendingNote >= 0)
+                out.push ({ 0, pendingStep, pendingNote, false });   // swap-edge note-off, offset 0, FIRST
+
+            sequence.swap (pendingSequence);   // O(1) pointer swap: no alloc, no free, no lock
+            pendingNote = -1;
+            pendingStep = 0;
+            transport.reset();                 // restart from step 0 (preserves running state)
+            playhead.store (0, std::memory_order_relaxed);
+        }
+
         sequencePending.store (false, std::memory_order_release);
     }
 
