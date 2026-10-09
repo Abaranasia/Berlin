@@ -78,8 +78,6 @@
     <GROUP id="{4A6C8E0F-2D4B-4F71-9A83-7C5D9E1F3A42}" name="plugin">
       <FILE id="plBapH" name="BerlinAudioProcessor.h" compile="0" resource="0" file="Source/plugin/BerlinAudioProcessor.h"/>
       <FILE id="plBapC" name="BerlinAudioProcessor.cpp" compile="1" resource="0" file="Source/plugin/BerlinAudioProcessor.cpp"/>
-      <FILE id="plBaeH" name="BerlinAudioProcessorEditor.h" compile="0" resource="0" file="Source/plugin/BerlinAudioProcessorEditor.h"/>
-      <FILE id="plBaeC" name="BerlinAudioProcessorEditor.cpp" compile="1" resource="0" file="Source/plugin/BerlinAudioProcessorEditor.cpp"/>
     </GROUP>
     <GROUP id="{9E1C3A5D-7F2B-4D6E-8A0C-3F5B7D9E1C32}" name="bridge">
       <FILE id="brUbrH" name="UiBridge.h" compile="0" resource="0" file="Source/bridge/UiBridge.h"/>

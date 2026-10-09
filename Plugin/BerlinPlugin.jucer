@@ -14,10 +14,6 @@
             file="../Source/plugin/BerlinAudioProcessor.h"/>
       <FILE id="plBapC" name="BerlinAudioProcessor.cpp" compile="1" resource="0"
             file="../Source/plugin/BerlinAudioProcessor.cpp"/>
-      <FILE id="plBaeH" name="BerlinAudioProcessorEditor.h" compile="0" resource="0"
-            file="../Source/plugin/BerlinAudioProcessorEditor.h"/>
-      <FILE id="plBaeC" name="BerlinAudioProcessorEditor.cpp" compile="1"
-            resource="0" file="../Source/plugin/BerlinAudioProcessorEditor.cpp"/>
       <FILE id="plPmnC" name="BerlinPluginMain.cpp" compile="1" resource="0"
             file="../Source/plugin/BerlinPluginMain.cpp"/>
     </GROUP>
