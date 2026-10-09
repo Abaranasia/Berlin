@@ -114,7 +114,8 @@ Edits MUST NOT be stored in presets. MIDI export MUST export the current, edited
 
 ### Requirement: Keep-Position Edit Playback
 
-A step edit MUST NOT reset the transport or playhead. If the edited step is the one currently sounding and its note or gate changed, the sounding note MUST receive a note-off at adoption. Otherwise no note-off MUST be sent.
+A step edit MUST NOT reset the transport or playhead. If the edited step is the one currently sounding and its note or gate changed, the sounding note MUST receive a note-off at adoption. Otherwise no note-off MUST be sent. An edit MUST be rejected with `busy` while a publish is pending or while a state restore is pending; in both cases the busy check comes after index and note validation.
+(Previously: busy covered only a pending publish; a pending state restore was not considered.)
 
 #### Scenario: Playhead continues after edit [T]
 - GIVEN playback is at step 9
@@ -136,8 +137,14 @@ A step edit MUST NOT reset the transport or playhead. If the edited step is the 
 - WHEN a valid step edit is made
 - THEN it fails with `busy` and state is unchanged
 
+#### Scenario: Pending restore rejects a valid edit [T]
+- GIVEN a state restore is pending and no publish is pending
+- WHEN a valid step edit is made
+- THEN it fails with `busy`, the sequence and `edited` are unchanged
+- AND once the restore has published, the same edit succeeds
+
 #### Scenario: Validation precedes busy [T]
-- GIVEN a publish is pending
+- GIVEN a publish is pending, or a state restore is pending
 - WHEN an edit with an out-of-range index or an out-of-scale note is made
 - THEN it fails with `step-out-of-range` or `note-out-of-scale` (checked in that order), not `busy`, so the UI only retries edits that can succeed
 

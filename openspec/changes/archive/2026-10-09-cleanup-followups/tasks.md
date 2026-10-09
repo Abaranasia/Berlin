@@ -56,7 +56,7 @@ Chain strategy: pending
 
 ## Phase 6: UI commit checkpoint
 
-- [ ] 6.1 Commits: `refactor: tidy knob helpers, settings indent and step css`; `fix: ignore button-less knob moves and end drag on lost capture`.
+- [x] 6.1 Commits: `refactor: tidy knob helpers, settings indent and step css`; `fix: ignore button-less knob moves and end drag on lost capture`.
 
 ## Phase 7: Item 1 - Busy restore retry (C++)
 
@@ -84,10 +84,10 @@ All RED tests in `Tests/Source/BerlinAudioProcessorTests.cpp` after ~:1020; use 
 
 ## Phase 9: Manual [M]
 
-- [ ] 9.1 Knob drag feel; release outside window; disabled Knob inert.
-- [ ] 9.2 Restore plugin state in Sonar while a publish is pending, if reproducible; verify sequence/edited settle.
-- [ ] 9.3 Visual check of the step grid after the `.step` merge.
+- [x] 9.1 Knob drag feel; release outside window; disabled Knob inert. (user 2026-10-09)
+- [x] 9.2 Restore plugin state in Sonar while a publish is pending, if reproducible; verify sequence/edited settle. (user 2026-10-09)
+- [x] 9.3 Visual check of the step grid after the `.step` merge. (user 2026-10-09)
 
 ## Phase 10: Archive (separate)
 
-- [ ] 10.1 `sdd-verify`, then `sdd-archive`; merge deltas into main specs and diff the archive output (folder duplication risk).
+- [x] 10.1 `sdd-verify`, then `sdd-archive`; merge deltas into main specs and diff the archive output (folder duplication risk).

@@ -99,4 +99,4 @@ No migration is required. The state format is unchanged.
 
 ## Open Questions
 
-- [ ] A3 (schedule reset on a restore retry) needs a matching spec scenario in `auto-evolution`.
+- [x] A3 (schedule reset on a restore retry): covered by the auto-evolution scenario "Restore publish restarts the schedule".

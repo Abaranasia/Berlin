@@ -61,7 +61,7 @@ Each tick, while a restore is pending, MUST retry the restore regenerate and MUS
 - WHEN the next tick runs with no publish pending
 - THEN `mutate()` is not called; the first automatic mutation comes one full rate period after the restore published
 
-#### Scenario: Successful retry sends a change message [T]
+#### Scenario: Successful retry sends a change message [M]
 
 - GIVEN a restore is pending and the blocking publish was adopted
 - WHEN a tick runs
