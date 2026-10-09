@@ -178,9 +178,9 @@ describe('nativeBridge.settings (standalone capability)', () => {
     await expect(pending).resolves.toEqual({ ok: false, error: 'device-unavailable' });
   });
 
-  it('keeps the dispatch command surface at exactly the 15 existing commands', async () => {
+  it('keeps the dispatch command surface at exactly the 16 commands', async () => {
     const { COMMAND_NAMES } = await import('./protocol');
-    expect(COMMAND_NAMES).toHaveLength(15);
+    expect(COMMAND_NAMES).toHaveLength(16);
     expect(COMMAND_NAMES).not.toContain('getAudioSettings');
     expect(COMMAND_NAMES).not.toContain('applyAudioSettings');
   });

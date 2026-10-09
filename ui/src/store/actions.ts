@@ -15,3 +15,7 @@ export function sendGen<F extends LiveGenerationField>(store: Store, field: F, v
 // rangeLow and rangeHigh always travel together so the host normalizes them as a pair.
 export const sendRange = (store: Store, rangeLow: number, rangeHigh: number): void =>
   store.send('gen.range', { name: 'setGenerationParams', args: { rangeLow, rangeHigh } }, [rangeLow, rangeHigh]);
+
+// One lane per step (`step.<i>`): absolute {note, active} values, so the latest pending one replaces any earlier one.
+export const sendStep = (store: Store, index: number, note: number, active: boolean): void =>
+  store.send(`step.${index}`, { name: 'setStep', args: { index, note, active } }, { note, active });

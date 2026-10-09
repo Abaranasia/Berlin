@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { sendStep } from './actions';
 import { createStore, shown } from './store';
 import type { Bridge } from '../bridge/bridge';
 import type { Command, DispatchResult, PlayheadEvent, Snapshot } from '../bridge/protocol';
@@ -453,5 +454,114 @@ describe('onSettled: the outcome of one request', () => {
     expect(store.getState().status).toEqual({ text: 'Error: callback boom', error: true });
     store.send('bpm', bpm(131), 131);
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe('step edits: per-step keys and busy retry (fake timers)', () => {
+  const busy: DispatchResult = { ok: false, error: 'busy' };
+  const stepCmd = (index: number, note: number, active = true): Command => ({ name: 'setStep', args: { index, note, active } });
+  const steps = (...notes: number[]) => snap({ steps: notes.map((note) => ({ note, active: true })) });
+  const flush = () => vi.advanceTimersByTimeAsync(0);
+  const fresh = () => {
+    const fake = fakeBridge();
+    return { ...fake, store: createStore(fake.bridge) };
+  };
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('sendStep sends setStep under step.<i> with the optimistic {note, active}', () => {
+    const { store, calls } = fresh();
+    sendStep(store, 3, 52, false);
+    expect(calls.map((c) => c.cmd)).toEqual([stepCmd(3, 52, false)]);
+    expect(shown(store.getState(), 'step.3', { note: 48, active: true })).toEqual({ note: 52, active: false });
+    expect(shown(store.getState(), 'step.4', { note: 48, active: true })).toEqual({ note: 48, active: true });
+  });
+
+  it('a fast wheel ends on the last note: exactly one further setStep after the first response', async () => {
+    const { store, calls } = fresh();
+    for (let note = 50; note < 60; note += 1) sendStep(store, 3, note, true);
+    expect(calls).toHaveLength(1);
+    calls[0].resolve(ok(steps(0, 0, 0, 50)));
+    await flush();
+    expect(calls.map((c) => c.cmd)).toEqual([stepCmd(3, 50), stepCmd(3, 59)]);
+  });
+
+  it('busy then ok lands the last value with no status and the display never reverts', async () => {
+    const { store, calls } = fresh();
+    sendStep(store, 2, 55, true);
+    calls[0].resolve(busy);
+    await flush();
+    expect(store.getState().status).toBeNull();
+    expect(shown(store.getState(), 'step.2', { note: 48, active: true }).note).toBe(55);
+    expect(calls).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(25);
+    expect(calls.map((c) => c.cmd)).toEqual([stepCmd(2, 55), stepCmd(2, 55)]);
+    calls[1].resolve(ok(steps(0, 0, 55)));
+    await flush();
+    expect(store.getState().status).toBeNull();
+    expect(store.getState().overlay).toEqual({});
+    expect(store.getState().engine?.steps[2].note).toBe(55);
+  });
+
+  it('a newer send during the retry wait replaces the old one', async () => {
+    const { store, calls } = fresh();
+    sendStep(store, 2, 55, true);
+    calls[0].resolve(busy);
+    await flush();
+    sendStep(store, 2, 60, true);
+    expect(calls).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(25);
+    expect(calls.map((c) => c.cmd)).toEqual([stepCmd(2, 55), stepCmd(2, 60)]);
+    expect(shown(store.getState(), 'step.2', { note: 48, active: true }).note).toBe(60);
+  });
+
+  it('settles with "Busy, try again" once the retry limit is exhausted', async () => {
+    const { store, calls } = fresh();
+    sendStep(store, 2, 55, true);
+    calls[0].resolve(busy);
+    for (let i = 1; i <= 40; i += 1) {
+      await vi.advanceTimersByTimeAsync(25);
+      expect(calls).toHaveLength(i + 1);
+      if (i < 40) expect(store.getState().status).toBeNull();
+      calls[i].resolve(busy);
+    }
+    await flush();
+    expect(calls).toHaveLength(41);
+    expect(store.getState().status).toEqual({ text: 'Busy, try again', error: true });
+    expect(store.getState().overlay).toEqual({});
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(calls).toHaveLength(41);
+  });
+
+  it('different steps do not coalesce', async () => {
+    const { store, calls } = fresh();
+    sendStep(store, 1, 50, true);
+    sendStep(store, 2, 52, true);
+    expect(calls.map((c) => c.cmd)).toEqual([stepCmd(1, 50), stepCmd(2, 52)]);
+  });
+
+  it('a non-busy failure reverts the display and shows a mapped message', async () => {
+    const { store, calls } = fresh();
+    sendStep(store, 1, 49, true);
+    calls[0].resolve({ ok: false, error: 'note-out-of-scale' });
+    await flush();
+    expect(store.getState().overlay).toEqual({});
+    expect(shown(store.getState(), 'step.1', { note: 48, active: true }).note).toBe(48);
+    expect(store.getState().status).toEqual({ text: 'That note is not in the current scale.', error: true });
+    sendStep(store, 2, 50, true);
+    calls[1].resolve({ ok: false, error: 'step-out-of-range' });
+    await flush();
+    expect(store.getState().status).toEqual({ text: 'That step cannot be edited.', error: true });
+  });
+
+  it('other commands do not retry on busy', async () => {
+    const { store, calls } = fresh();
+    store.send('bpm', bpm(130), 130);
+    calls[0].resolve(busy);
+    await flush();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(calls).toHaveLength(1);
+    expect(store.getState().status).toEqual({ text: 'Busy, try again', error: true });
   });
 });

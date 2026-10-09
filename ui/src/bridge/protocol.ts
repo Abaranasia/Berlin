@@ -1,4 +1,4 @@
-// Hand-written wire protocol for the 15 UiBridge commands (see the ui-bridge spec, "Encoding Conventions").
+// Hand-written wire protocol for the 16 UiBridge commands (see the ui-bridge spec, "Encoding Conventions").
 export const WAVEFORMS = ['saw', 'square', 'pulse', 'triangle'] as const;
 export const LFO_DESTINATIONS = ['pitch', 'cutoff', 'amplitude', 'pulseWidth'] as const;
 export const DELAY_DIVISIONS = ['half', 'quarter', 'dottedEighth', 'eighth', 'eighthTriplet', 'sixteenth'] as const;
@@ -61,6 +61,8 @@ export interface Snapshot {
   autoEvolveEnabled: boolean;
   autoEvolveRate: number;
   mutationCount: number;
+  edited: boolean; // true after a step edit until the next regenerate, randomize or preset load
+  scaleNotes: number[]; // ascending in-scale MIDI notes within the range: the editable note set
   steps: { note: number; active: boolean }[];
   presetNames: string[];
 }
@@ -80,19 +82,20 @@ export type Command =
   | { name: 'setAutoEvolveRate'; args: { rate: number } }
   | { name: 'savePreset'; args: { name: string; overwrite: boolean } }
   | { name: 'loadPreset'; args: { name: string } }
-  | { name: 'exportMidi'; args: { path: string } };
+  | { name: 'exportMidi'; args: { path: string } }
+  | { name: 'setStep'; args: { index: number; note: number; active: boolean } };
 
 export type CommandName = Command['name'];
 
 export const COMMAND_NAMES: readonly CommandName[] = [
   'setPlaying', 'setBpm', 'setSeed', 'setPatch', 'setGenerationParams', 'regenerate', 'mutate',
   'setSynthEnabled', 'setEffectsEnabled', 'setMasterLevel', 'setAutoEvolveEnabled', 'setAutoEvolveRate',
-  'savePreset', 'loadPreset', 'exportMidi',
+  'savePreset', 'loadPreset', 'exportMidi', 'setStep',
 ];
 
 // Fixed tokens; the parameterised ones (`missing arg: x`, ...) and anything unknown fall under `string`.
 export type ErrorToken =
-  | 'busy' | 'exists' | 'path not absolute'
+  | 'busy' | 'exists' | 'path not absolute' | 'step-out-of-range' | 'note-out-of-scale'
   | 'nameInvalid' | 'directoryUnavailable' | 'writeFailed' | 'fileNotFound' | 'parseFailed' | 'unsupportedVersion'
   | 'invalidTimeline' | 'pathUnavailable'
   | (string & {});

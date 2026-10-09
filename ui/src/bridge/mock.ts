@@ -20,6 +20,9 @@ const initial = (): Snapshot => ({
   },
   seed: '42', bpm: 120, playing: false, playheadStep: 0, loopCount: 0, synthEnabled: true, effectsEnabled: true,
   masterLevel: 0.8, autoEvolveEnabled: false, autoEvolveRate: 4, mutationCount: 0,
+  edited: false,
+  // Fixed fixture (C minor, 36..72); the mock does not recompute it on setGenerationParams.
+  scaleNotes: [36, 38, 39, 41, 43, 44, 46, 48, 50, 51, 53, 55, 56, 58, 60, 62, 63, 65, 67, 68, 70, 72],
   steps: Array.from({ length: 16 }, (_, i) => ({ note: 48 + i, active: i % 2 === 0 })),
   presetNames: [],
 });
@@ -72,6 +75,15 @@ function number(args: Record<string, unknown>, name: string, range: Range): numb
 
 const text = (args: Record<string, unknown>, name: string): string =>
   typeof args[name] === 'string' ? (args[name] as string) : reject(args[name] === undefined ? `missing arg: ${name}` : `invalid type: ${name}`);
+
+// Integer argument with the bridge's missing / invalid type / non-finite tokens (no clamping, no rounding).
+function int(args: Record<string, unknown>, name: string): number {
+  const value = args[name];
+  if (value === undefined) return reject(`missing arg: ${name}`);
+  if (typeof value !== 'number' || !Number.isInteger(value) && Number.isFinite(value)) return reject(`invalid type: ${name}`);
+  if (!Number.isFinite(value)) return reject(`non-finite: ${name}`);
+  return value;
+}
 
 const flag = (args: Record<string, unknown>, name: string): boolean =>
   typeof args[name] === 'boolean' ? (args[name] as boolean) : reject(args[name] === undefined ? `missing arg: ${name}` : `invalid type: ${name}`);
@@ -144,6 +156,7 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
       case 'setGenerationParams': merge(state.generationParams, args, GENERATION_LIMITS); applyRangeConstraint(args); break;
       case 'regenerate':
         if (busy) reject('busy');
+        state.edited = false;
         if (flag(args, 'randomize') && !state.generationParams.lockSeed) state.seed = String(Math.floor(Math.random() * 1e9));
         break;
       case 'mutate':
@@ -165,10 +178,21 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
       case 'loadPreset':
         if (busy) reject('busy');
         if (!presets.has(text(args, 'name'))) reject('fileNotFound');
+        state.edited = false;
         break;
       case 'exportMidi':
         if (!/^([A-Za-z]:[\\/]|\/)/.test(text(args, 'path'))) reject('path not absolute');
         break;
+      case 'setStep': {
+        // Host order (D4): arguments, then index, then note, then busy.
+        const [index, note, active] = [int(args, 'index'), int(args, 'note'), flag(args, 'active')];
+        if (index < 0 || index >= state.steps.length) reject('step-out-of-range');
+        if (!state.scaleNotes.includes(note)) reject('note-out-of-scale');
+        if (busy) reject('busy');
+        state.steps[index] = { note, active };
+        state.edited = true;
+        break;
+      }
       default: reject(`unknown command: ${(command as { name: string }).name}`);
     }
   };

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   COMMAND_NAMES, WAVEFORMS, LFO_DESTINATIONS, DELAY_DIVISIONS, RHYTHM_MODES, SCALE_TYPES,
-  type Command, type DispatchResult, type Snapshot,
+  type Command, type DispatchResult, type ErrorToken, type Snapshot,
 } from './protocol';
 
 // Literal lists copied from the ui-bridge "Encoding Conventions" requirement.
@@ -15,9 +15,10 @@ describe('enum lists match the bridge encoding', () => {
 });
 
 describe('command names', () => {
-  it('are the 15 bridge commands', () => {
-    expect(COMMAND_NAMES).toHaveLength(15);
-    expect(new Set(COMMAND_NAMES).size).toBe(15);
+  it('are the 16 bridge commands', () => {
+    expect(COMMAND_NAMES).toHaveLength(16);
+    expect(new Set(COMMAND_NAMES).size).toBe(16);
+    expect(COMMAND_NAMES).toContain('setStep');
     expect(COMMAND_NAMES).toContain('exportMidi');
     expect(COMMAND_NAMES).toContain('setGenerationParams');
   });
@@ -35,8 +36,32 @@ describe('typed fixtures', () => {
   });
 
   it('rejects an unknown command name at compile time', () => {
-    // @ts-expect-error not one of the 15 commands
+    // @ts-expect-error not one of the 16 commands
     const cmd: Command = { name: 'doesNotExist', args: {} };
     expect(cmd.name).toBe('doesNotExist');
+  });
+});
+
+describe('step editing protocol', () => {
+  it('setStep args are typed {index, note, active}; omitting active fails to compile', () => {
+    const cmd: Command = { name: 'setStep', args: { index: 2, note: 50, active: true } };
+    // @ts-expect-error active is required
+    const missing: Command = { name: 'setStep', args: { index: 2, note: 50 } };
+    expect(cmd.args).toEqual({ index: 2, note: 50, active: true });
+    expect(missing.name).toBe('setStep');
+  });
+
+  it('the snapshot type carries edited and scaleNotes', () => {
+    const snapshot = { edited: true, scaleNotes: [48, 50, 51] } as Snapshot;
+    const edited: boolean = snapshot.edited;
+    const notes: number[] = snapshot.scaleNotes;
+    expect(edited).toBe(true);
+    expect(notes).toEqual([48, 50, 51]);
+  });
+
+  it('the step error tokens are accepted as DispatchResult errors', () => {
+    const tokens: ErrorToken[] = ['step-out-of-range', 'note-out-of-scale'];
+    const results: DispatchResult[] = tokens.map((error) => ({ ok: false, error }));
+    expect(results.map((r) => r.ok === false && r.error)).toEqual(['step-out-of-range', 'note-out-of-scale']);
   });
 });
