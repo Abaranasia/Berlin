@@ -156,8 +156,8 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
       case 'setGenerationParams': merge(state.generationParams, args, GENERATION_LIMITS); applyRangeConstraint(args); break;
       case 'regenerate':
         if (busy) reject('busy');
-        state.edited = false;
         if (flag(args, 'randomize') && !state.generationParams.lockSeed) state.seed = String(Math.floor(Math.random() * 1e9));
+        state.edited = false; // only after the args validated, like the engine
         break;
       case 'mutate':
         if (busy) reject('busy');
@@ -187,7 +187,8 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
         // Host order (D4): arguments, then index, then note, then busy.
         const [index, note, active] = [int(args, 'index'), int(args, 'note'), flag(args, 'active')];
         if (index < 0 || index >= state.steps.length) reject('step-out-of-range');
-        if (!state.scaleNotes.includes(note)) reject('note-out-of-scale');
+        // The step's current note is always accepted (mute after a scale change); a changed note must be in scale.
+        if (note !== state.steps[index].note && !state.scaleNotes.includes(note)) reject('note-out-of-scale');
         if (busy) reject('busy');
         state.steps[index] = { note, active };
         state.edited = true;

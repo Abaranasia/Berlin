@@ -23,6 +23,7 @@
 #include <juce_audio_processors_headless/juce_audio_processors_headless.h>
 #include <juce_core/juce_core.h>
 
+#include "core/Scale.h"
 #include "generation/DeterministicRandom.h"
 #include "generation/MutationEngine.h"
 #include "generation/SequenceBuilder.h"
@@ -977,6 +978,45 @@ public:
 
             expect (processor.getCurrentSequence() == before);
             expect (! processor.isEdited());
+        }
+
+        beginTest ("editStep() mute is allowed on a note that became out of scale; a changed out-of-scale note is not");
+        {
+            berlin::BerlinAudioProcessor processor;
+            const int note = processor.getCurrentSequence()[2].note;
+
+            auto params = processor.getGenerationParams();
+            params.scaleType = berlin::ScaleType::major;
+            // Pick a major-scale root that excludes the note.
+            params.rootPitchClass = 0;
+            while (berlin::Scale::fromPitchClass (params.scaleType, params.rootPitchClass).contains (note))
+                ++params.rootPitchClass;
+            processor.setGenerationParams (params);
+
+            expect (processor.editStep (2, note, false) == berlin::StepEditResult::ok);
+            expect (! processor.getCurrentSequence()[2].active);
+            expect (processor.getCurrentSequence()[2].note == note);
+
+            // A CHANGED out-of-scale note is still rejected.
+            const auto scale = berlin::Scale::fromPitchClass (params.scaleType, params.rootPitchClass);
+            int other = params.rangeLow;
+            while (scale.contains (other) || other == note)
+                ++other;
+            expect (processor.editStep (2, other, true) == berlin::StepEditResult::noteOutOfScale);
+        }
+
+        beginTest ("setStateInformation() keeps edited when the restore publish is busy, because the edited sequence still plays");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);   // publish pending, edited
+            expect (processor.isEdited());
+
+            processor.setStateInformation (state.getData(), (int) state.getSize());   // regenerate(false) is busy here
+            expect (processor.isEdited());
+            expect (! processor.getCurrentSequence()[2].active);   // the edited sequence was not replaced
         }
 
         beginTest ("editStep() while a publish is pending fails busy with sequence and edited unchanged");

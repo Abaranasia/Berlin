@@ -167,7 +167,10 @@ void BerlinAudioProcessor::setStateInformation (const void* data, int sizeInByte
             generationParams.rangeLow       = preset.rangeLow;
             generationParams.rangeHigh      = preset.rangeHigh;
 
-            regenerate (false);   // re-derive the sequence from the restored seed; does NOT replay mutation history (D4)
+            // re-derive the sequence from the restored seed; does NOT replay mutation history (D4).
+            // If busy, the edited sequence keeps playing and `edited` stays true: the restored
+            // seed does not reproduce what is playing.
+            regenerate (false);
             sendChangeMessage();
         }
     }

@@ -114,6 +114,17 @@ public:
 
             expect (berlin::validateStepEdit (sequence, scaleNotes, 3, 48) == StepEditError::none);
         }
+
+        beginTest ("validateStepEdit: the step's CURRENT note is always accepted, a changed note must be in scale");
+        {
+            const std::vector<int> scaleNotes { 48, 50 };
+            berlin::Sequence sequence (16);
+            sequence[3] = { 49, false };   // out of scale (e.g. after a scale change)
+
+            expect (berlin::validateStepEdit (sequence, scaleNotes, 3, 49) == StepEditError::none);
+            expect (berlin::validateStepEdit (sequence, scaleNotes, 3, 51) == StepEditError::noteOutOfScale);
+            expect (berlin::validateStepEdit (sequence, scaleNotes, 4, 49) == StepEditError::noteOutOfScale);   // other step's note differs
+        }
     }
 };
 

@@ -4,7 +4,7 @@
 
 ### Requirement: setStep Command
 
-`setStep {index: int, note: int, active: bool}` MUST set one step to the absolute note and gate given. Validation is authoritative in the engine: `index` outside `[0, min(size, 16))` returns `ok:false, error:"step-out-of-range"`; `note` not in the snapshot's `scaleNotes` returns `"note-out-of-scale"`; a publish still pending adoption returns `"busy"`. A missing arg, wrong type or non-finite number MUST return the existing `missing arg: <name>`, `invalid type: <name>` or `non-finite: <name>` token. On any error no state changes (including `edited`). On success the result is `{ok:true, error:"", snapshot}`. Relative deltas and toggles are not supported.
+`setStep {index: int, note: int, active: bool}` MUST set one step to the absolute note and gate given. Validation is authoritative in the engine: `index` outside `[0, min(size, 16))` returns `ok:false, error:"step-out-of-range"`; `note` not in the snapshot's `scaleNotes` returns `"note-out-of-scale"`, unless it equals the step's current note, which is always accepted; a publish still pending adoption returns `"busy"`. A missing arg, wrong type or non-finite number MUST return the existing `missing arg: <name>`, `invalid type: <name>` or `non-finite: <name>` token. On any error no state changes (including `edited`). On success the result is `{ok:true, error:"", snapshot}`. Relative deltas and toggles are not supported.
 
 #### Scenario: Valid edit succeeds [T]
 - GIVEN a valid note in `scaleNotes` and no pending publish

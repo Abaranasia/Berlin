@@ -192,6 +192,22 @@ describe('mock bridge setStep mirrors the host', () => {
     expect((await mock.getSnapshot())!.edited).toBe(false);
   });
 
+  it("accepts the step's current note even when out of scale, but not a changed out-of-scale note", async () => {
+    const mock = createMockBridge();
+    const before = (await mock.getSnapshot())!;
+    const note = before.steps[1].note; // mock steps are not all in scale
+    expect(before.scaleNotes).not.toContain(note);
+    expect(snapshotOf(await setStep(mock, 1, note, false)).steps[1]).toEqual({ note, active: false });
+    expect(await setStep(mock, 2, note)).toEqual({ ok: false, error: 'note-out-of-scale' });
+  });
+
+  it('a regenerate with invalid args does not clear edited', async () => {
+    const mock = createMockBridge();
+    await setStep(mock, 0, 50);
+    expect(await run(mock, { name: 'regenerate', args: {} })).toEqual({ ok: false, error: 'missing arg: randomize' });
+    expect((await mock.getSnapshot())!.edited).toBe(true);
+  });
+
   it('rejects malformed args like the bridge', async () => {
     const mock = createMockBridge();
     expect(await run(mock, { name: 'setStep', args: { index: 1, note: 50 } })).toEqual({ ok: false, error: 'missing arg: active' });

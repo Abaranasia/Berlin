@@ -31,7 +31,8 @@ enum class StepEditError { none, stepOutOfRange, noteOutOfScale };
 std::vector<int> scaleNotesFor (const GenerationParams& params);
 
 // Index is checked first, then the note. A muted step keeps its note, so the
-// gate is not part of validation.
+// gate is not part of validation. A note equal to the step's current note is
+// always accepted, even if it is no longer in scaleNotes.
 StepEditError validateStepEdit (const Sequence& sequence, const std::vector<int>& scaleNotes,
                                 int index, int note) noexcept;
 

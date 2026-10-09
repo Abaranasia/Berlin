@@ -27,7 +27,7 @@ The engine MUST accept an edit only for an index in `[0, min(size, 16))`, where 
 
 ### Requirement: Absolute Note and Gate Assignment
 
-A step edit MUST set the step's note and gate to the supplied absolute values. The note MUST be a member of the current `scaleNotes`, else the edit MUST be rejected with `note-out-of-scale`. A muted step (`active=false`) MUST keep its note.
+A step edit MUST set the step's note and gate to the supplied absolute values. A note equal to the step's current note MUST always be accepted, even if it is no longer in `scaleNotes` (e.g. after a scale or range change). A changed note MUST be a member of the current `scaleNotes`, else the edit MUST be rejected with `note-out-of-scale`. A muted step (`active=false`) MUST keep its note.
 
 #### Scenario: Mute keeps the note [T]
 - GIVEN step 3 is active with note 48
@@ -38,6 +38,12 @@ A step edit MUST set the step's note and gate to the supplied absolute values. T
 - GIVEN C minor and a note not in `scaleNotes`
 - WHEN a step is edited with that note
 - THEN the edit fails with `note-out-of-scale` and the step is unchanged
+
+#### Scenario: Mute allowed on an out-of-scale note [T]
+- GIVEN a step whose note is no longer in `scaleNotes` after a scale change
+- WHEN it is edited with its current note and active false
+- THEN the edit succeeds, the step is inactive and its note is unchanged
+- AND an edit that changes it to another out-of-scale note still fails with `note-out-of-scale`
 
 #### Scenario: Idempotent re-send [T]
 - GIVEN an edit has succeeded
