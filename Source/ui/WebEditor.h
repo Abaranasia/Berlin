@@ -1,18 +1,16 @@
 /*
   ==============================================================================
 
-   WebEditor - opt-in WebView2 host for the PoC React UI (webview-poc,
-   web-editor spec). Compiled only when BERLIN_WEB_UI is defined. Drives the
-   engine solely through UiBridge (message thread) and never touches the audio
-   thread. No automated test: gui code, covered by build + manual checks; the
-   logic it relies on lives in WebAssets / WebEditorSupport (unit-tested).
+   WebEditor - the plugin and standalone editor: a WebView2 host for the React
+   UI (web-editor spec). Drives the engine solely through UiBridge (message
+   thread) and never touches the audio thread. No automated test: gui code,
+   covered by build + manual checks; the logic it relies on lives in
+   WebAssets / WebEditorSupport (unit-tested).
 
   ==============================================================================
 */
 
 #pragma once
-
-#if BERLIN_WEB_UI
 
 #include <memory>
 
@@ -67,5 +65,3 @@ private:
 };
 
 } // namespace berlin
-
-#endif // BERLIN_WEB_UI

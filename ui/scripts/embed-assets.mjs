@@ -1,11 +1,11 @@
-// Pre-build entry point: node ui/scripts/embed-assets.mjs --jucer <path>
+// Pre-build entry point: node ui/scripts/embed-assets.mjs
 // Thin wrapper; the logic lives in embed-lib.mjs (unit-tested).
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { readWebUiFlag, runPipeline, withLock, renameWithRetry } from './embed-lib.mjs';
+import { runPipeline, withLock, renameWithRetry } from './embed-lib.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const uiDir = path.join(repoRoot, 'ui');
@@ -95,12 +95,8 @@ const io = {
 const spawn = (cmd, args, opts = {}) =>
   spawnSync(cmd, args, { cwd: repoRoot, stdio: 'inherit', shell: process.platform === 'win32', timeout: opts.timeout });
 
-const jucerIdx = process.argv.indexOf('--jucer');
-if (jucerIdx < 0 || !process.argv[jucerIdx + 1]) fail('BRL004', 'missing --jucer <path>');
-
 try {
-  const flagOn = readWebUiFlag(fs.readFileSync(process.argv[jucerIdx + 1], 'utf8'));
-  runPipeline({ flagOn, spawn, io });
+  runPipeline({ spawn, io });
 } catch (e) {
   const m = /^(BRL\d+): (.*)$/.exec(e.message);
   fail(m ? m[1] : 'BRL004', m ? m[2] : e.message);

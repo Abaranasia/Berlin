@@ -14,10 +14,6 @@
             file="../Source/plugin/BerlinAudioProcessor.h"/>
       <FILE id="plBapC" name="BerlinAudioProcessor.cpp" compile="1" resource="0"
             file="../Source/plugin/BerlinAudioProcessor.cpp"/>
-      <FILE id="plBaeH" name="BerlinAudioProcessorEditor.h" compile="0" resource="0"
-            file="../Source/plugin/BerlinAudioProcessorEditor.h"/>
-      <FILE id="plBaeC" name="BerlinAudioProcessorEditor.cpp" compile="1"
-            resource="0" file="../Source/plugin/BerlinAudioProcessorEditor.cpp"/>
       <FILE id="plPmnC" name="BerlinPluginMain.cpp" compile="1" resource="0"
             file="../Source/plugin/BerlinPluginMain.cpp"/>
     </GROUP>
@@ -163,8 +159,8 @@
   <EXPORTFORMATS>
     <VS2026 targetFolder="Builds/VisualStudio2026">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="BerlinPlugin" headerPath="../../../Source" prebuildCommand="where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer || exit /b 1"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="BerlinPlugin" headerPath="../../../Source" prebuildCommand="where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs --jucer ..\..\BerlinPlugin.jucer || exit /b 1"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="BerlinPlugin" headerPath="../../../Source" prebuildCommand="where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs || exit /b 1"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="BerlinPlugin" headerPath="../../../Source" prebuildCommand="where node &gt;nul 2&gt;nul || (echo Berlin prebuild : error BRL001: node not found on PATH &amp; exit /b 1) &amp; node ..\..\..\ui\scripts\embed-assets.mjs || exit /b 1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../Projucer/modules"/>

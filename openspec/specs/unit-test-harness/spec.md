@@ -8,9 +8,7 @@ A runnable, headless console test target for Berlin, modeled on `JUCE/extras/Uni
 
 ### Requirement: Console Test Runner Project
 
-The system MUST provide a sibling Projucer project `Tests/BerlinTests.jucer` with `projectType="consoleapp"` and the preprocessor definition `JUCE_UNIT_TESTS=1`, built independently from `Berlin.jucer`, sharing all harness-eligible source tiers — currently `Source/core/*`, `Source/generation/*`, `Source/playback/*`, `Source/midi/*` (excluding `MidiOutputSink.*`), the JUCE-free half of `Source/export/*`, the DSP math of `Source/synth/*`, and `Source/plugin/BerlinAudioProcessor.{h,cpp}` (excluding `BerlinAudioProcessorEditor.{h,cpp}`, which is GUI and stays manual-gate-only) — and additionally the gui-free `Source/ui/` helpers (asset lookup, MIME, path-traversal rejection, user-data-folder path, native-args adapter), using only `juce_core`, and `Source/bridge/*` (`UiBridge`), all by relative-path file registration (no source duplication). The harness's module list MUST include `juce_dsp`, `juce_audio_formats`, `juce_audio_basics`, and `juce_audio_processors_headless` in addition to `juce_core`. `WebEditor.{h,cpp}` and `Source/ui/generated/EmbeddedAssets.*` MUST NOT be registered; they stay manual-gate-only. A source tier or file that depends on any module beyond this set (e.g. `Source/midi/MidiOutputSink.*` or `BerlinAudioProcessorEditor.*`, requiring `juce_audio_devices`/`juce_gui_basics`) MUST NOT be registered in this project and stays manual-gate-only.
-
-(Previously: did not include `BerlinAudioProcessor`, `juce_audio_processors_headless`, or `Source/ui/` helpers; the plugin engine layer and GUI-free helpers did not exist. `Tests/BerlinTests.jucer` already registers `../Source/bridge/UiBridge.{h,cpp}`; this delta only corrects the requirement text to list `Source/bridge/*`, and no `.jucer` change is needed for the bridge. Only the new gui-free `Source/ui/` helpers are newly registered.)
+The system MUST provide a sibling Projucer project `Tests/BerlinTests.jucer` with `projectType="consoleapp"` and the preprocessor definition `JUCE_UNIT_TESTS=1`, built independently from `Berlin.jucer`, sharing all harness-eligible source tiers — currently `Source/core/*`, `Source/generation/*`, `Source/playback/*`, `Source/midi/*` (excluding `MidiOutputSink.*`), the JUCE-free half of `Source/export/*`, the DSP math of `Source/synth/*`, and `Source/plugin/BerlinAudioProcessor.{h,cpp}` — and additionally the gui-free `Source/ui/` helpers (asset lookup, MIME, path-traversal rejection, user-data-folder path, native-args adapter), using only `juce_core`, and `Source/bridge/*` (`UiBridge`), all by relative-path file registration (no source duplication). The harness's module list MUST include `juce_dsp`, `juce_audio_formats`, `juce_audio_basics`, and `juce_audio_processors_headless` in addition to `juce_core`. The harness MUST stay headless: it MUST NOT register any editor, `WebEditor.{h,cpp}`, `EditorFactory.*` or `Source/ui/generated/EmbeddedAssets.*`, which stay manual-gate-only. A source tier or file that depends on any module beyond this set (e.g. `Source/midi/MidiOutputSink.*` or `WebEditor.*`, requiring `juce_audio_devices`/`juce_gui_basics`) MUST NOT be registered in this project.
 
 #### Scenario: Test project regenerates and builds
 
@@ -18,12 +16,12 @@ The system MUST provide a sibling Projucer project `Tests/BerlinTests.jucer` wit
 - WHEN `Projucer.exe --resave Tests/BerlinTests.jucer` is run and the generated project is built
 - THEN the build succeeds and produces a console executable
 
-#### Scenario: BerlinAudioProcessor is registered, its editor is not
+#### Scenario: BerlinAudioProcessor is registered, no editor is [T]
 
-- GIVEN `Source/plugin/BerlinAudioProcessor.{h,cpp}` and `Source/plugin/BerlinAudioProcessorEditor.{h,cpp}`
+- GIVEN `Source/plugin/BerlinAudioProcessor.{h,cpp}`
 - WHEN `Tests/BerlinTests.jucer`'s file list is inspected
 - THEN `BerlinAudioProcessor.{h,cpp}` is registered by relative path with `juce_audio_processors_headless` in the module list
-- AND `BerlinAudioProcessorEditor.{h,cpp}` is absent, because it depends on GUI modules
+- AND no editor, `WebEditor` or `EditorFactory` file is registered, and a headless processor's `createEditor()` still returns `nullptr`
 
 #### Scenario: Bridge and helpers registered
 
@@ -31,7 +29,7 @@ The system MUST provide a sibling Projucer project `Tests/BerlinTests.jucer` wit
 - WHEN its file list is inspected
 - THEN `Source/bridge/*` (already present) and the new gui-free `Source/ui/` helpers are registered by relative path
 
-#### Scenario: GUI and generated files excluded
+#### Scenario: GUI and generated files excluded [B]
 
 - GIVEN `WebEditor.{h,cpp}` and `EmbeddedAssets.{h,cpp}`
 - WHEN the file list is inspected

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The React UI (`ui/src`) gives full legacy-editor parity through `UiBridge` only: typed protocol, bridge abstraction, store, and plain unstyled controls. Styling is defined by web-ui-layout.
+The React UI (`ui/src`) provides all engine controls through `UiBridge` only: typed protocol, bridge abstraction, store, and plain unstyled controls. Styling is defined by web-ui-layout.
 
 ## Requirements
 
@@ -116,7 +116,7 @@ Any dispatch or dialog failure (`ok:false`, thrown error, rejected promise) MUST
 
 ### Requirement: Status Line And Error Messages
 
-A status line MUST show the latest outcome. Error tokens MUST map to human-readable messages exactly as in the design's "Status Messages" table (including `exists`, `busy`, `path not absolute`, every `PresetResult` and `MidiFileWriteResult` name, with preset and write failures worded as the legacy `describePresetFailure` / `describeWriteFailure`). Because `writeFailed` is both a `PresetResult` and a `MidiFileWriteResult` name, the mapping MUST take the command into account (`exportMidi` uses the write-failure wording, `savePreset`/`loadPreset` the preset wording). Unmapped tokens MUST show the raw token. Error outcomes, including the invalid-seed message, MUST be shown in an error style.
+A status line MUST show the latest outcome. Error tokens MUST map to human-readable messages exactly as in the design's "Status Messages" table (including `exists`, `busy`, `path not absolute`, every `PresetResult` and `MidiFileWriteResult` name). Because `writeFailed` is both a `PresetResult` and a `MidiFileWriteResult` name, the mapping MUST take the command into account (`exportMidi` uses the export write-failure wording, `savePreset`/`loadPreset` the preset wording). Unmapped tokens MUST show the raw token. Error outcomes, including the invalid-seed message, MUST be shown in an error style.
 
 #### Scenario: Token mapping
 - GIVEN `loadPreset` returns `fileNotFound`
@@ -131,7 +131,7 @@ A status line MUST show the latest outcome. Error tokens MUST map to human-reada
 #### Scenario: Busy
 - GIVEN `regenerate` returns `busy`
 - WHEN handled
-- THEN the status shows `Busy, try again` (the legacy wording)
+- THEN the status shows `Busy, try again`
 
 #### Scenario: Command-dependent writeFailed
 - GIVEN `writeFailed` is returned
@@ -243,7 +243,7 @@ The UI MUST provide via `setPatch`: Waveform, Pulse Width, Cutoff, Resonance, At
 
 ### Requirement: Skewed Sliders
 
-Cutoff, Resonance, Attack, Decay, Release and LFO Rate controls (rendered as sliders or as Knobs) MUST use skewed mappings whose midpoint maps to the legacy values: cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2. Endpoints MUST map to the protocol limits and the mapping MUST round-trip.
+Cutoff, Resonance, Attack, Decay, Release and LFO Rate controls (rendered as sliders or as Knobs) MUST use skewed mappings whose midpoint maps to these values: cutoff 1000, resonance 2, attack 0.2, decay 0.3, release 0.5, LFO rate 2. Endpoints MUST map to the protocol limits and the mapping MUST round-trip.
 
 #### Scenario: Midpoint
 - GIVEN the cutoff control position 0.5
@@ -410,16 +410,3 @@ A Vitest guard at `ui/scripts/limits-drift.test.mjs` MUST compare the TS limits 
 - WHEN the guard runs
 - THEN it passes, and fails if any bound differs
 
-### Requirement: Manual Parity Checks (MANUAL)
-
-Every legacy-editor action MUST be verified manually with the flag on, in standalone and Cakewalk Sonar. A Sonar-only dialog failure blocks the slice.
-
-#### Scenario: Parity checklist (MANUAL)
-- GIVEN the flag-on build
-- WHEN each control section (transport, toggles, tempo, delay, reverb, generation, rhythm, pitch, evolution, synth, presets, export) is exercised
-- THEN each behaves like the legacy editor
-
-#### Scenario: Dialogs (MANUAL)
-- GIVEN Export and overwrite-confirm
-- WHEN used, including closing the editor mid-dialog
-- THEN they behave correctly and keyboard focus is not lost, in both hosts

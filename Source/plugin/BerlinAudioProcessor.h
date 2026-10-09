@@ -15,7 +15,7 @@
    Owns SequencePlayer, Transport (via SequencePlayer), SynthEngine,
    MidiEventTranslator, PresetManager, the current sequence/seed/mutation
    state, GenerationParams, and the auto-evolve Timer (D1) - none of it is
-   editor-owned, so attach/detach of a BerlinAudioProcessorEditor never
+   editor-owned, so attach/detach of an editor never
    touches this state (plugin-host-integration's "Editor Attach/Detach Does
    Not Affect Engine State" requirement).
 

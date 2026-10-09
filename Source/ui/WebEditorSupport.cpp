@@ -109,4 +109,16 @@ std::optional<juce::String> devServerOrigin (const juce::String& env)
     return std::nullopt;
 }
 
+juce::String webViewFallbackMessage (bool dataFolderCreated, bool runtimeSupported, const juce::File& dataFolder)
+{
+    if (! dataFolderCreated)
+        return "The web interface cannot be shown: the WebView2 user data folder could not be created at "
+               + dataFolder.getFullPathName() + ".";
+
+    if (! runtimeSupported)
+        return "The Microsoft WebView2 runtime is not available, so the web interface cannot be shown.";
+
+    return {};
+}
+
 } // namespace berlin

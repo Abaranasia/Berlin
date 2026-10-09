@@ -71,18 +71,10 @@ public:
            #if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
            #else
-            // Resizable only when the editor is (WebEditor); the legacy editor stays fixed (design D13).
-            editorLimits = content->getEditorConstrainer();
-
-            if (editorLimits != nullptr)
-            {
-                setResizable (true, false);
-                applyEditorLimits();   // provisional: the native frame size is unknown until the window is shown
-            }
-            else
-            {
-                setResizable (false, false);
-            }
+            // The WebEditor is always resizable within its own limits.
+            editorLimits = &content->getEditorConstrainer();
+            setResizable (true, false);
+            applyEditorLimits();   // provisional: the native frame size is unknown until the window is shown
 
             centreWithSize (getWidth(), getHeight());
            #endif
@@ -93,8 +85,7 @@ public:
             // The native frame (title bar, borders) exists only once the peer does. The resize
             // constrainer works on the whole window, so the limits must include the frame for the
             // CONTENT to stay within the editor's limits.
-            if (editorLimits != nullptr)
-                applyEditorLimits();
+            applyEditorLimits();
            #endif
         }
 
@@ -133,7 +124,7 @@ public:
                              editorLimits->getMaximumWidth() + extraW, editorLimits->getMaximumHeight() + extraH);
         }
 
-        const juce::ComponentBoundsConstrainer* editorLimits = nullptr;   // owned by the editor, which MainComponent owns
+        const juce::ComponentBoundsConstrainer* editorLimits = nullptr;   // set in the constructor; owned by the editor, which MainComponent owns
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };

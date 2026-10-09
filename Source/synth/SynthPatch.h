@@ -65,8 +65,8 @@ inline constexpr float kMinLfoRateHz = 0.05f,       kMaxLfoRateHz = 20.0f;
 inline constexpr float kMinLfoDepth = 0.0f,         kMaxLfoDepth = 1.0f;
 
 // tempo-control spec (design.md D7, Phase 7): the single canonical BPM range
-// - BerlinAudioProcessor::setBpm clamps to these, tempoSlider's range mirrors
-// them (BerlinAudioProcessorEditor).
+// - BerlinAudioProcessor::setBpm clamps to these, and the web UI's tempo
+// range mirrors them.
 inline constexpr double kMinBpm = 40.0, kMaxBpm = 240.0, kDefaultBpm = 120.0;
 
 // internal-synth-output spec (design.md D5/D6, Phase 7): delay/reverb bounds.
@@ -127,8 +127,8 @@ struct SynthPatch
     // tempo-control spec (design.md D7, Phase 7): Free by default (matches
     // today's manual-delay-time behavior with no persisted BPM sync). When
     // true, delayTimeSeconds tracks delaySecondsFor(liveBpm, delayDivision)
-    // instead of a manually-set value (BerlinAudioProcessorEditor's
-    // recomputeSyncedDelayTime, Phase 10).
+    // instead of a manually-set value (the web UI's
+    // DelayPanel, Phase 10).
     bool         delaySynced   = false;
     SyncDivision delayDivision = SyncDivision::quarter;   // unused while delaySynced is false
 };

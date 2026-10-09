@@ -197,6 +197,21 @@ public:
             expect (! devServerOrigin ("http://localhost:65536").has_value());
             expect (! devServerOrigin ("http://127.0.0.1:99999").has_value());
         }
+
+        beginTest ("fallback message names the actual cause");
+        {
+            const auto folder = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("BerlinWV2");
+            expect (berlin::webViewFallbackMessage (true, true, folder).isEmpty());
+
+            const auto runtime = berlin::webViewFallbackMessage (true, false, folder);
+            expect (runtime.containsIgnoreCase ("runtime"));
+            expect (! runtime.contains (folder.getFullPathName()));
+
+            const auto folderMsg = berlin::webViewFallbackMessage (false, true, folder);
+            expect (folderMsg.contains (folder.getFullPathName()));
+            expect (! folderMsg.containsIgnoreCase ("runtime is not available"));
+            expect (folderMsg != runtime);
+        }
     }
 };
 

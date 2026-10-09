@@ -35,8 +35,8 @@ namespace berlin
 enum class RhythmMode { random, euclidean, probability };
 
 // Fixed step count for every generation mode (vst3-au-plugin followup-fixes
-// cleanup: previously redeclared separately in SequenceBuilder.cpp and
-// BerlinAudioProcessorEditor.cpp - not configurable, so it lives here next to
+// cleanup: previously redeclared separately in SequenceBuilder.cpp and the
+// editor - not configurable, so it lives here next to
 // the struct whose generation it drives, not as a GenerationParams member).
 inline constexpr int kNumSteps = 16;
 

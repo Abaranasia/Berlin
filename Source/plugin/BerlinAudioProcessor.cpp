@@ -316,7 +316,7 @@ void BerlinAudioProcessor::pushPatchToSynth()
     // tempo-delay-ui Phase 10 (internal-synth-output's "Live-Adjustable Delay
     // And Reverb Parameters" requirement): delaySynced/delayDivision are
     // UI-only state (they only decide what delayTimeSeconds gets computed
-    // to, in the editor's recomputeSyncedDelayTime) - not separate synth
+    // to, in the web UI's DelayPanel) - not separate synth
     // engine parameters, so only the 7 actual DSP fields are forwarded here.
     synth.setDelayTimeSeconds (currentPatch.delayTimeSeconds);
     synth.setDelayFeedback    (currentPatch.delayFeedback);
@@ -420,8 +420,7 @@ bool BerlinAudioProcessor::flushPendingNoteOff (juce::MidiBuffer& out) noexcept
 
 // createEditor()/hasEditor() (D5): deliberately defined OUTSIDE the
 // `namespace berlin { ... }` block above. `#include`-ing
-// BerlinAudioProcessorEditor.h (which itself opens `namespace berlin { ... }`
-// and includes the full juce_audio_processors/juce_gui_basics headers) from
+// ui/EditorFactory.h (which includes the full juce_audio_processors/juce_gui_basics headers) from
 // INSIDE an already-open `namespace berlin { }` would nest every JUCE
 // declaration those headers bring in under `berlin::juce::...` instead of the
 // real top-level `::juce::...` - breaking name lookup for every other
