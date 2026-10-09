@@ -21,6 +21,7 @@
 
 #include "bridge/UiBridge.h"
 #include "plugin/BerlinAudioProcessor.h"
+#include "ui/StandaloneHost.h"
 #include "ui/WebEditorSupport.h"
 
 namespace berlin
@@ -31,7 +32,9 @@ class WebEditor final : public juce::AudioProcessorEditor,
                         private juce::ChangeListener
 {
 public:
-    explicit WebEditor (BerlinAudioProcessor& processorToEdit);
+    // `standaloneHost` non-null only in the standalone app (ui-settings D1): it enables
+    // the getAudioSettings / applyAudioSettings native functions. It must outlive this editor.
+    explicit WebEditor (BerlinAudioProcessor& processorToEdit, StandaloneHost* standaloneHost = nullptr);
     ~WebEditor() override;
 
     void resized() override;
@@ -49,6 +52,7 @@ private:
 
     // Member order matters: the browser is destroyed first (its native
     // functions capture `bridge` and `this`).
+    StandaloneHost*                            host;
     UiBridge                                   bridge;
     PlayheadChangeDetector                     detector;
     PendingEventGate                           gate;

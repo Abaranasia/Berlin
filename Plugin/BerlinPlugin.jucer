@@ -125,6 +125,8 @@
       <FILE id="uiWedC" name="WebEditor.cpp" compile="1" resource="0" file="../Source/ui/WebEditor.cpp"/>
       <FILE id="uiWasH" name="WebAssets.h" compile="0" resource="0" file="../Source/ui/WebAssets.h"/>
       <FILE id="uiWasC" name="WebAssets.cpp" compile="1" resource="0" file="../Source/ui/WebAssets.cpp"/>
+      <FILE id="uiHstH" name="StandaloneHost.h" compile="0" resource="0"
+            file="../Source/ui/StandaloneHost.h"/>
       <FILE id="uiWesH" name="WebEditorSupport.h" compile="0" resource="0"
             file="../Source/ui/WebEditorSupport.h"/>
       <FILE id="uiWesC" name="WebEditorSupport.cpp" compile="1" resource="0"
@@ -133,6 +135,12 @@
             file="../Source/ui/generated/EmbeddedAssets.h"/>
       <FILE id="uiEmaC" name="EmbeddedAssets.cpp" compile="1" resource="0"
             file="../Source/ui/generated/EmbeddedAssets.cpp"/>
+    </GROUP>
+    <GROUP id="{D4E6F8A0-2B3C-4D5E-9F1A-3B5C7D9E1F24}" name="settings">
+      <FILE id="pgSetH" name="StandaloneSettings.h" compile="0" resource="0"
+            file="../Source/settings/StandaloneSettings.h"/>
+      <FILE id="pgSetC" name="StandaloneSettings.cpp" compile="1" resource="0"
+            file="../Source/settings/StandaloneSettings.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

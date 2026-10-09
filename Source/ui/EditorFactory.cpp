@@ -11,11 +11,12 @@
 namespace berlin
 {
 
-std::unique_ptr<juce::AudioProcessorEditor> createBerlinEditor (BerlinAudioProcessor& processor)
+std::unique_ptr<juce::AudioProcessorEditor> createBerlinEditor (BerlinAudioProcessor& processor, StandaloneHost* host)
 {
    #if BERLIN_WEB_UI
-    return std::make_unique<WebEditor> (processor);
+    return std::make_unique<WebEditor> (processor, host);
    #else
+    juce::ignoreUnused (host);
     return std::make_unique<BerlinAudioProcessorEditor> (processor);
    #endif
 }

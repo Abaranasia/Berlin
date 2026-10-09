@@ -38,6 +38,10 @@
             file="Source/SequencePlayerStopTests.cpp"/>
       <FILE id="btSphC" name="SequencePlayerHandoffTests.cpp" compile="1"
             resource="0" file="Source/SequencePlayerHandoffTests.cpp"/>
+      <FILE id="btSsetC" name="StandaloneSettingsTests.cpp" compile="1" resource="0"
+            file="Source/StandaloneSettingsTests.cpp"/>
+      <FILE id="btMcrC" name="MidiChannelRemapTests.cpp" compile="1" resource="0"
+            file="Source/MidiChannelRemapTests.cpp"/>
       <FILE id="btMmbC" name="MidiMessageBytesTests.cpp" compile="1" resource="0"
             file="Source/MidiMessageBytesTests.cpp"/>
       <FILE id="btMxtC" name="MidiExportTimelineTests.cpp" compile="1" resource="0"
@@ -131,6 +135,8 @@
             file="../Source/midi/MidiChannel.h"/>
       <FILE id="tmMsgH" name="MidiMessageBytes.h" compile="0" resource="0"
             file="../Source/midi/MidiMessageBytes.h"/>
+      <FILE id="tmRmpH" name="MidiChannelRemap.h" compile="0" resource="0"
+            file="../Source/midi/MidiChannelRemap.h"/>
       <FILE id="tmTrnH" name="MidiEventTranslator.h" compile="0" resource="0"
             file="../Source/midi/MidiEventTranslator.h"/>
       <FILE id="tmTrnC" name="MidiEventTranslator.cpp" compile="1" resource="0"
@@ -182,6 +188,12 @@
             file="../Source/ui/WebEditorSupport.h"/>
       <FILE id="tuWesC" name="WebEditorSupport.cpp" compile="1" resource="0"
             file="../Source/ui/WebEditorSupport.cpp"/>
+    </GROUP>
+    <GROUP id="{D4E6F8A0-2B3C-4D5E-9F1A-3B5C7D9E1F24}" name="settings">
+      <FILE id="tgSetH" name="StandaloneSettings.h" compile="0" resource="0"
+            file="../Source/settings/StandaloneSettings.h"/>
+      <FILE id="tgSetC" name="StandaloneSettings.cpp" compile="1" resource="0"
+            file="../Source/settings/StandaloneSettings.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

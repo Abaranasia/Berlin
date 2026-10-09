@@ -35,6 +35,9 @@
     <Filter Include="BerlinTests\ui">
       <UniqueIdentifier>{4C7E0A45-7153-A771-2ADD-4F068D91408E}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BerlinTests\settings">
+      <UniqueIdentifier>{A3957EB1-C00E-D44B-2A65-988284EB906D}</UniqueIdentifier>
+    </Filter>
     <Filter Include="BerlinTests">
       <UniqueIdentifier>{99B26223-EE90-F7C5-C12F-435CBF576C49}</UniqueIdentifier>
     </Filter>
@@ -505,6 +508,12 @@
     <ClCompile Include="..\..\Source\SequencePlayerHandoffTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\StandaloneSettingsTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\MidiChannelRemapTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\MidiMessageBytesTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
@@ -627,6 +636,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\ui\WebEditorSupport.cpp">
       <Filter>BerlinTests\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\settings\StandaloneSettings.cpp">
+      <Filter>BerlinTests\settings</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -2037,6 +2049,9 @@
     <ClInclude Include="..\..\..\Source\midi\MidiMessageBytes.h">
       <Filter>BerlinTests\midi</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\midi\MidiChannelRemap.h">
+      <Filter>BerlinTests\midi</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Source\midi\MidiEventTranslator.h">
       <Filter>BerlinTests\midi</Filter>
     </ClInclude>
@@ -2078,6 +2093,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\ui\WebEditorSupport.h">
       <Filter>BerlinTests\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\settings\StandaloneSettings.h">
+      <Filter>BerlinTests\settings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\Projucer\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
