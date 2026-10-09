@@ -164,6 +164,7 @@
     <ClCompile Include="..\..\..\Source\generation\MutationEngine.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\EuclideanRhythmGenerator.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\SequenceBuilder.cpp"/>
+    <ClCompile Include="..\..\..\Source\generation\StepEdit.cpp"/>
     <ClCompile Include="..\..\..\Source\generation\AutoEvolveSchedule.cpp"/>
     <ClCompile Include="..\..\..\Source\playback\Transport.cpp"/>
     <ClCompile Include="..\..\..\Source\playback\SequencePlayer.cpp"/>
@@ -2903,6 +2904,7 @@
     <ClInclude Include="..\..\..\Source\generation\EuclideanRhythmGenerator.h"/>
     <ClInclude Include="..\..\..\Source\generation\GenerationParams.h"/>
     <ClInclude Include="..\..\..\Source\generation\SequenceBuilder.h"/>
+    <ClInclude Include="..\..\..\Source\generation\StepEdit.h"/>
     <ClInclude Include="..\..\..\Source\generation\AutoEvolveSchedule.h"/>
     <ClInclude Include="..\..\..\Source\playback\StepEvent.h"/>
     <ClInclude Include="..\..\..\Source\playback\StepEventBuffer.h"/>

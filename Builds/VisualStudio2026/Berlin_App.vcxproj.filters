@@ -910,6 +910,9 @@
     <ClCompile Include="..\..\Source\generation\SequenceBuilder.cpp">
       <Filter>Berlin\generation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\generation\StepEdit.cpp">
+      <Filter>Berlin\generation</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\generation\AutoEvolveSchedule.cpp">
       <Filter>Berlin\generation</Filter>
     </ClCompile>
@@ -4258,6 +4261,9 @@
       <Filter>Berlin\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\generation\SequenceBuilder.h">
+      <Filter>Berlin\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\generation\StepEdit.h">
       <Filter>Berlin\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\generation\AutoEvolveSchedule.h">
