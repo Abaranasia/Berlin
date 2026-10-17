@@ -1,4 +1,4 @@
-// Status line wording (design "Status Messages"). Preset/export text is copied from the legacy editor.
+// Status line wording (design "Status Messages"). Preset/export text is copied from the original JUCE editor.
 import type { Command } from '../bridge/protocol';
 
 export interface Status {
@@ -7,6 +7,10 @@ export interface Status {
 }
 
 const BUSY = 'Busy, try again';
+const STEP: Record<string, string> = {
+  'step-out-of-range': 'That step cannot be edited.',
+  'note-out-of-scale': 'That note is not in the current scale.',
+};
 const PRESET: Record<string, string> = {
   nameInvalid: 'Preset name is invalid.',
   directoryUnavailable: 'Preset folder unavailable.',
@@ -28,7 +32,7 @@ const failure = (text: string): Status => ({ text, error: true });
 export function describe(command: string, token: string): Status {
   if (token === 'busy') return failure(BUSY);
   if (command === 'savePreset' && token === 'exists') return failure('A preset with that name already exists.');
-  const table = command === 'exportMidi' ? EXPORT : command === 'savePreset' || command === 'loadPreset' ? PRESET : {};
+  const table = command === 'setStep' ? STEP : command === 'exportMidi' ? EXPORT : command === 'savePreset' || command === 'loadPreset' ? PRESET : {};
   return failure(table[token] ?? token);
 }
 

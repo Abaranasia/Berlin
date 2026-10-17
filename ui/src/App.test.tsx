@@ -278,7 +278,7 @@ describe('App: collapsible synth panel', () => {
 });
 
 describe('App: step view', () => {
-  it('distinguishes gated steps (LED on, note name) from rests (LED off, dot)', async () => {
+  it('distinguishes gated steps (LED on) from rests (LED off, note kept and flagged for dimming)', async () => {
     const { host, initial, emitSnapshot } = await mount();
     await act(async () => { emitSnapshot(withSteps(initial, { 1: { note: 48, active: true }, 2: { note: 50, active: false } })); });
     const gated = region(host, '[data-step="1"]');
@@ -286,8 +286,9 @@ describe('App: step view', () => {
     expect(gated.querySelector('.led')!.getAttribute('data-on')).toBe('true');
     expect(gated.textContent).toContain('C3');
     expect(rest.querySelector('.led')!.getAttribute('data-on')).toBe('false');
-    expect(rest.textContent).toContain('·');
-    expect(rest.textContent).not.toContain('D3');
+    expect(rest.textContent).toContain('D3'); // a muted step keeps its note, dimmed by data-gate=false
+    expect(rest.getAttribute('data-gate')).toBe('false');
+    expect(gated.getAttribute('data-gate')).toBe('true');
   });
 
   it('highlights only the playhead step', async () => {

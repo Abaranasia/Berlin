@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { act } from 'react';
+import { act, useState } from 'react';
 import { Knob } from './Knob';
 import { SKEWS } from '../../lib/skew';
 import { LIMITS } from '../../bridge/limits';
@@ -16,7 +16,7 @@ const mount = async (element: Parameters<typeof renderPlain>[0]) => {
 
 const face = (host: HTMLElement) => host.querySelector<SVGElement>('[data-knob-face]')!;
 const fire = (el: Element, type: string, init: MouseEventInit = {}) =>
-  act(async () => void el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, ...init })));
+  act(async () => void el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, buttons: 1, ...init })));
 const dragFrom = async (el: Element, startY: number, ...moves: number[]) => {
   await fire(el, 'pointerdown', { clientY: startY });
   for (const y of moves) await fire(el, 'pointermove', { clientY: y });
@@ -139,6 +139,48 @@ describe('Knob vertical drag', () => {
     await dragFrom(face(host), 300, 100);
     expect(onChange).not.toHaveBeenCalled();
     expect(document.activeElement).not.toBe(field(host, 'Sustain'));
+  });
+
+  it('a button-less move ends the drag and dispatches nothing', async () => {
+    const onChange = vi.fn();
+    const host = await mount(linear(onChange));
+    await dragFrom(face(host), 300);
+    await fire(face(host), 'pointermove', { clientY: 250, buttons: 0 });
+    await fire(face(host), 'pointermove', { clientY: 250, buttons: 1 }); // the drag already ended
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('lostpointercapture ends the drag', async () => {
+    const onChange = vi.fn();
+    const host = await mount(linear(onChange));
+    await dragFrom(face(host), 300, 250);
+    await fire(face(host), 'lostpointercapture');
+    await fire(face(host), 'pointermove', { clientY: 100 });
+    expect(onChange.mock.calls.map((c) => c[0])).toEqual([0.75]);
+  });
+
+  it('dispatches nothing once disabled flips mid-drag', async () => {
+    const onChange = vi.fn();
+    const Wrapper = () => {
+      const [disabled, setDisabled] = useState(false);
+      return (
+        <Knob
+          label="Sustain"
+          value={0.5}
+          min={0}
+          max={1}
+          step={0.01}
+          disabled={disabled}
+          onChange={(v) => {
+            onChange(v);
+            setDisabled(true);
+          }}
+        />
+      );
+    };
+    const host = await mount(<Wrapper />);
+    await dragFrom(face(host), 300, 250, 200, 150);
+    expect(onChange.mock.calls.map((c) => c[0])).toEqual([0.75]);
   });
 });
 

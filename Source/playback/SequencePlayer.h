@@ -64,6 +64,10 @@
 namespace berlin
 {
 
+// How the audio thread adopts a published Sequence: restart resets the
+// transport and playhead to step 0; keepPosition leaves both untouched.
+enum class PublishMode { restart, keepPosition };
+
 class SequencePlayer
 {
 public:
@@ -79,8 +83,11 @@ public:
     // then nothing is published and `incoming` is left unmodified. The audio
     // thread adopts at the top of the next process(): it emits a note-off at
     // offset 0 for any sounding note, swaps the sequence in (O(1), no
-    // alloc/free/lock), and restarts the pattern from step 0.
-    bool publishSequence (Sequence& incoming) noexcept;
+    // alloc/free/lock), and restarts the pattern from step 0. With
+    // PublishMode::keepPosition (step edits) the adopt neither resets the
+    // transport nor the playhead; it only emits a note-off when the sounding
+    // step's note or gate changed (or no longer exists) in the adopted content.
+    bool publishSequence (Sequence& incoming, PublishMode mode = PublishMode::restart) noexcept;
 
     // MESSAGE THREAD ONLY. Relaxed store into pendingBpm; adopted at the top
     // of the NEXT process() call, AFTER the pending-sequence adopt block and
@@ -129,6 +136,7 @@ public:
 private:
     Sequence sequence;               // AUDIO-THREAD-EXCLUSIVE after construction
     Sequence pendingSequence;        // staging slot; message thread only while !sequencePending
+    PublishMode pendingMode { PublishMode::restart };   // written before the sequencePending release store, read after the acquire load
     std::atomic<bool> sequencePending { false };
     Transport transport;
     int pendingNote { -1 };    // -1 = nothing sounding

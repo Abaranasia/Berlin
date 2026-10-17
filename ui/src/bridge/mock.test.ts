@@ -166,3 +166,67 @@ describe('mock bridge settings', () => {
     await expect(createMockBridge({ standalone: true, applyResult: { ok: false, error: 'busy' } }).settings!.apply(request)).resolves.toEqual({ ok: false, error: 'busy' });
   });
 });
+
+describe('mock bridge setStep mirrors the host', () => {
+  const C_MINOR_36_72 = [36, 38, 39, 41, 43, 44, 46, 48, 50, 51, 53, 55, 56, 58, 60, 62, 63, 65, 67, 68, 70, 72];
+  const setStep = (mock: ReturnType<typeof createMockBridge>, index: number, note: number, active = true) =>
+    run(mock, { name: 'setStep', args: { index, note, active } });
+
+  it('a valid edit updates the step and sets edited; the fixture scaleNotes is C minor 36..72', async () => {
+    const mock = createMockBridge();
+    const before = (await mock.getSnapshot())!;
+    expect(before.edited).toBe(false);
+    expect(before.scaleNotes).toEqual(C_MINOR_36_72);
+    const after = snapshotOf(await setStep(mock, 2, 50, false));
+    expect(after.steps[2]).toEqual({ note: 50, active: false });
+    expect(after.steps[3]).toEqual(before.steps[3]);
+    expect(after.edited).toBe(true);
+  });
+
+  it('validates the index first, then the note', async () => {
+    const mock = createMockBridge();
+    expect(await setStep(mock, 16, 50)).toEqual({ ok: false, error: 'step-out-of-range' });
+    expect(await setStep(mock, -1, 50)).toEqual({ ok: false, error: 'step-out-of-range' });
+    expect(await setStep(mock, 2, 49)).toEqual({ ok: false, error: 'note-out-of-scale' });
+    expect(await setStep(mock, 16, 49)).toEqual({ ok: false, error: 'step-out-of-range' });
+    expect((await mock.getSnapshot())!.edited).toBe(false);
+  });
+
+  it("accepts the step's current note even when out of scale, but not a changed out-of-scale note", async () => {
+    const mock = createMockBridge();
+    const before = (await mock.getSnapshot())!;
+    const note = before.steps[1].note; // mock steps are not all in scale
+    expect(before.scaleNotes).not.toContain(note);
+    expect(snapshotOf(await setStep(mock, 1, note, false)).steps[1]).toEqual({ note, active: false });
+    expect(await setStep(mock, 2, note)).toEqual({ ok: false, error: 'note-out-of-scale' });
+  });
+
+  it('a regenerate with invalid args does not clear edited', async () => {
+    const mock = createMockBridge();
+    await setStep(mock, 0, 50);
+    expect(await run(mock, { name: 'regenerate', args: {} })).toEqual({ ok: false, error: 'missing arg: randomize' });
+    expect((await mock.getSnapshot())!.edited).toBe(true);
+  });
+
+  it('rejects malformed args like the bridge', async () => {
+    const mock = createMockBridge();
+    expect(await run(mock, { name: 'setStep', args: { index: 1, note: 50 } })).toEqual({ ok: false, error: 'missing arg: active' });
+    expect(await run(mock, { name: 'setStep', args: { index: 2.5, note: 50, active: true } })).toEqual({ ok: false, error: 'invalid type: index' });
+  });
+
+  it('busy rejects a valid edit but validation still precedes busy', async () => {
+    const mock = createMockBridge({ busy: true });
+    expect(await setStep(mock, 2, 50)).toEqual({ ok: false, error: 'busy' });
+    expect(await setStep(mock, 99, 50)).toEqual({ ok: false, error: 'step-out-of-range' });
+  });
+
+  it('regenerate and loadPreset clear edited; mutate keeps it', async () => {
+    const mock = createMockBridge();
+    await run(mock, { name: 'savePreset', args: { name: 'A', overwrite: false } });
+    await setStep(mock, 0, 50);
+    expect(snapshotOf(await run(mock, { name: 'mutate', args: {} })).edited).toBe(true);
+    expect(snapshotOf(await run(mock, { name: 'regenerate', args: { randomize: false } })).edited).toBe(false);
+    await setStep(mock, 0, 50);
+    expect(snapshotOf(await run(mock, { name: 'loadPreset', args: { name: 'A' } })).edited).toBe(false);
+  });
+});

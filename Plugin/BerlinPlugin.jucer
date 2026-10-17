@@ -61,6 +61,10 @@
             file="../Source/generation/SequenceBuilder.h"/>
       <FILE id="geSqbC" name="SequenceBuilder.cpp" compile="1" resource="0"
             file="../Source/generation/SequenceBuilder.cpp"/>
+      <FILE id="geSteH" name="StepEdit.h" compile="0" resource="0"
+            file="../Source/generation/StepEdit.h"/>
+      <FILE id="geSteC" name="StepEdit.cpp" compile="1" resource="0"
+            file="../Source/generation/StepEdit.cpp"/>
       <FILE id="geAesH" name="AutoEvolveSchedule.h" compile="0" resource="0"
             file="../Source/generation/AutoEvolveSchedule.h"/>
       <FILE id="geAesC" name="AutoEvolveSchedule.cpp" compile="1" resource="0"

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A single validated command surface (`dispatch(command, args)` / `snapshot()`) that lets a UI (present or future, e.g. a WebView) drive the engine without touching engine internals directly. Exactly 15 commands. All dispatch runs on the message thread only.
+A single validated command surface (`dispatch(command, args)` / `snapshot()`) that lets a UI (present or future, e.g. a WebView) drive the engine without touching engine internals directly. Exactly 16 commands. All dispatch runs on the message thread only.
 
 ## Requirements
 
@@ -22,7 +22,8 @@ Every `dispatch` call MUST return an object with `ok: bool` and `error: string`.
 
 ### Requirement: Fixed Error Tokens
 
-`error` MUST be one of these machine-matchable tokens, where `<name>` is the offending command or argument/field name: `unknown command: <name>`, `missing arg: <name>`, `invalid type: <name>`, `non-finite: <name>`, `unknown field: <name>`, `invalid enum: <name>`, `busy`, `exists`, `path not absolute`, a `PresetResult` enum name (`nameInvalid`, `directoryUnavailable`, `writeFailed`, `fileNotFound`, `parseFailed`, `unsupportedVersion`), or a `MidiFileWriteResult` enum name (`invalidTimeline`, `pathUnavailable`, `writeFailed`).
+`error` MUST be one of these machine-matchable tokens, where `<name>` is the offending command or argument/field name: `unknown command: <name>`, `missing arg: <name>`, `invalid type: <name>`, `non-finite: <name>`, `unknown field: <name>`, `invalid enum: <name>`, `busy`, `exists`, `path not absolute`, `step-out-of-range`, `note-out-of-scale`, a `PresetResult` enum name (`nameInvalid`, `directoryUnavailable`, `writeFailed`, `fileNotFound`, `parseFailed`, `unsupportedVersion`), or a `MidiFileWriteResult` enum name (`invalidTimeline`, `pathUnavailable`, `writeFailed`).
+(Previously: no `step-out-of-range` or `note-out-of-scale`.)
 
 #### Scenario: Error token names the offending argument
 - GIVEN any state
@@ -62,6 +63,35 @@ Dispatch MUST return `ok:false` with the matching error token and MUST NOT chang
 - GIVEN a valid patch state
 - WHEN `dispatch("setPatch", {waveform: "sawtooth"})` is called (not a preset XML waveform name; the valid name is `"saw"`)
 - THEN `ok` is false, `error` is `"invalid enum: waveform"`, and the patch is unchanged
+
+### Requirement: setStep Command
+
+`setStep {index: int, note: int, active: bool}` MUST set one step to the absolute note and gate given. Validation is authoritative in the engine: `index` outside `[0, min(size, 16))` returns `ok:false, error:"step-out-of-range"`; `note` not in the snapshot's `scaleNotes` returns `"note-out-of-scale"`, unless it equals the step's current note, which is always accepted; a publish still pending adoption returns `"busy"`. A missing arg, wrong type or non-finite number MUST return the existing `missing arg: <name>`, `invalid type: <name>` or `non-finite: <name>` token. On any error no state changes (including `edited`). On success the result is `{ok:true, error:"", snapshot}`. Relative deltas and toggles are not supported.
+
+#### Scenario: Valid edit succeeds [T]
+- GIVEN a valid note in `scaleNotes` and no pending publish
+- WHEN `dispatch("setStep", {index: 2, note: 50, active: true})` is called
+- THEN `ok` is true and `snapshot.steps[2]` is `{note: 50, active: true}` and `snapshot.edited` is true
+
+#### Scenario: Out-of-range index [T]
+- GIVEN a 16-step sequence
+- WHEN `dispatch("setStep", {index: 16, note: 50, active: true})` is called
+- THEN `error` is `"step-out-of-range"` and state is unchanged
+
+#### Scenario: Out-of-scale note [T]
+- GIVEN a note not in `scaleNotes`
+- WHEN `setStep` is dispatched with it
+- THEN `error` is `"note-out-of-scale"` and state is unchanged
+
+#### Scenario: Busy [T]
+- GIVEN a published sequence not yet adopted
+- WHEN `setStep` is dispatched
+- THEN `error` is `"busy"`, no `snapshot` key, state unchanged
+
+#### Scenario: Malformed args [T]
+- GIVEN any state
+- WHEN `setStep` is dispatched with `{index: 1, note: 50}`, and separately `{index: "1", note: 50, active: true}`
+- THEN `error` is `"missing arg: active"`, and `"invalid type: index"`, with state unchanged
 
 ### Requirement: Finite Out-Of-Range Numbers Are Clamped, Not Rejected
 
@@ -179,12 +209,18 @@ When delay sync is on, `delayTimeSeconds` MUST be derived from BPM and the selec
 
 ### Requirement: Snapshot Contents
 
-`snapshot()` MUST contain these top-level keys: `patch` (all 21 patch fields including `outputLevel`), `generationParams` (all 9 generation params), `seed`, `bpm`, `playing`, `playheadStep`, `loopCount`, `synthEnabled`, `effectsEnabled`, `masterLevel`, `autoEvolveEnabled`, `autoEvolveRate`, `mutationCount`, `steps` (16 entries of `{note, active}`), and `presetNames`.
+`snapshot()` MUST contain these top-level keys: `patch` (all 21 patch fields including `outputLevel`), `generationParams` (all 9 generation params), `seed`, `bpm`, `playing`, `playheadStep`, `loopCount`, `synthEnabled`, `effectsEnabled`, `masterLevel`, `autoEvolveEnabled`, `autoEvolveRate`, `mutationCount`, `edited` (bool), `scaleNotes` (int array: ascending in-scale MIDI notes within `[rangeLow, rangeHigh]` for the current scale and root), `steps` (16 entries of `{note, active}`), and `presetNames`.
+(Previously: no `edited` or `scaleNotes`.)
 
 #### Scenario: Snapshot includes every documented field
 - GIVEN any valid engine state
 - WHEN `snapshot()` is called
-- THEN the result contains all of: patch, generation params, seed, bpm, playing, playheadStep, loopCount, synthEnabled, effectsEnabled, masterLevel, autoEvolveEnabled, autoEvolveRate, mutationCount, 16-entry steps, presetNames
+- THEN the result contains all of: patch, generation params, seed, bpm, playing, playheadStep, loopCount, synthEnabled, effectsEnabled, masterLevel, autoEvolveEnabled, autoEvolveRate, mutationCount, edited, scaleNotes, 16-entry steps, presetNames
+
+#### Scenario: scaleNotes tracks generation params [T]
+- GIVEN `setGenerationParams {scaleType:"major", rootPitchClass:0, rangeLow:48, rangeHigh:60}` succeeded
+- WHEN the snapshot is read
+- THEN `scaleNotes` is `[48,50,52,53,55,57,59,60]`
 
 ### Requirement: Snapshot presetNames Is Always Current
 
@@ -197,7 +233,8 @@ When delay sync is on, `delayTimeSeconds` MUST be derived from BPM and the selec
 
 ### Requirement: Message-Thread-Only Dispatch
 
-All 15 commands MUST be dispatched and handled on the message thread only. No bridge command MUST be callable from, or have any effect on, the audio thread directly.
+All 16 commands MUST be dispatched and handled on the message thread only. No bridge command MUST be callable from, or have any effect on, the audio thread directly.
+(Previously: 15 commands.)
 
 #### Scenario: Dispatch is a message-thread operation
 - GIVEN the bridge's implementation
@@ -206,7 +243,8 @@ All 15 commands MUST be dispatched and handled on the message thread only. No br
 
 ### Requirement: Standalone-Only Settings Functions
 
-When the editor is created with a non-null standalone host, the bridge MUST register two additional native functions, `getAudioSettings` and `applyAudioSettings`; otherwise it MUST NOT register either. They are not `dispatch` commands: the 15-command `dispatch` surface, its result shape and its tokens are unchanged. Both MUST run on the message thread only and MUST NOT call back into JS after the editor is destroyed.
+When the editor is created with a non-null standalone host, the bridge MUST register two additional native functions, `getAudioSettings` and `applyAudioSettings`; otherwise it MUST NOT register either. They are not `dispatch` commands: the 16-command `dispatch` surface, its result shape and its tokens are unchanged by them. Both MUST run on the message thread only and MUST NOT call back into JS after the editor is destroyed.
+(Previously: "15-command" dispatch surface.)
 
 `getAudioSettings` MUST return the current setup and lists: audio device types and devices, sample rates and buffer sizes for the selected device, MIDI output ports (including a None entry), the selected port and the channel 1-16. It MUST NOT return output volume. It MAY take an optional `{ deviceType, device }` query; when given, the sample rates and buffer sizes MUST be those offered by that device, so the dialog can show options for a device that is selected but not yet applied. The None port MUST be represented by the id `""` and listed first as `{ id: "", name: "None" }`.
 
@@ -232,10 +270,10 @@ When the editor is created with a non-null standalone host, the bridge MUST regi
 - WHEN `applyAudioSettings` resolves with `{ ok: false, error: "invalid-request" }`
 - THEN the JS wrapper exposes that token unchanged
 
-#### Scenario: Dispatch surface unchanged [V]
+#### Scenario: Dispatch surface is 16 commands [V]
 - GIVEN the bridge command list
 - WHEN inspected
-- THEN it still contains exactly the 15 existing commands and no settings command
+- THEN it contains exactly the 15 prior commands plus `setStep`, and no settings command
 
 #### Scenario: Callback after teardown [M]
 - GIVEN an apply is in flight

@@ -541,6 +541,9 @@
     <ClCompile Include="..\..\Source\SequenceBuilderTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\StepEditTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\AutoEvolveScheduleTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
@@ -590,6 +593,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\generation\SequenceBuilder.cpp">
+      <Filter>BerlinTests\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\generation\StepEdit.cpp">
       <Filter>BerlinTests\generation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\generation\AutoEvolveSchedule.cpp">
@@ -2026,6 +2032,9 @@
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\generation\SequenceBuilder.h">
+      <Filter>BerlinTests\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\generation\StepEdit.h">
       <Filter>BerlinTests\generation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\generation\AutoEvolveSchedule.h">

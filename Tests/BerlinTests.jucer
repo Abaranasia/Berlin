@@ -59,6 +59,8 @@
             file="Source/PresetManagerFileTests.cpp"/>
       <FILE id="btSqbC" name="SequenceBuilderTests.cpp" compile="1" resource="0"
             file="Source/SequenceBuilderTests.cpp"/>
+      <FILE id="btSteC" name="StepEditTests.cpp" compile="1" resource="0"
+            file="Source/StepEditTests.cpp"/>
       <FILE id="btAesC" name="AutoEvolveScheduleTests.cpp" compile="1" resource="0"
             file="Source/AutoEvolveScheduleTests.cpp"/>
       <FILE id="btBapC" name="BerlinAudioProcessorTests.cpp" compile="1" resource="0"
@@ -114,6 +116,10 @@
             file="../Source/generation/SequenceBuilder.h"/>
       <FILE id="tgSqbC" name="SequenceBuilder.cpp" compile="1" resource="0"
             file="../Source/generation/SequenceBuilder.cpp"/>
+      <FILE id="tgSteH" name="StepEdit.h" compile="0" resource="0"
+            file="../Source/generation/StepEdit.h"/>
+      <FILE id="tgSteC" name="StepEdit.cpp" compile="1" resource="0"
+            file="../Source/generation/StepEdit.cpp"/>
       <FILE id="tgAesH" name="AutoEvolveSchedule.h" compile="0" resource="0"
             file="../Source/generation/AutoEvolveSchedule.h"/>
       <FILE id="tgAesC" name="AutoEvolveSchedule.cpp" compile="1" resource="0"

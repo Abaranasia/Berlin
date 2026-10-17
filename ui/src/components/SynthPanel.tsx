@@ -7,7 +7,7 @@ import { useShown } from '../store/hooks';
 import { Select } from './controls/Select';
 import { Knob } from './controls/Knob';
 
-// Cutoff, resonance, ADSR times and LFO rate use the legacy skewed mappings; the rest are linear.
+// Cutoff, resonance, ADSR times and LFO rate use the original JUCE editor's skewed mappings; the rest are linear.
 export function SynthPanel() {
   const store = useStoreApi();
   const waveform = useShown('patch.waveform', (s) => s.patch.waveform, 'saw');

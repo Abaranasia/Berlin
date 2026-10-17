@@ -29,6 +29,10 @@
    Timer-driven mutate() and after setStateInformation - NOT after a
    manually-invoked regenerate()/mutate()/loadPreset(), since the caller
    (editor) already has the boolean/enum result synchronously in those cases.
+   A setStateInformation whose publish is busy sets restorePending: the tick
+   timer retries regenerate (false) until it publishes (then broadcasts again,
+   restarts the auto-evolve schedule), and mutate()/editStep() report busy
+   meanwhile.
 
    Generation params are NOT persisted (D4): getStateInformation/
    setStateInformation reuse PresetManager::toValueTree/fromValueTree
@@ -73,6 +77,8 @@
 namespace berlin
 {
 
+enum class StepEditResult { ok, busy, stepOutOfRange, noteOutOfScale };
+
 class BerlinAudioProcessor final : public juce::AudioProcessor,
                                     public juce::ChangeBroadcaster,
                                     private juce::Timer
@@ -116,6 +122,25 @@ public:
     // ---- Commands: MESSAGE THREAD ONLY (MutationEngine allocates) ----
     bool regenerate (bool drawNewSeed);
     bool mutate();
+
+    // step-editing design D4. Sets one step to absolute {note, active}: validates
+    // the index, then the note against scaleNotesFor (generationParams), then
+    // refuses with busy while a publish is pending (so a busy retry only re-sends
+    // edits that can succeed). On ok it publishes with PublishMode::keepPosition
+    // (no restart), commits currentSequence and sets `edited`.
+    StepEditResult editStep (int index, int note, bool active);
+    bool isEdited() const { return edited; }
+
+    // The auto-evolve Timer's body, public so tests can drive one tick without a
+    // message loop (the headless test build has no modal dispatch loop).
+    void runAutoEvolveTick();
+
+    // Test seams (the Timer base is private): a busy setStateInformation leaves
+    // `restorePending` set until a later regenerate succeeds; the tick timer runs
+    // iff auto-evolve is on or a restore is pending.
+    bool isRestorePending() const noexcept   { return restorePending; }
+    bool isTickTimerRunning() const noexcept { return isTimerRunning(); }
+
     PresetResult save (const juce::String& name);
     PresetResult loadPreset (const juce::String& name);
     bool presetExists (const juce::String& name) const;
@@ -171,6 +196,7 @@ public:
 
 private:
     void timerCallback() override;
+    void updateTimer();   // runs the tick timer iff autoEvolveEnabled || restorePending
     void pushPatchToSynth();
 
     // ui-engine-api design.md D7: when currentPatch.delaySynced is true, sets
@@ -198,6 +224,8 @@ private:
 
     juce::int64 sequenceSeed;
     int         mutationCount { 0 };
+    bool        edited { false };   // set by a successful editStep; cleared by a successful regenerate (design D4)
+    bool        restorePending { false };   // setStateInformation's publish was busy; the tick retries it (message thread only)
 
     SequencePlayer      player;
     StepEventBuffer     blockEvents;

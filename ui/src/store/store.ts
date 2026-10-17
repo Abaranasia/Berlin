@@ -11,6 +11,7 @@ import { describe, describeSuccess, describeThrown, type Status } from './status
 //   - bare command-level names for the single-value commands (bpm, playing, masterLevel, synthEnabled,
 //     effectsEnabled, autoEvolveEnabled, autoEvolveRate, seed) and the flow commands (regenerate, mutate,
 //     exportMidi, savePreset, loadPreset), whose optimistic value is the command's argument.
+//   - `step.<i>`       one step's absolute {note, active}, sent as setStep (retried on busy, see RETRY_ON_BUSY)
 // `send` and `shown` are both typed by KeyValues, so a control cannot read a value of another type than it writes.
 type PatchKeyValues = { [F in keyof Patch as `patch.${F}`]: Patch[F] };
 type GenKeyValues = { [F in Exclude<keyof GenerationParams, 'rangeLow' | 'rangeHigh'> as `gen.${F}`]: GenerationParams[F] };
@@ -30,7 +31,7 @@ export type KeyValues = PatchKeyValues &
     exportMidi: string;
     savePreset: string;
     loadPreset: string;
-  };
+  } & { [key in `step.${number}`]: { note: number; active: boolean } }; // one lane per step: absolute values
 export type StoreKey = keyof KeyValues;
 
 export interface State {
@@ -58,9 +59,15 @@ export interface Store {
 
 export interface StoreOptions {
   settleTimeoutMs?: number; // how long one dispatch may stay in flight before its key is force-settled
+  busyRetryDelayMs?: number; // wait before re-sending a retryable command that came back busy
+  busyRetryLimit?: number; // retries before a busy result is reported
 }
 
 export const DEFAULT_SETTLE_TIMEOUT_MS = 5000;
+export const DEFAULT_BUSY_RETRY_DELAY_MS = 25;
+export const DEFAULT_BUSY_RETRY_LIMIT = 40; // about one second
+// Commands whose busy result is retried inside the store: absolute values, so re-sending the latest is always right.
+const RETRY_ON_BUSY: ReadonlySet<string> = new Set(['setStep']);
 const MALFORMED_RESPONSE = 'malformed response';
 const TIMED_OUT = 'request timed out';
 
@@ -76,7 +83,10 @@ const isDispatchResult = (result: unknown): result is DispatchResult => {
   return ok === false && typeof error === 'string';
 };
 
-export function createStore(bridge: Bridge, { settleTimeoutMs = DEFAULT_SETTLE_TIMEOUT_MS }: StoreOptions = {}): Store {
+export function createStore(
+  bridge: Bridge,
+  { settleTimeoutMs = DEFAULT_SETTLE_TIMEOUT_MS, busyRetryDelayMs = DEFAULT_BUSY_RETRY_DELAY_MS, busyRetryLimit = DEFAULT_BUSY_RETRY_LIMIT }: StoreOptions = {},
+): Store {
   let state: State = { engine: null, overlay: {}, playhead: { step: 0, playing: false }, status: null, draft: { lastManualDelay: null } };
   const listeners = new Set<() => void>();
   const set = (patch: Partial<State>) => {
@@ -97,7 +107,7 @@ export function createStore(bridge: Bridge, { settleTimeoutMs = DEFAULT_SETTLE_T
   let seq = 0;
   let lastAppliedSeq = 0;
 
-  const run = (key: string, command: Command, onSettled?: Settled): void => {
+  const run = (key: string, command: Command, onSettled?: Settled, retries = 0): void => {
     inFlight.add(key);
     const mine = ++seq;
     let settled = false;
@@ -132,7 +142,30 @@ export function createStore(bridge: Bridge, { settleTimeoutMs = DEFAULT_SETTLE_T
       const status = describeSuccess(command); // before `fresh`, so a throw does not consume the sequence number
       return { ...fresh(result.snapshot), ...(status && { status }) };
     };
+    // A busy retryable command ends this run silently: the key stays in flight with its overlay, so newer sends
+    // land in `pending`. After the delay the latest pending value runs, otherwise the same command again.
+    // Lifecycle notes:
+    // (a) A replaced command's `onSettled` is never called, which deviates from `Settled`'s "called once"
+    //     contract. That is safe today because no `setStep` caller passes it (actions.ts).
+    // (b) The retry budget restarts for the new value.
+    // (c) Worst-case latency is `busyRetryLimit * busyRetryDelayMs`, not `settleTimeoutMs`.
+    // (d) Once the budget is exhausted, the busy result is reported normally.
+    // (e) The retry timeout is not tracked or cancelled.
+    const retryLater = () => {
+      settled = true;
+      clearTimeout(timer);
+      setTimeout(() => {
+        const next = pending.get(key);
+        pending.delete(key);
+        if (next) run(key, next.command, next.onSettled);
+        else run(key, command, onSettled, retries + 1);
+      }, busyRetryDelayMs);
+    };
     const onResult = (result: unknown) => {
+      if (!settled && RETRY_ON_BUSY.has(command.name) && retries < busyRetryLimit && isDispatchResult(result) && !result.ok && result.error === 'busy') {
+        retryLater();
+        return;
+      }
       if (settled) {
         // Late (after a timeout): the key already moved on, so leave its status and overlay alone.
         if (isDispatchResult(result) && result.ok) {

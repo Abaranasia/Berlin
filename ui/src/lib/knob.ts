@@ -1,7 +1,14 @@
 // Pure math shared by Slider and Knob: range attributes, value <-> position mapping, drag and SVG geometry.
-import type { Skew } from '../components/controls/Slider';
+
+// A skewed control moves over a 0..1 position; `skew` converts between that position and the real value.
+export interface Skew {
+  toPosition(value: number): number;
+  toValue(position: number): number;
+}
 
 export const KNOB_TRAVEL_PX = 200; // a vertical drag of this many pixels covers the full range
+export const KNOB_SIZE = 56; // side of the square SVG viewBox
+export const FACE_RADIUS = 16;
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 const num = (n: number): string => String(Number(n.toFixed(2)));
@@ -27,7 +34,7 @@ export function valueAt(position: number, min: number, max: number, step?: numbe
 
 export const dragToPosition = (startPos: number, upPx: number): number => clamp01(startPos + upPx / KNOB_TRAVEL_PX);
 
-const CENTER = 28;
+const CENTER = KNOB_SIZE / 2;
 const RADIUS = 22;
 const START_DEG = 135;
 const SWEEP_DEG = 270;

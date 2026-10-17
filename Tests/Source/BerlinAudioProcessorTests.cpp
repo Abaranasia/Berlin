@@ -23,10 +23,37 @@
 #include <juce_audio_processors_headless/juce_audio_processors_headless.h>
 #include <juce_core/juce_core.h>
 
+#include "core/Scale.h"
+#include "generation/DeterministicRandom.h"
+#include "generation/MutationEngine.h"
+#include "generation/SequenceBuilder.h"
 #include "plugin/BerlinAudioProcessor.h"
 
 namespace
 {
+    // Runs one tiny block so the audio side adopts any pending publish.
+    void adoptPending (berlin::BerlinAudioProcessor& processor)
+    {
+        juce::AudioBuffer<float> buffer (2, 1);
+        juce::MidiBuffer midi;
+        processor.processBlock (buffer, midi);
+    }
+
+    int countNoteOns (const juce::File& file)
+    {
+        juce::FileInputStream stream (file);
+        juce::MidiFile midiFile;
+        int count = 0;
+
+        if (stream.openedOk() && midiFile.readFrom (stream))
+            for (int track = 0; track < midiFile.getNumTracks(); ++track)
+                for (auto* event : *midiFile.getTrack (track))
+                    if (event->message.isNoteOn())
+                        ++count;
+
+        return count;
+    }
+
     struct TempPresetDir
     {
         TempPresetDir()
@@ -919,6 +946,450 @@ public:
             processor.setMasterLevel (0.3f);
             expectEquals (processor.getMasterLevel(), 0.3f);
             expectEquals (processor.getPatch().outputLevel, 0.3f);
+        }
+
+        // ---- Step editing (step-editing spec, design D4): editStep, edited flag.
+        // Default fixture: C minor 36..72, so 41 is in scale and 37 is not.
+
+        beginTest ("editStep() ok updates currentSequence and sets edited; other steps untouched");
+        {
+            berlin::BerlinAudioProcessor processor;
+            const auto before = processor.getCurrentSequence();
+            expect (! processor.isEdited());
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+
+            expect (processor.isEdited());
+            expect (processor.getCurrentSequence()[2] == berlin::Step { 41, false });
+
+            for (int i = 0; i < before.size(); ++i)
+                if (i != 2)
+                    expect (processor.getCurrentSequence()[i] == before[i]);
+        }
+
+        beginTest ("editStep() rejected edit (index, scale) leaves sequence and edited unchanged");
+        {
+            berlin::BerlinAudioProcessor processor;
+            const auto before = processor.getCurrentSequence();
+
+            expect (processor.editStep (16, 41, true) == berlin::StepEditResult::stepOutOfRange);
+            expect (processor.editStep (-1, 41, true) == berlin::StepEditResult::stepOutOfRange);
+            expect (processor.editStep (2, 37, true) == berlin::StepEditResult::noteOutOfScale);
+
+            expect (processor.getCurrentSequence() == before);
+            expect (! processor.isEdited());
+        }
+
+        beginTest ("editStep() mute is allowed on a note that became out of scale; a changed out-of-scale note is not");
+        {
+            berlin::BerlinAudioProcessor processor;
+            const int note = processor.getCurrentSequence()[2].note;
+
+            auto params = processor.getGenerationParams();
+            params.scaleType = berlin::ScaleType::major;
+            // Pick a major-scale root that excludes the note.
+            params.rootPitchClass = 0;
+            while (berlin::Scale::fromPitchClass (params.scaleType, params.rootPitchClass).contains (note))
+                ++params.rootPitchClass;
+            processor.setGenerationParams (params);
+
+            expect (processor.editStep (2, note, false) == berlin::StepEditResult::ok);
+            expect (! processor.getCurrentSequence()[2].active);
+            expect (processor.getCurrentSequence()[2].note == note);
+
+            // A CHANGED out-of-scale note is still rejected.
+            const auto scale = berlin::Scale::fromPitchClass (params.scaleType, params.rootPitchClass);
+            int other = params.rangeLow;
+            while (scale.contains (other) || other == note)
+                ++other;
+            expect (processor.editStep (2, other, true) == berlin::StepEditResult::noteOutOfScale);
+        }
+
+        beginTest ("setStateInformation() keeps edited when the restore publish is busy, because the edited sequence still plays");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);   // publish pending, edited
+            expect (processor.isEdited());
+
+            processor.setStateInformation (state.getData(), (int) state.getSize());   // regenerate(false) is busy here
+            expect (processor.isEdited());
+            expect (! processor.getCurrentSequence()[2].active);   // the edited sequence was not replaced
+        }
+
+        // ---- cleanup-followups: a busy restore is retried by the tick until it publishes.
+        // Helpers: `state` comes from a source processor seeded 1234; a busy restore is made by
+        // editStep() (publish pending) right before setStateInformation().
+
+        beginTest ("busy restore publishes on a later retry: sequence reseeded, edited cleared, flag and timer released");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());   // busy
+            expect (processor.isRestorePending());
+            expect (processor.isEdited());
+            expect (processor.isTickTimerRunning());   // auto-evolve is off, the retry alone keeps it alive
+            expect (processor.getSeed() == 1234);
+
+            processor.runAutoEvolveTick();   // still unadopted: stays busy
+            expect (processor.isRestorePending());
+            expect (processor.isEdited());
+            expect (! processor.getCurrentSequence()[2].active);
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();   // retry succeeds
+            expect (! processor.isRestorePending());
+            expect (! processor.isEdited());
+            expect (! processor.isTickTimerRunning());
+            expect (processor.getCurrentSequence() == berlin::buildSeededSequence (processor.getSeed(), processor.getGenerationParams()));
+        }
+
+        beginTest ("restore that publishes at once sets no pending flag and starts no timer");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            expect (! processor.isRestorePending());
+            expect (! processor.isTickTimerRunning());
+        }
+
+        beginTest ("restore retry survives auto-evolve being switched off");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setAutoEvolveEnabled (true);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            processor.setAutoEvolveEnabled (false);
+            expect (processor.isRestorePending());
+            expect (processor.isTickTimerRunning());
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();
+            expect (! processor.isRestorePending());
+            expect (! processor.isTickTimerRunning());
+        }
+
+        beginTest ("restore retry with auto-evolve on keeps the timer running afterwards");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            processor.setAutoEvolveEnabled (true);
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);
+            processor.runAutoEvolveTick();
+            expect (! processor.isRestorePending());
+            expect (processor.isTickTimerRunning());
+            processor.setAutoEvolveEnabled (false);
+            expect (! processor.isTickTimerRunning());
+        }
+
+        beginTest ("pending restore blocks a due mutation; its publish restarts the schedule (no back-to-back mutation)");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+            processor.setAutoEvolveRate (1);
+            processor.setAutoEvolveEnabled (true);   // baseline at loop count 0
+
+            juce::AudioBuffer<float> longBuffer (2, 17 * 5513);   // completes one loop: a mutation is due
+            juce::MidiBuffer midi;
+            processor.processBlock (longBuffer, midi);
+            expect (processor.getLoopCount() >= 1);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());   // busy
+            expect (processor.isRestorePending());
+
+            processor.runAutoEvolveTick();   // retry still busy: nothing else this tick
+            expectEquals (processor.getMutationCount(), 0);
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();   // retry publishes; schedule restarts
+            expect (! processor.isRestorePending());
+            expectEquals (processor.getMutationCount(), 0);
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();   // a full rate period has not elapsed since the restore
+            expectEquals (processor.getMutationCount(), 0);
+
+            processor.setAutoEvolveEnabled (false);
+        }
+
+        beginTest ("mutate() returns false while a restore is pending, then works once it publishes");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);   // no publish pending any more, but the restore is
+            expect (processor.isRestorePending());
+
+            const auto before = processor.getCurrentSequence();
+            expect (! processor.mutate());
+            expectEquals (processor.getMutationCount(), 0);
+            expect (processor.getCurrentSequence() == before);
+
+            processor.runAutoEvolveTick();   // retry publishes
+            adoptPending (processor);
+            expect (processor.mutate());
+            expectEquals (processor.getMutationCount(), 1);
+        }
+
+        beginTest ("editStep() is busy while a restore is pending; validation still comes first");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);
+            expect (processor.isRestorePending());
+
+            const auto before = processor.getCurrentSequence();
+            expect (processor.editStep (16, 41, true) == berlin::StepEditResult::stepOutOfRange);
+            expect (processor.editStep (2, 37, true) == berlin::StepEditResult::noteOutOfScale);
+            expect (processor.editStep (2, 41, true) == berlin::StepEditResult::busy);
+            expect (processor.getCurrentSequence() == before);
+
+            processor.runAutoEvolveTick();   // release the restore
+            expect (! processor.isRestorePending());
+        }
+
+        beginTest ("a successful regenerate or loadPreset clears a pending restore; a busy regenerate leaves it set");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor source, processor (temp.dir);
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+            expect (processor.save ("Restore Clear") == berlin::PresetResult::ok);
+
+            for (int mode = 0; mode < 3; ++mode)
+            {
+                expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+                processor.setStateInformation (state.getData(), (int) state.getSize());
+                expect (processor.isRestorePending());
+
+                if (mode == 0)
+                {
+                    expect (! processor.regenerate (false));   // publish still pending: busy
+                    expect (processor.isRestorePending());
+                    expect (processor.isTickTimerRunning());
+                    adoptPending (processor);
+                    expect (processor.regenerate (false));
+                }
+                else
+                {
+                    adoptPending (processor);
+                    if (mode == 1)
+                        expect (processor.regenerate (true));
+                    else
+                        expect (processor.loadPreset ("Restore Clear") == berlin::PresetResult::ok);
+                }
+
+                expect (! processor.isRestorePending());
+                expect (! processor.isTickTimerRunning());
+                adoptPending (processor);
+            }
+        }
+
+        beginTest ("editStep() while a publish is pending fails busy with sequence and edited unchanged");
+        {
+            berlin::BerlinAudioProcessor processor;
+            expect (processor.regenerate (false));   // publish now pending
+            const auto before = processor.getCurrentSequence();
+
+            expect (processor.editStep (2, 41, true) == berlin::StepEditResult::busy);
+
+            expect (processor.getCurrentSequence() == before);
+            expect (! processor.isEdited());
+        }
+
+        beginTest ("editStep(): validation precedes busy, index before note");
+        {
+            berlin::BerlinAudioProcessor processor;
+            expect (processor.regenerate (false));   // pending
+
+            expect (processor.editStep (16, 41, true) == berlin::StepEditResult::stepOutOfRange);
+            expect (processor.editStep (2, 37, true) == berlin::StepEditResult::noteOutOfScale);
+            expect (processor.editStep (16, 37, true) == berlin::StepEditResult::stepOutOfRange);
+        }
+
+        beginTest ("editStep() idempotent re-send gives an identical sequence and still publishes");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (3, 43, true) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            const auto afterFirst = processor.getCurrentSequence();
+
+            expect (processor.editStep (3, 43, true) == berlin::StepEditResult::ok);
+            expect (processor.getCurrentSequence() == afterFirst);
+
+            // The re-send published: a further edit is busy until adoption.
+            expect (processor.editStep (4, 43, true) == berlin::StepEditResult::busy);
+            adoptPending (processor);
+            expect (processor.editStep (4, 43, true) == berlin::StepEditResult::ok);
+        }
+
+        beginTest ("edited is cleared by regenerate, randomize, loadPreset and setStateInformation; kept by mutate");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor processor (temp.dir);
+            processor.prepareToPlay (44100.0, 64);
+            expect (processor.save ("Edit Clear") == berlin::PresetResult::ok);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expect (processor.isEdited());
+
+            expect (processor.mutate());
+            adoptPending (processor);
+            expect (processor.isEdited());   // mutate keeps it
+
+            expect (processor.regenerate (false));
+            adoptPending (processor);
+            expect (! processor.isEdited());
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expect (processor.regenerate (true));   // randomize
+            adoptPending (processor);
+            expect (! processor.isEdited());
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expect (processor.loadPreset ("Edit Clear") == berlin::PresetResult::ok);
+            adoptPending (processor);
+            expect (! processor.isEdited());
+
+            juce::MemoryBlock state;
+            processor.getStateInformation (state);
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);
+            expect (! processor.isEdited());
+        }
+
+        beginTest ("regenerate with the same seed restores the seeded original");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto original = processor.getCurrentSequence();
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expect (! (processor.getCurrentSequence() == original));
+
+            expect (processor.regenerate (false));
+            expect (processor.getCurrentSequence() == original);
+            expect (processor.getCurrentSequence() == berlin::buildSeededSequence (processor.getSeed(), processor.getGenerationParams()));
+        }
+
+        beginTest ("mutate() after an edit builds on the edited sequence");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            const auto edited = processor.getCurrentSequence();
+
+            berlin::DeterministicRandom rng (berlin::MutationEngine::mutationSeed (processor.getSeed(), 1));
+            const auto expected = berlin::MutationEngine::applyRandomTransform (edited, rng);
+
+            expect (processor.mutate());
+            expect (processor.getCurrentSequence() == expected);
+        }
+
+        beginTest ("exportMidiTo() exports the edited sequence: a muted step produces no note");
+        {
+            const juce::File tempFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                             .getNonexistentChildFile ("BerlinEditExportTest", ".mid", false);
+
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+
+            int activeIndex = -1;
+            for (int i = 0; i < processor.getCurrentSequence().size() && activeIndex < 0; ++i)
+                if (processor.getCurrentSequence()[i].active)
+                    activeIndex = i;
+            expect (activeIndex >= 0);
+
+            expect (processor.exportMidiTo (tempFile) == berlin::MidiFileWriteResult::ok);
+            const int before = countNoteOns (tempFile);
+            tempFile.deleteFile();
+
+            const auto note = processor.getCurrentSequence()[activeIndex].note;
+            expect (processor.editStep (activeIndex, note, false) == berlin::StepEditResult::ok);
+
+            expect (processor.exportMidiTo (tempFile) == berlin::MidiFileWriteResult::ok);
+            const int after = countNoteOns (tempFile);
+            tempFile.deleteFile();
+
+            expectEquals (after, before - 4);   // kExportRepeats = 4 loops, one note fewer per loop
+        }
+
+        beginTest ("auto-evolve: a pending edit publish makes the due tick skip mutate(); after adoption evolve mutates the edited sequence and keeps edited");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            processor.setAutoEvolveRate (1);
+            processor.setAutoEvolveEnabled (true);   // baseline at loop count 0
+
+            juce::AudioBuffer<float> longBuffer (2, 17 * 5513);   // completes one loop
+            juce::MidiBuffer midi;
+            processor.processBlock (longBuffer, midi);
+            expect (processor.getLoopCount() >= 1);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);   // publish pending
+            const auto edited = processor.getCurrentSequence();
+
+            processor.runAutoEvolveTick();   // due tick while pending
+            expectEquals (processor.getMutationCount(), 0);
+            expect (processor.getCurrentSequence() == edited);
+
+            adoptPending (processor);
+            processor.runAutoEvolveTick();   // tick retries and mutates
+            expectEquals (processor.getMutationCount(), 1);
+
+            berlin::DeterministicRandom rng (berlin::MutationEngine::mutationSeed (processor.getSeed(), 1));
+            expect (processor.getCurrentSequence() == berlin::MutationEngine::applyRandomTransform (edited, rng));
+            expect (processor.isEdited());
+
+            processor.setAutoEvolveEnabled (false);
         }
     }
 };

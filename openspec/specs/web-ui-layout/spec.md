@@ -109,7 +109,8 @@ The layout MUST use one breakpoint at 1100 px viewport width. At or above it, an
 
 ### Requirement: Knob Control
 
-Synth panel range controls MUST render as `Knob`, wrapping a visually hidden native range input. A Knob MUST keep the aria-label, min/max/step, disabled state and dispatch of the Slider it replaces. Skewed controls MUST use the existing `SKEWS` mapping. Pointer drag MUST be vertical, 200 px of travel being the full range. Keyboard MUST work through the native input. Wheel and double-click reset MUST NOT be supported. A pure helper `ui/src/lib/knob.ts` MUST implement the drag math.
+Synth panel range controls MUST render as `Knob`, wrapping a visually hidden native range input. A Knob MUST keep the aria-label, min/max/step, disabled state and dispatch of the Slider it replaces. Skewed controls MUST use the existing `SKEWS` mapping. Pointer drag MUST be vertical, 200 px of travel being the full range. Keyboard MUST work through the native input. Wheel and double-click reset MUST NOT be supported. A pure helper `ui/src/lib/knob.ts` MUST implement the drag math. A pointer move with no pressed button (`buttons === 0`) or on a disabled Knob MUST end any drag in progress and dispatch nothing. Losing pointer capture (`lostpointercapture`) MUST end the drag.
+(Previously: a move was not checked for pressed buttons or disabled state, and lost pointer capture did not end the drag, so a missed pointer-up could leave the Knob tracking a button-less pointer.)
 
 #### Scenario: Drag math [V]
 - GIVEN range 0..1 at 0.5
@@ -141,9 +142,30 @@ Synth panel range controls MUST render as `Knob`, wrapping a visually hidden nat
 - WHEN a Knob is dragged
 - THEN it tracks the pointer smoothly
 
+#### Scenario: Button-less move ends the drag [V]
+- GIVEN a drag in progress on an enabled Knob
+- WHEN a pointer move arrives with `buttons === 0`
+- THEN nothing is dispatched and the drag has ended, so a following move with `buttons === 1` and no new pointer-down also dispatches nothing
+
+#### Scenario: Move on a disabled Knob dispatches nothing [V]
+- GIVEN a Knob that is disabled while pointer events are fired at it
+- WHEN a pointer-down and a pointer move with `buttons === 1` occur
+- THEN nothing is dispatched and no drag is active
+
+#### Scenario: Lost pointer capture ends the drag [V]
+- GIVEN a drag in progress
+- WHEN `lostpointercapture` fires
+- THEN the drag ends and a following move with `buttons === 1` dispatches nothing
+
+#### Scenario: Normal drag is unaffected [V]
+- GIVEN an enabled Knob
+- WHEN pointer-down, then moves with `buttons === 1`, then pointer-up occur
+- THEN the drag dispatches values as before
+
 ### Requirement: Step View
 
-MainArea MUST show 16 steps, each with step number, gate LED, and note name. The playhead step MUST be highlighted and gated steps MUST be visually distinct from rests. It MUST be driven only by the snapshot and `playhead` events.
+MainArea MUST show 16 steps, each with step number, gate LED, and note name. The playhead step MUST be highlighted and gated steps MUST be visually distinct from rests. Display MUST be driven only by the snapshot, optimistic `step.<i>` values and `playhead` events. Cells MUST be interactive as defined in capability `step-editing` (click mute, drag and wheel note change, roving-tabindex keyboard, aria-label and `aria-pressed`). Muted steps MUST show their note dimmed. A small "edited" indicator MUST show while `snapshot.edited` is true. Interactive targets keep the 44 px minimum.
+(Previously: read-only, driven only by the snapshot and `playhead` events; no handlers, dimming or indicator.)
 
 #### Scenario: Gate distinction [V]
 - GIVEN a snapshot with step 1 gated (MIDI 48; naming convention MIDI 60 = C4) and step 2 rest
@@ -154,6 +176,21 @@ MainArea MUST show 16 steps, each with step number, gate LED, and note name. The
 - GIVEN a `playhead {step:4}` event
 - WHEN received
 - THEN only step 4 is highlighted
+
+#### Scenario: Muted note dimmed [V]
+- GIVEN step 2 is a rest with note 50
+- WHEN rendered
+- THEN its note text "D3" is shown with the dimmed style
+
+#### Scenario: Edited indicator follows snapshot [V]
+- GIVEN a snapshot with `edited:true`, then a snapshot event with `edited:false`
+- WHEN rendered
+- THEN the indicator is shown, then removed
+
+#### Scenario: Focus ring on cells [M]
+- GIVEN keyboard focus on a step cell
+- WHEN focused
+- THEN the accent focus ring is visible
 
 ### Requirement: Delay-Times Card
 

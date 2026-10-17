@@ -192,18 +192,18 @@ export function SettingsDialog({ settings, onClose }: SettingsDialogProps) {
                 />
                 <Select label="MIDI channel" value={String(form.midiChannel)} options={CHANNELS} onChange={(v) => update({ midiChannel: Number(v) })} />
               </section>
-            <section className="dialog-section">
-              <h3>Output level</h3>
-              <Slider
-                label="Output level"
-                value={level}
-                min={LIMITS.outputLevel.min}
-                max={LIMITS.outputLevel.max}
-                step={0.01}
-                format={formatDb}
-                onChange={(next) => store.send('masterLevel', { name: 'setMasterLevel', args: { level: next } }, next)}
-              />
-            </section>
+              <section className="dialog-section">
+                <h3>Output level</h3>
+                <Slider
+                  label="Output level"
+                  value={level}
+                  min={LIMITS.outputLevel.min}
+                  max={LIMITS.outputLevel.max}
+                  step={0.01}
+                  format={formatDb}
+                  onChange={(next) => store.send('masterLevel', { name: 'setMasterLevel', args: { level: next } }, next)}
+                />
+              </section>
             </>
           )}
           {applyError && <p role="alert" className="dialog-error">{errorText(applyError)}</p>}

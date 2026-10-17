@@ -1,10 +1,6 @@
-import { rangeAttrs } from '../../lib/knob';
+import { rangeAttrs, type Skew } from '../../lib/knob';
 
-// A skewed slider moves over a 0..1 position; `skew` converts between that position and the real value.
-export interface Skew {
-  toPosition(value: number): number;
-  toValue(position: number): number;
-}
+export type { Skew } from '../../lib/knob';
 
 export interface SliderProps {
   label: string;

@@ -55,7 +55,8 @@ public:
         This class implements the desktop window that contains an instance of
         our MainComponent class.
     */
-    class MainWindow    : public juce::DocumentWindow
+    class MainWindow    : public juce::DocumentWindow,
+                          private juce::ComponentPeer::ScaleFactorListener
     {
     public:
         MainWindow (juce::String name)
@@ -85,7 +86,22 @@ public:
             // The native frame (title bar, borders) exists only once the peer does. The resize
             // constrainer works on the whole window, so the limits must include the frame for the
             // CONTENT to stay within the editor's limits.
-            applyEditorLimits();
+            trackPeer();
+           #endif
+        }
+
+        ~MainWindow() override
+        {
+            if (juce::ComponentPeer::isValidPeer (trackedPeer))
+                trackedPeer->removeScaleFactorListener (this);
+        }
+
+        // A new peer (shown, re-created) has its own frame size and scale factor.
+        void parentHierarchyChanged() override
+        {
+            DocumentWindow::parentHierarchyChanged();
+           #if ! (JUCE_IOS || JUCE_ANDROID)
+            trackPeer();
            #endif
         }
 
@@ -109,6 +125,9 @@ public:
         // Message thread only; the audio path is untouched.
         void applyEditorLimits()
         {
+            if (editorLimits == nullptr)   // a peer re-created before the constructor sets it
+                return;
+
             auto frame = getContentComponentBorder();
 
             if (auto* peer = getPeer())
@@ -124,7 +143,28 @@ public:
                              editorLimits->getMaximumWidth() + extraW, editorLimits->getMaximumHeight() + extraH);
         }
 
+        // Listens to the current peer's scale factor and re-applies the limits. The frame size is
+        // in logical pixels, so it changes when the display scale (DPI) changes or the window moves
+        // to a monitor with a different scale. removeFromDesktop() deletes a peer without notice,
+        // so the old pointer is checked with isValidPeer, and the listener is always re-added
+        // (a new peer can reuse the old address).
+        void trackPeer()
+        {
+            if (juce::ComponentPeer::isValidPeer (trackedPeer))
+                trackedPeer->removeScaleFactorListener (this);
+
+            trackedPeer = getPeer();
+
+            if (trackedPeer != nullptr)
+                trackedPeer->addScaleFactorListener (this);
+
+            applyEditorLimits();
+        }
+
+        void nativeScaleFactorChanged (double) override   { applyEditorLimits(); }
+
         const juce::ComponentBoundsConstrainer* editorLimits = nullptr;   // set in the constructor; owned by the editor, which MainComponent owns
+        juce::ComponentPeer* trackedPeer = nullptr;                        // never dereferenced unless isValidPeer
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };

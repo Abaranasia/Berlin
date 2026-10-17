@@ -27,8 +27,10 @@
 #include <cerrno>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 
 #include "generation/SequenceBuilder.h"   // normalizePitchRange
+#include "generation/StepEdit.h"          // scaleNotesFor
 #include "plugin/BerlinAudioProcessor.h"
 
 namespace berlin
@@ -198,6 +200,26 @@ namespace
             return juce::String ("missing arg: ") + field;
 
         return readFiniteNumber (args, field, out);
+    }
+
+    // Absolute integer arg (setStep): a finite, integral number. A fractional
+    // value is a type error (never rounded: absolute values must not be silently
+    // altered). Values beyond int range are clamped to the int limits BEFORE the
+    // cast, so they fail later as range errors instead of wrapping into garbage.
+    juce::String readRequiredInt (const juce::var& args, const char* field, int& out)
+    {
+        double raw = 0.0;
+
+        if (auto err = readRequiredNumber (args, field, raw); err.isNotEmpty())
+            return err;
+
+        if (raw != std::trunc (raw))
+            return juce::String ("invalid type: ") + field;
+
+        out = static_cast<int> (std::clamp (raw,
+                                            static_cast<double> (std::numeric_limits<int>::min()),
+                                            static_cast<double> (std::numeric_limits<int>::max())));
+        return {};
     }
 
     juce::String readRequiredBool (const juce::var& args, const char* field, bool& out)
@@ -511,6 +533,16 @@ namespace
         return juce::var (obj);
     }
 
+    juce::var encodeScaleNotes (const GenerationParams& params)
+    {
+        juce::Array<juce::var> notes;
+
+        for (const int note : scaleNotesFor (params))
+            notes.add (note);
+
+        return juce::var (notes);
+    }
+
     juce::var encodeSteps (const Sequence& sequence)
     {
         juce::Array<juce::var> steps;
@@ -527,7 +559,7 @@ namespace
     }
 
     //==========================================================================
-    // ---- D9: the 15-entry dispatch table + its handlers. Each handler parses
+    // ---- D9: the 16-entry dispatch table + its handlers. Each handler parses
     //      and validates everything into locals BEFORE calling any mutator. --
 
     juce::String handleSetPlaying (BerlinAudioProcessor& processor, const juce::var& args)
@@ -589,6 +621,33 @@ namespace
         // D14: BerlinAudioProcessor::regenerate() itself checks busy BEFORE
         // drawing a seed, so a busy randomize draws no seed and changes nothing.
         return processor.regenerate (randomize) ? juce::String() : juce::String ("busy");
+    }
+
+    // setStep {index, note, active}: parse everything into locals first, then one
+    // editStep call (validation order index, note, busy lives in the processor).
+    juce::String handleSetStep (BerlinAudioProcessor& processor, const juce::var& args)
+    {
+        int index = 0;
+        if (auto err = readRequiredInt (args, "index", index); err.isNotEmpty())
+            return err;
+
+        int note = 0;
+        if (auto err = readRequiredInt (args, "note", note); err.isNotEmpty())
+            return err;
+
+        bool active = false;
+        if (auto err = readRequiredBool (args, "active", active); err.isNotEmpty())
+            return err;
+
+        switch (processor.editStep (index, note, active))
+        {
+            case StepEditResult::ok:             return {};
+            case StepEditResult::busy:           return "busy";
+            case StepEditResult::stepOutOfRange: return "step-out-of-range";
+            case StepEditResult::noteOutOfScale: return "note-out-of-scale";
+        }
+
+        return "busy";   // unreachable for a valid enumerator
     }
 
     juce::String handleMutate (BerlinAudioProcessor& processor, const juce::var&)
@@ -711,9 +770,10 @@ namespace
         { "savePreset",           handleSavePreset },
         { "loadPreset",           handleLoadPreset },
         { "exportMidi",           handleExportMidi },
+        { "setStep",              handleSetStep },
     };
 
-    static_assert (sizeof (kCommands) / sizeof (kCommands[0]) == 15);
+    static_assert (sizeof (kCommands) / sizeof (kCommands[0]) == 16);
 }
 
 //==============================================================================
@@ -771,6 +831,8 @@ juce::var UiBridge::snapshot() const
     obj->setProperty ("autoEvolveEnabled", processor.isAutoEvolveEnabled());
     obj->setProperty ("autoEvolveRate", processor.getAutoEvolveRate());
     obj->setProperty ("mutationCount", processor.getMutationCount());
+    obj->setProperty ("edited", processor.isEdited());
+    obj->setProperty ("scaleNotes", encodeScaleNotes (processor.getGenerationParams()));
     obj->setProperty ("steps", encodeSteps (processor.getCurrentSequence()));
 
     juce::Array<juce::var> presetNames;

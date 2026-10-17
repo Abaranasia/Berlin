@@ -1,4 +1,4 @@
-// Delay recommendations (legacy formatDelayRecommendations): one beat is 60000 / bpm ms, times each factor.
+// Delay recommendations (the original JUCE editor's formatDelayRecommendations): one beat is 60000 / bpm ms, times each factor.
 const DIVISIONS = [
   { label: '1/2', factor: 2 },
   { label: '1/4', factor: 1 },
