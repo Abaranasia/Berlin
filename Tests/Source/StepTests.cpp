@@ -53,16 +53,33 @@ public:
             expect (! (a == b));
         }
 
+        beginTest ("skipped defaults to false and a two-field init compiles");
+        {
+            const berlin::Step step { 60, true };
+
+            expect (! step.skipped);
+            expect (! berlin::Step {}.skipped);
+        }
+
+        beginTest ("equality - differing skipped compares unequal");
+        {
+            const berlin::Step a { 60, true, false };
+            const berlin::Step b { 60, true, true };
+
+            expect (! (a == b));
+            expect (b == berlin::Step { 60, true, true });
+        }
+
         beginTest ("no extra fields (review note)");
         {
             // C++ has no runtime member reflection, so this cannot be a real
             // assertion - it is a documented review check. Step.h's
             // static_assert(std::is_aggregate_v<Step>) enforces aggregate
             // shape; a reviewer must additionally confirm the type still
-            // exposes exactly `note` and `active` and nothing else (no
+            // exposes exactly `note`, `active` and `skipped` and nothing else (no
             // velocity, gate length, duration, probability, timing-offset,
             // or accent fields per the sequencing-core spec).
-            expect (true, "Reviewer must confirm Step exposes exactly {note, active} - see comment above.");
+            expect (true, "Reviewer must confirm Step exposes exactly {note, active, skipped} - see comment above.");
         }
     }
 };

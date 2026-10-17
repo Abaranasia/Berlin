@@ -94,8 +94,9 @@ namespace
 
     constexpr IntField<GenerationParams> kGenerationIntFields[] =
     {
-        { "pulses",         &GenerationParams::pulses,         0, kNumSteps },
-        { "rotation",       &GenerationParams::rotation,       0, kNumSteps - 1 },
+        { "length",         &GenerationParams::length,         1, kMaxSteps },
+        { "pulses",         &GenerationParams::pulses,         0, kMaxSteps },
+        { "rotation",       &GenerationParams::rotation,       0, kMaxSteps - 1 },
         { "rootPitchClass", &GenerationParams::rootPitchClass, 0, 11 },
         { "rangeLow",       &GenerationParams::rangeLow,       kMinPitch, kMaxPitch },
         { "rangeHigh",      &GenerationParams::rangeHigh,      kMinPitch, kMaxPitch },
@@ -318,7 +319,7 @@ namespace
     {
         static const std::initializer_list<const char*> known =
         {
-            "mode", "pulses", "rotation", "stepProbability", "lockSeed",
+            "mode", "pulses", "rotation", "stepProbability", "lockSeed", "length",
             "scaleType", "rootPitchClass", "rangeLow", "rangeHigh",
         };
 
@@ -426,6 +427,10 @@ namespace
 
             params.*(f.member) = value;
         }
+
+        // Euclidean pulses/rotation can never exceed the (staged) length.
+        params.pulses   = std::clamp (params.pulses, 0, params.length);
+        params.rotation = std::clamp (params.rotation, 0, params.length - 1);
 
         for (auto& f : kGenerationFloatFields)
         {
@@ -552,6 +557,7 @@ namespace
             auto* stepObject = new juce::DynamicObject();
             stepObject->setProperty ("note", sequence[i].note);
             stepObject->setProperty ("active", sequence[i].active);
+            stepObject->setProperty ("skipped", sequence[i].skipped);
             steps.add (juce::var (stepObject));
         }
 
@@ -623,7 +629,7 @@ namespace
         return processor.regenerate (randomize) ? juce::String() : juce::String ("busy");
     }
 
-    // setStep {index, note, active}: parse everything into locals first, then one
+    // setStep {index, note, active, skipped?}: parse everything into locals first, then one
     // editStep call (validation order index, note, busy lives in the processor).
     juce::String handleSetStep (BerlinAudioProcessor& processor, const juce::var& args)
     {
@@ -639,7 +645,18 @@ namespace
         if (auto err = readRequiredBool (args, "active", active); err.isNotEmpty())
             return err;
 
-        switch (processor.editStep (index, note, active))
+        // Optional: absent keeps the step's current flag; present must be a bool.
+        std::optional<bool> skipped;
+        if (args.hasProperty ("skipped"))
+        {
+            bool value = false;
+            if (auto err = readRequiredBool (args, "skipped", value); err.isNotEmpty())
+                return err;
+
+            skipped = value;
+        }
+
+        switch (processor.editStep (index, note, active, skipped))
         {
             case StepEditResult::ok:             return {};
             case StepEditResult::busy:           return "busy";

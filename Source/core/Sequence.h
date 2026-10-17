@@ -24,6 +24,9 @@
 namespace berlin
 {
 
+// Upper bound on a Sequence's length (step-model). kNumSteps stays the default.
+inline constexpr int kMaxSteps = 64;
+
 class Sequence
 {
 public:

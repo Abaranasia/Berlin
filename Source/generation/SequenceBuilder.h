@@ -39,6 +39,10 @@ namespace berlin
 
 void normalizePitchRange (int& low, int& high) noexcept;
 
+// Active steps for random mode at `length`: the 11-of-16 ratio, at least 1.
+// randomActiveCount (16) == 11, so a length-16 build draws exactly as before.
+int randomActiveCount (int length) noexcept;
+
 Sequence buildSeededSequence (juce::int64 seed, const GenerationParams& params);
 
 } // namespace berlin

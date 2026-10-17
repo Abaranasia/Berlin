@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   COMMAND_NAMES, WAVEFORMS, LFO_DESTINATIONS, DELAY_DIVISIONS, RHYTHM_MODES, SCALE_TYPES,
-  type Command, type DispatchResult, type ErrorToken, type Snapshot,
+  type Command, type DispatchResult, type ErrorToken, type GenerationParams, type Snapshot,
 } from './protocol';
 
 // Literal lists copied from the ui-bridge "Encoding Conventions" requirement.
@@ -49,6 +49,15 @@ describe('step editing protocol', () => {
     const missing: Command = { name: 'setStep', args: { index: 2, note: 50 } };
     expect(cmd.args).toEqual({ index: 2, note: 50, active: true });
     expect(missing.name).toBe('setStep');
+  });
+
+  it('setStep accepts an optional skipped flag and the snapshot carries skipped steps and the length', () => {
+    const cmd: Command = { name: 'setStep', args: { index: 2, note: 50, active: true, skipped: true } };
+    const step: Snapshot['steps'][number] = { note: 50, active: true, skipped: false };
+    const length: GenerationParams['length'] = 24;
+    expect(cmd.args).toMatchObject({ skipped: true });
+    expect(step.skipped).toBe(false);
+    expect(length).toBe(24);
   });
 
   it('the snapshot type carries edited and scaleNotes', () => {

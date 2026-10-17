@@ -8,6 +8,8 @@
 
 #include "MidiExportTimeline.h"
 
+#include "core/StepCursor.h"
+
 namespace berlin
 {
 
@@ -30,8 +32,9 @@ MidiExportStatus buildMidiExportTimeline (const Sequence& sequence,
         return MidiExportStatus::invalidStepsPerBeat;         // never rounded
 
     const int       ticksPerStep = kTicksPerQuarterNote / stepsPerBeat;   // exact by the guard above
-    const long long totalSteps   = static_cast<long long> (repeats) * sequence.size();
+    const long long totalSteps   = static_cast<long long> (repeats) * countPlayableSteps (sequence);   // skipped steps take no time
     int             pendingNote  = -1;
+    int             cursor       = -1;   // same walk as SequencePlayer (core/StepCursor.h)
 
     for (long long k = 0; k < totalSteps; ++k)
     {
@@ -41,7 +44,8 @@ MidiExportStatus buildMidiExportTimeline (const Sequence& sequence,
             out.events.push_back ({ tick, pendingNote, false });
         pendingNote = -1;
 
-        const Step& step = sequence[static_cast<int> (k % sequence.size())];   // loop wrap
+        cursor = nextPlayableStep (sequence, cursor).index;   // loop wrap; never -1 while totalSteps > 0
+        const Step& step = sequence[cursor];
         if (step.active)
         {
             out.events.push_back ({ tick, step.note, true });

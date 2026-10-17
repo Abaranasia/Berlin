@@ -40,6 +40,14 @@ namespace
         juce::File dir;
     };
 
+    // Runs one tiny block so the audio side adopts any pending publish.
+    void adoptPending (berlin::BerlinAudioProcessor& processor)
+    {
+        juce::AudioBuffer<float> buffer (2, 1);
+        juce::MidiBuffer midi;
+        processor.processBlock (buffer, midi);
+    }
+
     // GIVEN/WHEN/THEN helper (ui-bridge spec's "Rejected Input Leaves State
     // Unchanged" requirement): every rejected dispatch must leave state
     // byte-identical, verified as JSON::toString(snapshot()) equality.
@@ -552,9 +560,9 @@ public:
 
             auto* generationObject = snap["generationParams"].getDynamicObject();
             expect (generationObject != nullptr);
-            expectEquals (generationObject->getProperties().size(), 9);
+            expectEquals (generationObject->getProperties().size(), 10);
 
-            for (auto* key : { "mode", "pulses", "rotation", "stepProbability", "lockSeed",
+            for (auto* key : { "mode", "pulses", "rotation", "stepProbability", "lockSeed", "length",
                                 "scaleType", "rootPitchClass", "rangeLow", "rangeHigh" })
                 expect (snap["generationParams"].hasProperty (key), juce::String ("generationParams missing key: ") + key);
 
@@ -565,7 +573,11 @@ public:
             {
                 expect (snap["steps"][i].hasProperty ("note"));
                 expect (snap["steps"][i].hasProperty ("active"));
+                expect (snap["steps"][i].hasProperty ("skipped"));
+                expect (! static_cast<bool> (snap["steps"][i]["skipped"]));
             }
+
+            expectEquals ((int) snap["generationParams"]["length"], 16);
         }
 
         beginTest ("decodeGenerationParamsMerge: omitted range endpoint unchanged, supplied one span-clamped (REL-1)");
@@ -759,6 +771,93 @@ public:
                 args->setProperty ("active", 1);   // not a bool
                 check (args, "invalid type: active");
             }
+        }
+
+        // ---- Variable length and skip (step-model).
+
+        beginTest ("setGenerationParams length: 0 clamps to 1, 99 clamps to 64, staged (the playing sequence is untouched)");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+            const auto stepsBefore = (int) bridge.snapshot()["steps"].size();
+
+            auto low = new juce::DynamicObject();
+            low->setProperty ("length", 0);
+            auto result = bridge.dispatch ("setGenerationParams", juce::var (low));
+            expect (static_cast<bool> (result["ok"]));
+            expectEquals ((int) result["snapshot"]["generationParams"]["length"], 1);
+
+            auto high = new juce::DynamicObject();
+            high->setProperty ("length", 99);
+            result = bridge.dispatch ("setGenerationParams", juce::var (high));
+            expectEquals ((int) result["snapshot"]["generationParams"]["length"], 64);
+            expectEquals ((int) result["snapshot"]["steps"].size(), stepsBefore);
+        }
+
+        beginTest ("setGenerationParams: pulses and rotation are clamped to the length (in the same call and later)");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+
+            auto args = new juce::DynamicObject();
+            args->setProperty ("length", 8);
+            args->setProperty ("pulses", 20);
+            args->setProperty ("rotation", 20);
+            auto result = bridge.dispatch ("setGenerationParams", juce::var (args));
+            expectEquals ((int) result["snapshot"]["generationParams"]["pulses"], 8);
+            expectEquals ((int) result["snapshot"]["generationParams"]["rotation"], 7);
+
+            auto shrink = new juce::DynamicObject();
+            shrink->setProperty ("length", 4);
+            result = bridge.dispatch ("setGenerationParams", juce::var (shrink));
+            expectEquals ((int) result["snapshot"]["generationParams"]["pulses"], 4);
+            expectEquals ((int) result["snapshot"]["generationParams"]["rotation"], 3);
+
+            auto wide = new juce::DynamicObject();
+            wide->setProperty ("length", 64);
+            wide->setProperty ("pulses", 40);
+            wide->setProperty ("rotation", 63);
+            result = bridge.dispatch ("setGenerationParams", juce::var (wide));
+            expectEquals ((int) result["snapshot"]["generationParams"]["pulses"], 40);
+            expectEquals ((int) result["snapshot"]["generationParams"]["rotation"], 63);
+        }
+
+        beginTest ("setStep skipped: sets the flag in the snapshot; a non-bool is invalid type: skipped; absent keeps it");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            berlin::UiBridge bridge (processor);
+            const int note = bridge.snapshot()["steps"][2]["note"];
+
+            auto args = new juce::DynamicObject();
+            args->setProperty ("index", 2);
+            args->setProperty ("note", note);
+            args->setProperty ("active", true);
+            args->setProperty ("skipped", true);
+            auto result = bridge.dispatch ("setStep", juce::var (args));
+            expect (static_cast<bool> (result["ok"]));
+            expect (static_cast<bool> (result["snapshot"]["steps"][2]["skipped"]));
+
+            auto bad = new juce::DynamicObject();
+            bad->setProperty ("index", 2);
+            bad->setProperty ("note", note);
+            bad->setProperty ("active", true);
+            bad->setProperty ("skipped", "x");
+            const auto before = snapshotText (bridge);
+            result = bridge.dispatch ("setStep", juce::var (bad));
+            expect (! static_cast<bool> (result["ok"]));
+            expect (result["error"].toString() == "invalid type: skipped");
+            expect (snapshotText (bridge) == before);
+
+            adoptPending (processor);
+            auto keep = new juce::DynamicObject();
+            keep->setProperty ("index", 2);
+            keep->setProperty ("note", note);
+            keep->setProperty ("active", false);
+            result = bridge.dispatch ("setStep", juce::var (keep));
+            expect (static_cast<bool> (result["ok"]));
+            expect (static_cast<bool> (result["snapshot"]["steps"][2]["skipped"]));
+            expect (! static_cast<bool> (result["snapshot"]["steps"][2]["active"]));
         }
 
         beginTest ("dispatch surface is exactly 16 commands; settings functions are not dispatch commands");

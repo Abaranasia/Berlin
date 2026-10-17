@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { accumulateWheel, classifyGesture, dragSteps, focusTarget, noteAfter } from '../lib/stepEdit';
 import { noteName } from '../lib/noteName';
-import { STEP_COUNT, stepRow } from '../state/steps';
+import { ROW_SIZE, stepRow } from '../state/steps';
 import { sendStep } from '../store/actions';
 import { useStore, useStoreApi } from '../store/context';
 import { shown, type Store } from '../store/store';
@@ -9,6 +9,7 @@ import { shown, type Store } from '../store/store';
 interface StepValue {
   note: number;
   active: boolean;
+  skipped: boolean;
 }
 
 // What the step shows right now: the optimistic value while an edit is unsettled, else the engine's step.
@@ -25,12 +26,17 @@ function stepNote(store: Store, index: number, steps: number): void {
   const current = shownStep(store, index);
   if (!current) return;
   const note = noteAfter(scaleNotes(store), current.note, steps);
-  if (note !== current.note) sendStep(store, index, note, current.active);
+  if (note !== current.note) sendStep(store, index, note, current.active, current.skipped);
 }
 
 function toggleMute(store: Store, index: number): void {
   const current = shownStep(store, index);
-  if (current) sendStep(store, index, current.note, !current.active);
+  if (current) sendStep(store, index, current.note, !current.active, current.skipped);
+}
+
+function toggleSkip(store: Store, index: number): void {
+  const current = shownStep(store, index);
+  if (current) sendStep(store, index, current.note, current.active, !current.skipped);
 }
 
 interface StepCellProps {
@@ -38,6 +44,8 @@ interface StepCellProps {
   active: boolean; // the playhead is on this step
   note: number | undefined;
   gate: boolean | undefined;
+  skipped: boolean | undefined;
+  count: number; // steps in the sequence, for the Home/End focus targets
   focusable: boolean; // the roving tabindex stop
   onFocusCell(index: number): void;
 }
@@ -50,7 +58,7 @@ interface Drag {
 
 // Styled through the data-* attributes (see components.css); a muted step keeps its note, shown dimmed.
 // Click toggles mute, a vertical drag changes the note; the keyboard follows the roving-tabindex button pattern.
-const StepCell = memo(function StepCell({ index, active, note, gate, focusable, onFocusCell }: StepCellProps) {
+const StepCell = memo(function StepCell({ index, active, note, gate, skipped, count, focusable, onFocusCell }: StepCellProps) {
   const store = useStoreApi();
   const drag = useRef<Drag | null>(null);
 
@@ -66,7 +74,7 @@ const StepCell = memo(function StepCell({ index, active, note, gate, focusable, 
     d.dragged = true;
     const current = shownStep(store, index);
     const target = noteAfter(scaleNotes(store), d.startNote, dragSteps(d.startY, e.clientY));
-    if (current && target !== current.note) sendStep(store, index, target, current.active);
+    if (current && target !== current.note) sendStep(store, index, target, current.active, current.skipped);
   };
   const onPointerUp = () => {
     const d = drag.current;
@@ -74,11 +82,11 @@ const StepCell = memo(function StepCell({ index, active, note, gate, focusable, 
     if (d && !d.dragged) toggleMute(store, index);
   };
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const to = focusTarget(index, e.key, STEP_COUNT);
+    const to = focusTarget(index, e.key, count);
     if (to !== null) {
       e.preventDefault();
       onFocusCell(to);
-      e.currentTarget.parentElement?.querySelector<HTMLElement>(`[data-step="${to}"]`)?.focus();
+      e.currentTarget.closest('.steps')?.querySelector<HTMLElement>(`[data-step="${to}"]`)?.focus();
     } else if (e.key === ' ') {
       e.preventDefault();
       toggleMute(store, index);
@@ -88,27 +96,45 @@ const StepCell = memo(function StepCell({ index, active, note, gate, focusable, 
     }
   };
 
+  const label = note === undefined ? `Step ${index + 1}` : `Step ${index + 1}, ${noteName(note)}, ${gate ? 'on' : 'off'}${skipped ? ', skipped' : ''}`;
+
+  // The skip toggle is a sibling of the cell, not nested in it: a button inside role=button is invalid a11y.
+  // It joins the roving tabindex, so the row stays one tab stop for the cells and one for the skip buttons.
   return (
-    <div
-      className="step"
-      role="button"
-      tabIndex={focusable ? 0 : -1}
-      aria-pressed={gate === true}
-      aria-label={note === undefined ? `Step ${index + 1}` : `Step ${index + 1}, ${noteName(note)}, ${gate ? 'on' : 'off'}`}
-      data-step={index}
-      data-active={active}
-      data-note={note}
-      data-gate={gate}
-      onFocus={() => onFocusCell(index)}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={() => (drag.current = null)}
-      onKeyDown={onKeyDown}
-    >
-      <span className="step-num">{index + 1}</span>
-      <span className="led" data-on={gate === true} />
-      <span className="step-note">{note !== undefined ? noteName(note) : '·'}</span>
+    <div className="step-slot">
+      <div
+        className="step"
+        role="button"
+        tabIndex={focusable ? 0 : -1}
+        aria-pressed={gate === true}
+        aria-label={label}
+        data-step={index}
+        data-active={active}
+        data-note={note}
+        data-gate={gate}
+        data-skipped={skipped === true}
+        onFocus={() => onFocusCell(index)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => (drag.current = null)}
+        onKeyDown={onKeyDown}
+      >
+        <span className="step-num">{index + 1}</span>
+        <span className="led" data-on={gate === true} />
+        <span className="step-note">{note !== undefined ? noteName(note) : '·'}</span>
+      </div>
+      <button
+        type="button"
+        className="step-skip"
+        tabIndex={focusable ? 0 : -1}
+        aria-pressed={skipped === true}
+        aria-label={`Skip step ${index + 1}`}
+        title="Skip: the step takes no time in the pattern"
+        onClick={() => toggleSkip(store, index)}
+      >
+        Skip
+      </button>
     </div>
   );
 });
@@ -123,7 +149,9 @@ export function StepView() {
   const [focused, setFocused] = useState(0);
   const grid = useRef<HTMLDivElement>(null);
   const wheel = useRef({ index: -1, acc: 0 });
-  const row = stepRow(playhead.step, playhead.playing);
+  const count = steps?.length ?? ROW_SIZE; // 16 placeholders until the first snapshot
+  const row = stepRow(playhead.step, playhead.playing, count);
+  const tabStop = Math.min(focused, count - 1); // the sequence may have shrunk under the focused cell
 
   // React's onWheel is passive and cannot preventDefault, so the wheel is a native non-passive listener.
   useEffect(() => {
@@ -145,9 +173,11 @@ export function StepView() {
   return (
     <div className="step-view">
       <div className="steps" ref={grid}>
-        {Array.from({ length: STEP_COUNT }, (_, i) => {
+        {Array.from({ length: count }, (_, i) => {
           const value = (overlay[`step.${i}`] as StepValue | undefined) ?? steps?.[i];
-          return <StepCell key={i} index={i} active={row[i]} note={value?.note} gate={value?.active} focusable={i === focused} onFocusCell={setFocused} />;
+          return (
+            <StepCell key={i} index={i} active={row[i]} note={value?.note} gate={value?.active} skipped={value?.skipped} count={count} focusable={i === tabStop} onFocusCell={setFocused} />
+          );
         })}
       </div>
       {edited && (

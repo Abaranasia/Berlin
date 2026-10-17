@@ -218,7 +218,7 @@ bool BerlinAudioProcessor::regenerate (bool drawNewSeed)
     return true;
 }
 
-StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active)
+StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active, std::optional<bool> skipped)
 {
     // Validate first (index, then note), then busy: neither touches state.
     switch (validateStepEdit (currentSequence, scaleNotesFor (generationParams), index, note))
@@ -233,7 +233,7 @@ StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active)
         return StepEditResult::busy;
 
     auto next = currentSequence;
-    next[index] = Step { note, active };
+    next[index] = Step { note, active, skipped.value_or (next[index].skipped) };
 
     // publishSequence swaps through its argument, so publish a COPY (same
     // reasoning as regenerate()).

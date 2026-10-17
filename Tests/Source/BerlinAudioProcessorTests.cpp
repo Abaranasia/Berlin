@@ -1245,6 +1245,96 @@ public:
             expect (processor.editStep (16, 37, true) == berlin::StepEditResult::stepOutOfRange);
         }
 
+        // ---- Skip and variable length (step-model). `length` is a STAGED generation
+        // param: setGenerationParams commits it, the next generation applies it.
+
+        beginTest ("editStep() skipped: absent keeps the flag, present sets it, independent of the gate");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto original = processor.getCurrentSequence()[4];
+
+            expect (processor.editStep (4, original.note, true, true) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4].skipped);
+            expect (processor.getCurrentSequence()[4].active);
+            expectEquals (processor.getCurrentSequence()[4].note, original.note);
+
+            expect (processor.editStep (4, 41, false) == berlin::StepEditResult::ok);   // skipped absent
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, true });
+
+            expect (processor.editStep (4, 41, false, false) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, false });
+        }
+
+        beginTest ("setGenerationParams{length} is staged: the playing sequence is untouched, the next Generate rebuilds at that length");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto before = processor.getCurrentSequence();
+
+            auto params = processor.getGenerationParams();
+            params.length = 32;
+            processor.setGenerationParams (params);
+
+            expectEquals (processor.getGenerationParams().length, 32);
+            expect (processor.getCurrentSequence() == before);
+            expect (processor.regenerate (false));   // would fail busy had setGenerationParams published
+            expectEquals (processor.getCurrentSequence().size(), 32);
+            expect (processor.getCurrentSequence() == berlin::buildSeededSequence (processor.getSeed(), params));
+        }
+
+        beginTest ("setGenerationParams clamps length to 1..kMaxSteps");
+        {
+            berlin::BerlinAudioProcessor processor;
+            auto params = processor.getGenerationParams();
+
+            params.length = 0;
+            processor.setGenerationParams (params);
+            expectEquals (processor.getGenerationParams().length, 1);
+
+            params.length = 500;
+            processor.setGenerationParams (params);
+            expectEquals (processor.getGenerationParams().length, berlin::kMaxSteps);
+        }
+
+        beginTest ("editStep() reaches steps beyond 16 once the sequence is longer; index == size is rejected");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+
+            auto params = processor.getGenerationParams();
+            params.length = 24;
+            processor.setGenerationParams (params);
+            expect (processor.regenerate (false));
+            adoptPending (processor);
+
+            expect (processor.editStep (20, 41, true, true) == berlin::StepEditResult::ok);
+            expect (processor.editStep (24, 41, true) == berlin::StepEditResult::stepOutOfRange);
+        }
+
+        beginTest ("Randomize and loadPreset keep the live length");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor processor (temp.dir);
+            processor.prepareToPlay (44100.0, 64);
+            expect (processor.save ("Length Keep") == berlin::PresetResult::ok);
+
+            auto params = processor.getGenerationParams();
+            params.length = 40;
+            processor.setGenerationParams (params);
+
+            expect (processor.regenerate (true));
+            expectEquals (processor.getCurrentSequence().size(), 40);
+            adoptPending (processor);
+
+            expect (processor.loadPreset ("Length Keep") == berlin::PresetResult::ok);
+            expectEquals (processor.getCurrentSequence().size(), 40);
+            expectEquals (processor.getGenerationParams().length, 40);
+        }
+
         beginTest ("editStep() idempotent re-send gives an identical sequence and still publishes");
         {
             berlin::BerlinAudioProcessor processor;

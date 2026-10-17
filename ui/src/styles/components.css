@@ -40,6 +40,7 @@
 
 /* Step view: styled through the data-* attributes the cells carry. */
 .steps { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 6px; }
+.step-slot { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .step {
   display: flex;
   flex-direction: column;
@@ -57,6 +58,18 @@
   user-select: none;
 }
 .step[data-active='true'] { border-color: var(--accent); background: var(--accent-active-bg); }
+.step[data-skipped='true'] { opacity: 0.45; border-style: dashed; background: transparent; }
+.step[data-skipped='true'] .step-note { text-decoration: line-through; }
+.step-skip {
+  padding: 2px 0;
+  font: 10px var(--font-mono);
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.step-skip[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
 .step-num { font: 10px var(--font-mono); color: var(--muted); }
 .step-note { font: 12px var(--font-mono); color: var(--muted); }
 .step[data-gate='true'] .step-note { color: var(--text); }

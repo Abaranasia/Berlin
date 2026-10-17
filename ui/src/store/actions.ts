@@ -16,6 +16,6 @@ export function sendGen<F extends LiveGenerationField>(store: Store, field: F, v
 export const sendRange = (store: Store, rangeLow: number, rangeHigh: number): void =>
   store.send('gen.range', { name: 'setGenerationParams', args: { rangeLow, rangeHigh } }, [rangeLow, rangeHigh]);
 
-// One lane per step (`step.<i>`): absolute {note, active} values, so the latest pending one replaces any earlier one.
-export const sendStep = (store: Store, index: number, note: number, active: boolean): void =>
-  store.send(`step.${index}`, { name: 'setStep', args: { index, note, active } }, { note, active });
+// One lane per step (`step.<i>`): absolute {note, active, skipped} values, so the latest pending one replaces any earlier one.
+export const sendStep = (store: Store, index: number, note: number, active: boolean, skipped: boolean): void =>
+  store.send(`step.${index}`, { name: 'setStep', args: { index, note, active, skipped } }, { note, active, skipped });

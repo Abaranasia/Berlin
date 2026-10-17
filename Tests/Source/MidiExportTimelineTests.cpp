@@ -344,6 +344,74 @@ public:
                 expect (fromExport[i].noteOn == live[i].noteOn);
             }
         }
+
+        beginTest ("a skipped step consumes zero ticks: the timeline contains only the non-skipped steps");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true, true }, { 64, true } });
+            berlin::MidiExportTimeline out;
+
+            const auto status = berlin::buildMidiExportTimeline (sequence, 4, 2, out);
+
+            expect (status == berlin::MidiExportStatus::ok);
+            expectEquals (out.endTick, (long long) 2 * 2 * 240);   // repeats * playable steps * ticksPerStep
+
+            // 60, 64, 60, 64 on ticks 0, 240, 480, 720 with note-offs at the next boundary.
+            expectEquals ((int) out.events.size(), 8);
+            expect (out.events[0] == berlin::MidiExportEvent { 0, 60, true });
+            expect (out.events[1] == berlin::MidiExportEvent { 240, 60, false });
+            expect (out.events[2] == berlin::MidiExportEvent { 240, 64, true });
+            expect (out.events[7] == berlin::MidiExportEvent { 960, 64, false });
+
+            for (const auto& e : out.events)
+                expect (e.note != 62);
+        }
+
+        beginTest ("all-skipped sequence yields ok, zero events, endTick == 0");
+        {
+            auto sequence = makeSequence ({ { 60, true, true }, { 62, true, true } });
+            berlin::MidiExportTimeline out;
+
+            const auto status = berlin::buildMidiExportTimeline (sequence, 4, 3, out);
+
+            expect (status == berlin::MidiExportStatus::ok);
+            expect (out.events.empty());
+            expectEquals (out.endTick, (long long) 0);
+        }
+
+        beginTest ("equivalence with live playback: skip/rest mix over two repeats matches player offsets as ticks");
+        {
+            auto sequence = makeSequence ({ { 60, true, true }, { 62, true }, { 0, false }, { 64, true }, { 65, true, true }, { 67, true } });
+
+            // bpm=60, stepsPerBeat=4 @ sampleRate 4 -> one sample per step, 240 ticks per sample.
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+            player.prepare (4.0);
+            player.start();
+
+            struct Ordered { long long tick; int note; bool noteOn; };
+            std::vector<Ordered> live;
+
+            berlin::StepEventBuffer buffer;
+            for (int i = 0; i < 2 * 4; ++i)   // two passes of the 4 playable steps
+            {
+                player.process (1, buffer);
+                for (int j = 0; j < buffer.size(); ++j)
+                    live.push_back ({ (long long) (i + buffer[j].sampleOffset) * 240, buffer[j].note, buffer[j].isNoteOn });
+            }
+
+            if (player.flushPendingNoteOff (buffer))
+                live.push_back ({ (long long) 2 * 4 * 240, buffer[0].note, buffer[0].isNoteOn });
+
+            berlin::MidiExportTimeline exported;
+            berlin::buildMidiExportTimeline (sequence, 4, 2, exported);
+
+            expectEquals ((int) exported.events.size(), (int) live.size());
+            for (std::size_t i = 0; i < live.size() && i < exported.events.size(); ++i)
+            {
+                expectEquals (exported.events[i].tick, live[i].tick);
+                expectEquals (exported.events[i].note, live[i].note);
+                expect (exported.events[i].noteOn == live[i].noteOn);
+            }
+        }
     }
 };
 

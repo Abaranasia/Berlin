@@ -18,6 +18,7 @@ describe('RhythmPanel', () => {
   it('fields reflect the snapshot', async () => {
     const { host } = await mount();
     expect(field<HTMLSelectElement>(host, 'Rhythm mode').value).toBe('random');
+    expect(field(host, 'Length').value).toBe('16');
     expect(field(host, 'Pulses').value).toBe('5');
     expect(field(host, 'Rotation').value).toBe('0');
     expect(field(host, 'Chance %').value).toBe('50'); // stepProbability 0.5 shown as a percentage
@@ -53,6 +54,23 @@ describe('RhythmPanel', () => {
     expect(dispatch).toHaveBeenLastCalledWith({ name: 'setGenerationParams', args: { stepProbability: 0.25 } });
     expect(dispatch).toHaveBeenCalledTimes(3); // no regenerate
     expect(field(host, 'Chance %').value).toBe('25');
+  });
+
+  it('Live send: Length sends gen.length only and does not regenerate', async () => {
+    const { host, dispatch } = await mount();
+    await change(field(host, 'Length'), '24');
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setGenerationParams', args: { length: 24 } });
+    expect(field(host, 'Length').value).toBe('24');
+  });
+
+  it('Length spans 1..64 and caps Pulses at the length and Rotation at length - 1', async () => {
+    const { host, bridge } = await mount();
+    expect([field(host, 'Length').min, field(host, 'Length').max]).toEqual(['1', '64']);
+    expect(field(host, 'Pulses').max).toBe('16');
+    await act(async () => void (await bridge.dispatch({ name: 'setGenerationParams', args: { length: 40 } })));
+    expect(field(host, 'Pulses').max).toBe('40');
+    expect(field(host, 'Rotation').max).toBe('39');
   });
 
   it('a failed edit reverts the field to the engine value', async () => {

@@ -35,7 +35,7 @@ std::vector<int> scaleNotesFor (const GenerationParams& params)
 StepEditError validateStepEdit (const Sequence& sequence, const std::vector<int>& scaleNotes,
                                 int index, int note) noexcept
 {
-    if (index < 0 || index >= kEditableSteps || index >= sequence.size())
+    if (index < 0 || index >= sequence.size())
         return StepEditError::stepOutOfRange;
 
     // The step's current note is always accepted (so mute still works after a

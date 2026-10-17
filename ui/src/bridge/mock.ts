@@ -7,6 +7,10 @@ import {
   type ApplyAudioSettingsResult, type AudioSettings, type Command, type DispatchResult, type PlayheadEvent, type SettingsBridge, type Snapshot,
 } from './protocol';
 
+// Fixed fixture pattern: step i has note 48 + i and is gated on even steps. Nothing generated is skipped.
+const mockSteps = (count: number): Snapshot['steps'] =>
+  Array.from({ length: count }, (_, i) => ({ note: 48 + i, active: i % 2 === 0, skipped: false }));
+
 const initial = (): Snapshot => ({
   patch: {
     waveform: 'saw', cutoffHz: 1000, resonance: 1, pulseWidth: 0.5, attack: 0.01, decay: 0.2, sustain: 0.7, release: 0.3,
@@ -15,7 +19,7 @@ const initial = (): Snapshot => ({
     delaySynced: false, delayDivision: 'quarter',
   },
   generationParams: {
-    mode: 'random', pulses: 5, rotation: 0, stepProbability: 0.5, lockSeed: false,
+    mode: 'random', pulses: 5, rotation: 0, stepProbability: 0.5, lockSeed: false, length: 16,
     scaleType: 'minor', rootPitchClass: 0, rangeLow: 36, rangeHigh: 72,
   },
   seed: '42', bpm: 120, playing: false, playheadStep: 0, loopCount: 0, synthEnabled: true, effectsEnabled: true,
@@ -23,7 +27,7 @@ const initial = (): Snapshot => ({
   edited: false,
   // Fixed fixture (C minor, 36..72); the mock does not recompute it on setGenerationParams.
   scaleNotes: [36, 38, 39, 41, 43, 44, 46, 48, 50, 51, 53, 55, 56, 58, 60, 62, 63, 65, 67, 68, 70, 72],
-  steps: Array.from({ length: 16 }, (_, i) => ({ note: 48 + i, active: i % 2 === 0 })),
+  steps: mockSteps(16),
   presetNames: [],
 });
 
@@ -34,7 +38,7 @@ const ENUMS: Record<string, readonly string[]> = {
   waveform: WAVEFORMS, lfoDestination: LFO_DESTINATIONS, delayDivision: DELAY_DIVISIONS, mode: RHYTHM_MODES, scaleType: SCALE_TYPES,
 };
 const BOOLEANS = new Set(['delaySynced', 'lockSeed']);
-const INT_FIELDS = new Set(['pulses', 'rotation', 'rootPitchClass', 'rangeLow', 'rangeHigh']);
+const INT_FIELDS = new Set(['length', 'pulses', 'rotation', 'rootPitchClass', 'rangeLow', 'rangeHigh']);
 // Source/core/TempoSync.h factorFor: delay seconds = (60 / bpm) * beats per division.
 const DIVISION_BEATS: Record<string, number> = {
   half: 2, quarter: 1, dottedEighth: 0.75, eighth: 0.5, eighthTriplet: 1 / 3, sixteenth: 0.25,
@@ -153,11 +157,20 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
       case 'setBpm': state.bpm = number(args, 'bpm', LIMITS.bpm); applySyncedDelayTime(); break;
       case 'setSeed': state.seed = /^-?\d+$/.test(text(args, 'seed')) ? (args.seed as string) : reject('invalid type: seed'); break;
       case 'setPatch': merge(state.patch, args, PATCH_RANGES); applySyncedDelayTime(); break;
-      case 'setGenerationParams': merge(state.generationParams, args, GENERATION_LIMITS); applyRangeConstraint(args); break;
+      case 'setGenerationParams': {
+        merge(state.generationParams, args, GENERATION_LIMITS);
+        applyRangeConstraint(args);
+        // Host: euclidean pulses and rotation never exceed the (staged) length.
+        const params = state.generationParams;
+        params.pulses = Math.min(params.pulses, params.length);
+        params.rotation = Math.min(params.rotation, params.length - 1);
+        break;
+      }
       case 'regenerate':
         if (busy) reject('busy');
         if (flag(args, 'randomize') && !state.generationParams.lockSeed) state.seed = String(Math.floor(Math.random() * 1e9));
         state.edited = false; // only after the args validated, like the engine
+        state.steps = mockSteps(state.generationParams.length); // the staged length applies on generation
         break;
       case 'mutate':
         if (busy) reject('busy');
@@ -179,6 +192,7 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
         if (busy) reject('busy');
         if (!presets.has(text(args, 'name'))) reject('fileNotFound');
         state.edited = false;
+        state.steps = mockSteps(state.generationParams.length);
         break;
       case 'exportMidi':
         if (!/^([A-Za-z]:[\\/]|\/)/.test(text(args, 'path'))) reject('path not absolute');
@@ -186,11 +200,12 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
       case 'setStep': {
         // Host order (D4): arguments, then index, then note, then busy.
         const [index, note, active] = [int(args, 'index'), int(args, 'note'), flag(args, 'active')];
+        const skipped = args.skipped === undefined ? undefined : flag(args, 'skipped'); // absent keeps the flag
         if (index < 0 || index >= state.steps.length) reject('step-out-of-range');
         // The step's current note is always accepted (mute after a scale change); a changed note must be in scale.
         if (note !== state.steps[index].note && !state.scaleNotes.includes(note)) reject('note-out-of-scale');
         if (busy) reject('busy');
-        state.steps[index] = { note, active };
+        state.steps[index] = { note, active, skipped: skipped ?? state.steps[index].skipped };
         state.edited = true;
         break;
       }

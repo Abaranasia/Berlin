@@ -41,6 +41,7 @@ export interface GenerationParams {
   rotation: number;
   stepProbability: number;
   lockSeed: boolean;
+  length: number; // staged: applies on the next Generate, Randomize or preset load
   scaleType: ScaleType;
   rootPitchClass: number;
   rangeLow: number;
@@ -63,7 +64,7 @@ export interface Snapshot {
   mutationCount: number;
   edited: boolean; // true after a step edit until the next regenerate, randomize or preset load
   scaleNotes: number[]; // ascending in-scale MIDI notes within the range: the editable note set
-  steps: { note: number; active: boolean }[];
+  steps: { note: number; active: boolean; skipped: boolean }[]; // skipped: not in the playback order at all
   presetNames: string[];
 }
 
@@ -83,7 +84,7 @@ export type Command =
   | { name: 'savePreset'; args: { name: string; overwrite: boolean } }
   | { name: 'loadPreset'; args: { name: string } }
   | { name: 'exportMidi'; args: { path: string } }
-  | { name: 'setStep'; args: { index: number; note: number; active: boolean } };
+  | { name: 'setStep'; args: { index: number; note: number; active: boolean; skipped?: boolean } };
 
 export type CommandName = Command['name'];
 

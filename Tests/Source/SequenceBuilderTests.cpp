@@ -78,6 +78,91 @@ public:
             expect (! (a == b));
         }
 
+        // ---- variable length (step-model) ----
+
+        beginTest ("randomActiveCount keeps the 11-of-16 ratio and never drops below 1");
+        {
+            expectEquals (berlin::randomActiveCount (16), 11);
+            expectEquals (berlin::randomActiveCount (1), 1);
+            expectEquals (berlin::randomActiveCount (64), 44);
+        }
+
+        beginTest ("every mode builds a Sequence of exactly params.length steps, clamped to 1..kMaxSteps");
+        {
+            for (auto mode : { berlin::RhythmMode::random, berlin::RhythmMode::euclidean, berlin::RhythmMode::probability })
+            {
+                for (int length : { 1, 8, 24, 64 })
+                {
+                    auto params = paramsFor (mode, 5, 0, 0.5f);
+                    params.length = length;
+                    expectEquals (berlin::buildSeededSequence (seed, params).size(), length);
+                }
+
+                auto params = paramsFor (mode, 5, 0, 0.5f);
+                params.length = 0;
+                expectEquals (berlin::buildSeededSequence (seed, params).size(), 1);
+                params.length = 500;
+                expectEquals (berlin::buildSeededSequence (seed, params).size(), berlin::kMaxSteps);
+            }
+        }
+
+        beginTest ("random mode at length 64 has randomActiveCount active steps");
+        {
+            auto params = paramsFor (berlin::RhythmMode::random, 5, 0, 0.5f);
+            params.length = 64;
+            const auto seq = berlin::buildSeededSequence (seed, params);
+
+            int active = 0;
+            for (int i = 0; i < seq.size(); ++i)
+                if (seq[i].active)
+                    ++active;
+
+            expectEquals (active, 44);
+        }
+
+        beginTest ("euclidean pulses above the length are clamped and rotation wraps within it");
+        {
+            auto params = paramsFor (berlin::RhythmMode::euclidean, 20, 0, 0.5f);
+            params.length = 8;
+            const auto seq = berlin::buildSeededSequence (seed, params);
+
+            for (int i = 0; i < seq.size(); ++i)
+                expect (seq[i].active);
+
+            params.pulses   = 3;
+            params.rotation = 11;   // == 3 within length 8
+            auto rotated = params;
+            rotated.rotation = 3;
+            expect (berlin::buildSeededSequence (seed, params) == berlin::buildSeededSequence (seed, rotated));
+        }
+
+        beginTest ("generation never sets skipped");
+        {
+            for (auto mode : { berlin::RhythmMode::random, berlin::RhythmMode::euclidean, berlin::RhythmMode::probability })
+            {
+                auto params = paramsFor (mode, 5, 0, 0.5f);
+                params.length = 32;
+                const auto seq = berlin::buildSeededSequence (seed, params);
+
+                for (int i = 0; i < seq.size(); ++i)
+                    expect (! seq[i].skipped);
+            }
+        }
+
+        beginTest ("length defaults to 16 and an explicit 16 matches the default output");
+        {
+            const berlin::GenerationParams defaults;
+            expectEquals (defaults.length, berlin::kNumSteps);
+
+            for (auto mode : { berlin::RhythmMode::random, berlin::RhythmMode::euclidean, berlin::RhythmMode::probability })
+            {
+                auto explicit16 = paramsFor (mode, 5, 0, 0.5f);
+                explicit16.length = 16;
+                expect (berlin::buildSeededSequence (seed, paramsFor (mode, 5, 0, 0.5f))
+                        == berlin::buildSeededSequence (seed, explicit16));
+            }
+        }
+
         // ---- normalizePitchRange (scale-aware-generation design.md invariant) ----
 
         beginTest ("normalizePitchRange swaps an inverted pair so low <= high");

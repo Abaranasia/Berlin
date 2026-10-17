@@ -544,6 +544,9 @@
     <ClCompile Include="..\..\Source\StepEditTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\StepCursorTests.cpp">
+      <Filter>BerlinTests\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\AutoEvolveScheduleTests.cpp">
       <Filter>BerlinTests\Source</Filter>
     </ClCompile>
@@ -1999,6 +2002,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\core\Step.h">
+      <Filter>BerlinTests\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\core\StepCursor.h">
       <Filter>BerlinTests\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\core\Sequence.h">

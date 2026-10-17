@@ -11,10 +11,11 @@
    thread; by-value gives one owner, no aliasing). `sequence` is
    AUDIO-THREAD-EXCLUSIVE after construction: it is replaced only via the
    publish/adopt handoff below (design.md Decision 1) - the message thread
-   never touches it directly, only `pendingSequence`. Combines Transport's
-   monotonic absolute step counter with the Sequence's length to compute the
-   loop wrap (stepIndex = stepCounter % sequence.size()) - Transport itself
-   is sequence-length-agnostic and has no wrap concept.
+   never touches it directly, only `pendingSequence`. Transport only supplies
+   boundary timing; the step index comes from an audio-thread `cursor` advanced
+   by nextPlayableStep() (core/StepCursor.h, step-model), which skips steps
+   with `skipped == true` (they take no boundary) and reports the wrap.
+   Transport itself is sequence-length-agnostic and has no wrap concept.
 
    process() is the audio-thread, RT-safe entry point: clears the sink,
    then - BEFORE the boundary loop - checks whether a new Sequence is
@@ -22,7 +23,7 @@
    sounding note first, `sequence.swap(pendingSequence)`, transport/playhead
    reset), so the rest of THIS SAME process() call already reads from the
    newly adopted Sequence. For each Transport boundary in the block it then
-   pushes the pending note-off (if any) BEFORE computing the new stepIndex
+   pushes the pending note-off (if any) BEFORE computing the next step
    and pushing that step's note-on (if active) - this ordering IS the
    note-off-before-note-on contract. The atomic playhead is updated every
    iteration and is the only cross-thread observability seam besides the
@@ -41,10 +42,12 @@
    Counter") is a second observability seam mirroring playhead exactly:
    audio-thread relaxed store inside the boundary loop of process(), any-
    thread relaxed load via getLoopCount(). It increments exactly once per
-   genuine wrap (stepIndex == 0 && previousStep != 0) and is monotonic -
-   never reset or decremented, including by publish/adopt, since the adopt
-   path already zeroes playhead before the boundary loop runs (so the first
-   post-adopt boundary reads previousStep == 0 and is correctly excluded).
+   genuine wrap (the cursor crossing from the last non-skipped step to the
+   first) and is monotonic - never reset or decremented, including by
+   publish/adopt, since those set cursor = -1 and the first boundary after -1
+   is never a wrap. A length-1 sequence therefore counts every boundary after
+   the first. With every step skipped there is no event, no loop and the
+   playhead holds.
    isPublishPending() is a third, read-only seam letting a caller check
    busy state (sequencePending) before attempting a publish-dependent
    action, rather than only discovering it from that action's own
@@ -141,6 +144,7 @@ private:
     Transport transport;
     int pendingNote { -1 };    // -1 = nothing sounding
     int pendingStep { 0 };
+    int cursor { -1 };         // AUDIO-THREAD-EXCLUSIVE: last played step index, -1 = nothing played yet
     std::atomic<int> playhead { 0 };
     std::atomic<int> loopCount { 0 };
     std::atomic<double> pendingBpm;   // initialised in the constructor body from transport.getBpm()

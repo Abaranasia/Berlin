@@ -29,8 +29,9 @@ export const LIMITS: Record<string, Range> = {
 
 // Source/generation/GenerationParams.h and the UiBridge.cpp auto-evolve clamp.
 export const GENERATION_LIMITS: Record<string, Range> = {
-  pulses: { min: 0, max: 16 },
-  rotation: { min: 0, max: 15 },
+  length: { min: 1, max: 64 },
+  pulses: { min: 0, max: 64 },
+  rotation: { min: 0, max: 63 },
   rootPitchClass: { min: 0, max: 11 },
   rangeLow: { min: 0, max: 127 },
   rangeHigh: { min: 0, max: 127 },

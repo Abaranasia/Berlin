@@ -81,15 +81,20 @@ public:
             expectEquals (notes.back(), 72);
         }
 
-        beginTest ("validateStepEdit: index limits (negative, >=16, >=size) are stepOutOfRange; 15 on 16 steps is none");
+        beginTest ("validateStepEdit: index must be in [0, size); 16..63 are valid on a longer sequence, index == size is rejected");
         {
             const std::vector<int> scaleNotes { 48, 50, 51, 53 };
-            const berlin::Sequence sixteen (16), thirtyTwo (32), eight (8);
+            const berlin::Sequence sixteen (16), thirtyTwo (32), eight (8), sixtyFour (berlin::kMaxSteps);
 
             static_assert (noexcept (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48)));
 
             expect (berlin::validateStepEdit (sixteen, scaleNotes, -1, 48) == StepEditError::stepOutOfRange);
-            expect (berlin::validateStepEdit (thirtyTwo, scaleNotes, 16, 48) == StepEditError::stepOutOfRange);
+            expect (berlin::validateStepEdit (thirtyTwo, scaleNotes, 16, 48) == StepEditError::none);
+            expect (berlin::validateStepEdit (thirtyTwo, scaleNotes, 20, 48) == StepEditError::none);
+            expect (berlin::validateStepEdit (thirtyTwo, scaleNotes, 32, 48) == StepEditError::stepOutOfRange);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 16, 48) == StepEditError::stepOutOfRange);
+            expect (berlin::validateStepEdit (sixtyFour, scaleNotes, 63, 48) == StepEditError::none);
+            expect (berlin::validateStepEdit (sixtyFour, scaleNotes, 64, 48) == StepEditError::stepOutOfRange);
             expect (berlin::validateStepEdit (eight, scaleNotes, 8, 48) == StepEditError::stepOutOfRange);
             expect (berlin::validateStepEdit (sixteen, scaleNotes, 15, 48) == StepEditError::none);
             expect (berlin::validateStepEdit (thirtyTwo, scaleNotes, 15, 48) == StepEditError::none);

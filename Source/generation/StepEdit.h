@@ -22,9 +22,6 @@
 namespace berlin
 {
 
-// Only the 16 visible steps are editable (clamped further by the live size).
-inline constexpr int kEditableSteps = 16;
-
 enum class StepEditError { none, stepOutOfRange, noteOutOfScale };
 
 // Ascending in-scale MIDI notes within the normalized pitch range.

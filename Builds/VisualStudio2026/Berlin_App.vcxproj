@@ -3236,6 +3236,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\Source\MainComponent.h"/>
     <ClInclude Include="..\..\Source\core\Step.h"/>
+    <ClInclude Include="..\..\Source\core\StepCursor.h"/>
     <ClInclude Include="..\..\Source\core\Sequence.h"/>
     <ClInclude Include="..\..\Source\core\Scale.h"/>
     <ClInclude Include="..\..\Source\core\TempoSync.h"/>

@@ -285,7 +285,7 @@ public:
             expectEquals (player.getLoopCount(), 0);
         }
 
-        beginTest ("stopped player never increments loopCount; size-1 sequence never increments loopCount");
+        beginTest ("stopped player never increments loopCount");
         {
             auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true }, { 67, true } });   // N = 4
             berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
@@ -298,19 +298,131 @@ public:
                 player.process (4, buffer);
                 expectEquals (player.getLoopCount(), 0);
             }
+        }
 
-            // Size-1 sequence: every step is step 0, so the wrap condition
-            // (stepIndex == 0 && previousStep != 0) is unreachable (Decision 3).
-            auto sizeOneSequence = makeSequence ({ { 60, true } });
-            berlin::SequencePlayer sizeOnePlayer (sizeOneSequence, berlin::Transport (60.0, 1));
-            sizeOnePlayer.prepare (4.0);
-            sizeOnePlayer.start();
+        // ---- Skipped steps (step-model). Same {bpm=60, stepsPerBeat=1} @ 4.0
+        // convention: one process (4, ...) call == exactly one boundary.
+
+        beginTest ("a skipped step takes no boundary: the cycle runs 0, 2, 3 on consecutive boundaries");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true, true }, { 64, true }, { 67, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+
+            player.process (4, buffer);   // boundary 0
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, true });
+
+            player.process (4, buffer);   // boundary 1: step 1 is skipped -> step 2 follows step 0
+            expectEquals (buffer.size(), 2);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, false });
+            expect (buffer[1] == berlin::StepEvent { 0, 2, 64, true });
+
+            player.process (4, buffer);   // boundary 2
+            expect (buffer[1] == berlin::StepEvent { 0, 3, 67, true });
+
+            player.process (4, buffer);   // boundary 3: wraps to step 0
+            expect (buffer[1] == berlin::StepEvent { 0, 0, 60, true });
+            expectEquals (player.getLoopCount(), 1);
+        }
+
+        beginTest ("an inactive step still takes a boundary while a skipped one does not");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true, true }, { 0, false }, { 64, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);   // boundary 0: step 0 on
+
+            player.process (4, buffer);   // boundary 1: step 2 is a rest -> note-off only
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, false });
+
+            player.process (4, buffer);   // boundary 2: step 3 on, two step-durations after step 0
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 3, 64, true });
+        }
+
+        beginTest ("a skipped step 0 never plays and does not break loop counting");
+        {
+            auto sequence = makeSequence ({ { 60, true, true }, { 62, true }, { 64, true }, { 67, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+
+            for (int boundary = 0; boundary < 3; ++boundary)   // steps 1, 2, 3
+            {
+                player.process (4, buffer);
+                expectEquals (player.getPlayheadStep(), boundary + 1);
+                expectEquals (player.getLoopCount(), 0);
+            }
+
+            player.process (4, buffer);   // 3 -> 1: one pass over the non-skipped steps
+            expectEquals (player.getPlayheadStep(), 1);
+            expectEquals (player.getLoopCount(), 1);
+
+            for (int e = 0; e < buffer.size(); ++e)
+                expect (buffer[e].stepIndex != 0);
+        }
+
+        beginTest ("a restart adopt never counts as a loop, even with a skipped step 0");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            player.process (4, buffer);
+            player.process (4, buffer);   // playhead at 2
+
+            auto incoming = makeSequence ({ { 60, true, true }, { 62, true }, { 64, true } });
+            expect (player.publishSequence (incoming));
+
+            player.process (4, buffer);   // adopt: first boundary lands on step 1
+            expectEquals (player.getPlayheadStep(), 1);
+            expectEquals (player.getLoopCount(), 0);
+        }
+
+        beginTest ("an all-skipped sequence is silent, never loops and holds the playhead");
+        {
+            auto sequence = makeSequence ({ { 60, true, true }, { 62, true, true }, { 64, true, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
 
             for (int i = 0; i < 50; ++i)
             {
-                sizeOnePlayer.process (4, buffer);
-                expectEquals (sizeOnePlayer.getLoopCount(), 0);
+                player.process (4, buffer);
+                expectEquals (buffer.size(), 0);
+                expectEquals (player.getLoopCount(), 0);
+                expectEquals (player.getPlayheadStep(), 0);
             }
+        }
+
+        beginTest ("a length-1 sequence counts a loop on every boundary after the first");
+        {
+            auto sequence = makeSequence ({ { 60, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+
+            for (int i = 0; i < 50; ++i)
+                player.process (4, buffer);
+
+            expectEquals (player.getLoopCount(), 49);
         }
 
         // ---- BPM atomic plumbing (playback-transport spec, Phase 3). RED
