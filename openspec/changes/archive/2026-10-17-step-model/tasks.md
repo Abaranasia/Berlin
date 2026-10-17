@@ -70,7 +70,7 @@ Cut order if over 800: RhythmPanel dynamic caps, then mock resize.
 - [x] 8.3 `git diff --stat` under 800 lines. NOT MET (~1333 added / 172 deleted; tests ~1030, prod ~290, project files 16). The user accepted `size:exception` for a single PR on 2026-10-17.
 
 ## Phase 9: Manual [M]
-- [ ] 9.1 Lengths 1/7/64 in standalone and plugin; skip while playing; export matches what is heard.
+- [x] 9.1 Lengths 1/7/64 in standalone and plugin; skip while playing; export matches what is heard. The user ran all checks on 2026-10-17 and they passed. Length-changing mutations (stretch, palindrome, compress) are now visible in the grid; the user is keeping that as a feature.
 
 ## Phase 10: Archive (separate)
-- [ ] 10.1 `sdd-verify`, then `sdd-archive`; diff archive output (folder-duplication risk).
+- [x] 10.1 `sdd-verify`, then `sdd-archive`; diff archive output (folder-duplication risk). Verify passed with warnings. The user asked to archive on 2026-10-17.
