@@ -19,6 +19,7 @@
 #include "generation/SkipMaskGenerator.h"
 
 #include <algorithm>
+#include <optional>
 #include <vector>
 
 namespace berlin
@@ -78,10 +79,25 @@ Sequence buildSeededSequence (juce::int64 seed, const GenerationParams& params)
     normalizePitchRange (rangeLow, rangeHigh);
 
     PitchGenerator pitch (Scale::fromPitchClass (params.scaleType, params.rootPitchClass), rangeLow, rangeHigh);
-    for (int i = 0; i < sequence.size(); ++i)
+    if (params.melody == MelodyStyle::smooth)
     {
-        if (sequence[i].active)
-            sequence[i].note = pitch.generateNextNote (rng);
+        // One weighted draw per active step, after all rhythm draws. The proximity
+        // reference survives rests: inactive steps are never written and never reset it.
+        std::optional<int> previous;
+
+        for (int i = 0; i < sequence.size(); ++i)
+        {
+            if (sequence[i].active)
+                previous = sequence[i].note = pitch.generateMelodyNote (rng, previous);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < sequence.size(); ++i)
+        {
+            if (sequence[i].active)
+                sequence[i].note = pitch.generateNextNote (rng);
+        }
     }
 
     return sequence;

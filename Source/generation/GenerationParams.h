@@ -34,6 +34,11 @@ namespace berlin
 
 enum class RhythmMode { random, euclidean, probability };
 
+// How pitches are chosen for ACTIVE steps (musical-notes). random is the
+// original uniform pick (byte-identical to pre-change output); smooth is the
+// weighted, proximity/median/tonic-biased pick. Ordinals are fixed.
+enum class MelodyStyle { random, smooth };
+
 // Default step count (GenerationParams::length). The live length is a
 // GenerationParams member (step-model); kMaxSteps (core/Sequence.h) bounds it.
 inline constexpr int kNumSteps = 16;
@@ -66,6 +71,9 @@ struct GenerationParams
     int       rootPitchClass = 0;
     int       rangeLow       = kDefaultRangeLow;
     int       rangeHigh      = kDefaultRangeHigh;
+
+    // Pitch-selection style; LAST field so existing aggregate initializers still compile.
+    MelodyStyle melody = MelodyStyle::random;
 };
 
 } // namespace berlin
