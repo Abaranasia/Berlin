@@ -3,6 +3,7 @@ import {
   COMMAND_NAMES, WAVEFORMS, LFO_DESTINATIONS, DELAY_DIVISIONS, RHYTHM_MODES, SCALE_TYPES,
   type Command, type DispatchResult, type ErrorToken, type GenerationParams, type Snapshot,
 } from './protocol';
+import { DEFAULT_GATE, DEFAULT_VELOCITY, GATE } from './limits';
 
 // Literal lists copied from the ui-bridge "Encoding Conventions" requirement.
 describe('enum lists match the bridge encoding', () => {
@@ -53,11 +54,26 @@ describe('step editing protocol', () => {
 
   it('setStep accepts an optional skipped flag and the snapshot carries skipped steps and the length', () => {
     const cmd: Command = { name: 'setStep', args: { index: 2, note: 50, active: true, skipped: true } };
-    const step: Snapshot['steps'][number] = { note: 50, active: true, skipped: false, velocity: 100 };
+    const step: Snapshot['steps'][number] = { note: 50, active: true, skipped: false, velocity: 100, gatePercent: 100 };
     const length: GenerationParams['length'] = 24;
     expect(cmd.args).toMatchObject({ skipped: true });
     expect(step.skipped).toBe(false);
     expect(length).toBe(24);
+  });
+
+  it('setStep omitting gatePercent compiles, and the snapshot step carries it', () => {
+    const without: Command = { name: 'setStep', args: { index: 2, note: 50, active: true, velocity: 70 } };
+    const withGate: Command = { name: 'setStep', args: { index: 2, note: 50, active: true, gatePercent: 25 } };
+    const step: Snapshot['steps'][number] = { note: 50, active: true, skipped: false, velocity: 100, gatePercent: 50 };
+    expect(without.args).not.toHaveProperty('gatePercent');
+    expect(withGate.args).toMatchObject({ gatePercent: 25 });
+    expect(step.gatePercent).toBe(50);
+  });
+
+  it('the gate limits and the default match Source/core/Step.h', () => {
+    expect(GATE).toEqual({ min: 1, max: 100 });
+    expect(DEFAULT_GATE).toBe(100);
+    expect(DEFAULT_VELOCITY).toBe(100);
   });
 
   it('the snapshot type carries edited and scaleNotes', () => {

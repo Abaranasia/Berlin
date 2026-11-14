@@ -25,9 +25,11 @@
 #include <juce_core/juce_core.h>
 
 #include <algorithm>
+#include <cmath>
 #include <type_traits>
 #include <vector>
 
+#include "GateStreamSupport.h"
 #include "core/Sequence.h"
 #include "core/Step.h"
 #include "export/MidiExportTimeline.h"
@@ -496,6 +498,125 @@ public:
             expectEquals (clamped[0], 1);
             expectEquals (clamped[1], 127);
             expectEquals (clamped[2], 127);
+        }
+
+        // ---- step-gate: gate-scaled note-off ticks
+
+        beginTest ("gate places the note-off at gate percent of the step: 25/50/75/100 at 240 ticks per step give 60/120/180/240");
+        {
+            const int gates[] = { 25, 50, 75, 100 };
+            const long long offTicks[] = { 60, 120, 180, 240 };
+
+            for (int g = 0; g < 4; ++g)
+            {
+                auto sequence = makeSequence ({ { 60, true, false, 100, gates[g] } });
+                berlin::MidiExportTimeline out;
+                expect (berlin::buildMidiExportTimeline (sequence, 4, 1, out) == berlin::MidiExportStatus::ok);
+
+                expect (out.events == std::vector<berlin::MidiExportEvent> { { 0, 60, true }, { offTicks[g], 60, false } },
+                        "gate " + juce::String (gates[g]));
+                expectEquals ((int) out.endTick, 240);
+            }
+        }
+
+        beginTest ("a gate that rounds to zero ticks still lasts one tick, including the one-tick-per-step clamp");
+        {
+            const int stepsPerBeat[] = { 96, 960, 960 };   // 10, 1 and 1 ticks per step
+            const int gates[]        = { 1,  1,   99 };
+
+            for (int k = 0; k < 3; ++k)
+            {
+                auto sequence = makeSequence ({ { 60, true, false, 100, gates[k] } });
+                berlin::MidiExportTimeline out;
+                expect (berlin::buildMidiExportTimeline (sequence, stepsPerBeat[k], 1, out) == berlin::MidiExportStatus::ok);
+
+                expectEquals ((int) out.events.size(), 2);
+                expectEquals ((int) out.events[1].tick, 1);
+                expect (! out.events[1].noteOn);
+            }
+        }
+
+        beginTest ("mixed gates across repeats keep the list non-decreasing with the note-off before a shared-tick note-on");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true }, { 64, true, false, 100, 75 }, { 65, false } });
+            berlin::MidiExportTimeline out;
+            expect (berlin::buildMidiExportTimeline (sequence, 4, 3, out) == berlin::MidiExportStatus::ok);
+
+            expectEquals ((int) out.events.size(), 18);   // 3 repeats x 3 active steps x on/off
+
+            for (size_t i = 1; i < out.events.size(); ++i)
+            {
+                expect (out.events[i].tick >= out.events[i - 1].tick);
+
+                if (out.events[i].tick == out.events[i - 1].tick)
+                    expect (! (out.events[i - 1].noteOn && ! out.events[i].noteOn),
+                            "a note-on must not precede a note-off at a shared tick");
+            }
+
+            expect (everyNoteOnIsClosed (out.events));
+        }
+
+        beginTest ("a short last step has its single note-off inside the step, no terminal note-off, and an unchanged grid length");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true, false, 100, 50 } });
+            berlin::MidiExportTimeline out;
+            expect (berlin::buildMidiExportTimeline (sequence, 4, 1, out) == berlin::MidiExportStatus::ok);
+
+            expect (out.events == std::vector<berlin::MidiExportEvent> { { 0, 60, true },   { 240, 60, false },
+                                                                         { 240, 62, true }, { 360, 62, false } });
+            expectEquals ((int) out.endTick, 480);   // gate does not change the grid
+            expect (everyNoteOnIsClosed (out.events));
+
+            auto full = makeSequence ({ { 60, true }, { 62, true } });
+            berlin::MidiExportTimeline legacy;
+            expect (berlin::buildMidiExportTimeline (full, 4, 1, legacy) == berlin::MidiExportStatus::ok);
+            expect (legacy.events.back() == berlin::MidiExportEvent { 480, 62, false });   // gate 100 keeps the terminal off
+        }
+
+        beginTest ("skipped and inactive steps with a short gate emit nothing and leave the other ticks unchanged");
+        {
+            auto gated   = makeSequence ({ { 60, true }, { 62, false, false, 100, 25 }, { 64, true, true, 100, 25 }, { 65, true } });
+            auto neutral = makeSequence ({ { 60, true }, { 62, false },                 { 64, true, true },          { 65, true } });
+
+            berlin::MidiExportTimeline a, b;
+            expect (berlin::buildMidiExportTimeline (gated, 4, 2, a) == berlin::MidiExportStatus::ok);
+            expect (berlin::buildMidiExportTimeline (neutral, 4, 2, b) == berlin::MidiExportStatus::ok);
+
+            expectEquals ((int) a.events.size(), 8);   // 2 repeats x 2 active steps x on/off
+            expect (a.events == b.events);
+            expectEquals ((int) a.endTick, (int) b.endTick);
+        }
+
+        beginTest ("sample/tick parity: the live gate length and the exported gate length agree for every gate 1..99");
+        {
+            // 96 kHz, 60 BPM, 4 steps per beat: 24000 samples and 240 ticks per step
+            for (int gate = 1; gate <= 99; ++gate)
+            {
+                auto sequence = makeSequence ({ { 60, true, false, 100, gate } });
+
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+                player.prepare (96000.0);
+                player.start();
+
+                long long position = 0;
+                bool ok = true;
+                const auto live = drain (player, position, 24000, 24000, ok);
+
+                berlin::MidiExportTimeline out;
+                expect (berlin::buildMidiExportTimeline (sequence, 4, 1, out) == berlin::MidiExportStatus::ok);
+
+                if (live.size() != 2 || out.events.size() != 2)
+                {
+                    expect (false, "gate " + juce::String (gate) + " must give one note-on and one note-off in both domains");
+                    continue;
+                }
+
+                const long long samples = live[1].sampleOffset - live[0].sampleOffset;
+                const long long ticks   = out.events[1].tick - out.events[0].tick;
+
+                expectEquals ((int) samples, 240 * gate);
+                expectEquals ((int) ticks, (int) std::llround (samples * 240.0 / 24000.0));
+            }
         }
     }
 };

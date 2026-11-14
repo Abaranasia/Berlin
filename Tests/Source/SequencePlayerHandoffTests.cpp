@@ -29,6 +29,7 @@
 #include <atomic>
 #include <vector>
 
+#include "GateStreamSupport.h"
 #include "core/Sequence.h"
 #include "core/Step.h"
 #include "playback/SequencePlayer.h"
@@ -547,6 +548,126 @@ public:
             player.process (0, buffer);
             expectEquals (buffer.size(), 1);
             expect (buffer[0] == berlin::StepEvent { 0, 1, 62, false });
+        }
+
+        // ---- step-gate keepPosition pins (D11). 4 samples per step.
+
+        beginTest ("keepPosition: a gate-only edit of the sounding step emits nothing at adopt, keeps the old off time and applies on the next pass");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true }, { 64, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            player.process (3, buffer);   // step 1 (62) sounding since absolute 4, position 7
+
+            auto edited = makeSequence ({ { 60, true }, { 62, true, false, 100, 50 }, { 64, true } });   // gate only
+            expect (player.publishSequence (edited, berlin::PublishMode::keepPosition));
+
+            player.process (0, buffer);
+            expectEquals (buffer.size(), 0);   // no note-off, no retrigger at adopt
+
+            long long position = 7;
+            bool ok = true;
+            const auto events = drain (player, position, 17, 5, ok);   // absolute [7, 24)
+
+            expect (ok);
+            expect (events == std::vector<berlin::StepEvent> { { 8, 1, 62, false },  { 8, 2, 64, true },    // old (boundary) off holds
+                                                               { 12, 2, 64, false }, { 12, 0, 60, true },
+                                                               { 16, 0, 60, false }, { 16, 1, 62, true },
+                                                               { 18, 1, 62, false },                        // next pass uses gate 50
+                                                               { 20, 2, 64, true } });
+        }
+
+        beginTest ("keepPosition: a gate change plus a note change on the sounding step still emits the note-off at offset 0");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true }, { 64, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            player.process (3, buffer);   // step 1 (62) sounding
+
+            auto edited = makeSequence ({ { 60, true }, { 63, true, false, 100, 25 }, { 64, true } });
+            expect (player.publishSequence (edited, berlin::PublishMode::keepPosition));
+
+            player.process (0, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 1, 62, false });
+        }
+
+        beginTest ("keepPosition: a note change after the gate off already fired emits no extra note-off");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true, false, 100, 50 }, { 64, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            long long position = 0;
+            bool ok = true;
+            const auto events = drain (player, position, 7, 7, ok);   // step 1 on at 4, gate off at 6
+
+            expect (ok);
+            expect (events.back() == berlin::StepEvent { 6, 1, 62, false });
+
+            auto edited = makeSequence ({ { 60, true }, { 63, true, false, 100, 50 }, { 64, true } });
+            expect (player.publishSequence (edited, berlin::PublishMode::keepPosition));
+
+            berlin::StepEventBuffer buffer;
+            player.process (0, buffer);
+            expectEquals (buffer.size(), 0);   // nothing is sounding, so nothing to cut
+        }
+
+        beginTest ("a full swap before the gate off emits one off at offset 0 and none later");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true, false, 100, 50 }, { 64, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            player.process (1, buffer);   // step 1 on at 4, its gate off would be at 6
+
+            auto replacement = makeSequence ({ { 70, false }, { 72, false } });
+            expect (player.publishSequence (replacement));
+
+            player.process (0, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 1, 62, false });
+
+            long long position = 5;
+            bool ok = true;
+            const auto later = drain (player, position, 20, 3, ok);   // all-rest sequence: the stale gate off must not fire
+
+            expect (ok);
+            expectEquals ((int) later.size(), 0);
+        }
+
+        beginTest ("an adopted stop before the gate off emits one off at offset 0 and none later");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true, false, 100, 50 }, { 64, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            player.process (1, buffer);   // step 1 sounding, gate off would be at 6
+
+            player.setPlaying (false);
+            player.process (1, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 1, 62, false });
+
+            long long position = 6;
+            bool ok = true;
+            const auto later = drain (player, position, 20, 3, ok);
+            expectEquals ((int) later.size(), 0);
         }
     }
 };

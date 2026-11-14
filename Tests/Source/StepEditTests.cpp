@@ -156,6 +156,42 @@ public:
             expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 49, 0) == StepEditError::noteOutOfScale);
             expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 49, 64) == StepEditError::noteOutOfScale);
         }
+
+        beginTest ("validateStepEdit: gate must be in [1, 100]; nullopt is accepted");
+        {
+            const std::vector<int> scaleNotes { 48, 50, 51, 53 };
+            const berlin::Sequence sixteen (16);
+
+            static_assert (noexcept (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, 100, 50)));
+
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, std::nullopt, 0) == StepEditError::gateOutOfRange);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, std::nullopt, 101) == StepEditError::gateOutOfRange);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, std::nullopt, -5) == StepEditError::gateOutOfRange);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, std::nullopt, 1) == StepEditError::none);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, std::nullopt, 100) == StepEditError::none);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, 100, std::nullopt) == StepEditError::none);
+        }
+
+        beginTest ("validateStepEdit: index, note and velocity are each checked before gate");
+        {
+            const std::vector<int> scaleNotes { 48, 50, 51, 53 };
+            const berlin::Sequence sixteen (16);
+
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 16, 48, 0, 0) == StepEditError::stepOutOfRange);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 49, 0, 0) == StepEditError::noteOutOfScale);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, 0, 0) == StepEditError::velocityOutOfRange);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 0, 48, 64, 0) == StepEditError::gateOutOfRange);
+        }
+
+        beginTest ("validateStepEdit: a muted or skipped step with a short gate still validates a valid gate");
+        {
+            const std::vector<int> scaleNotes { 48, 50, 51, 53 };
+            berlin::Sequence sixteen (16);
+            sixteen[2] = { 48, false, true, 100, 25 };   // muted and skipped, gate 25
+
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 2, 48, 100, 25) == StepEditError::none);
+            expect (berlin::validateStepEdit (sixteen, scaleNotes, 2, 48, 100, 101) == StepEditError::gateOutOfRange);
+        }
     }
 };
 

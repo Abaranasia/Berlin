@@ -12,6 +12,7 @@ suite('describe(command, token): every row of the design Status Messages table',
     ['exportMidi', 'pathUnavailable', 'Export failed: destination folder unavailable.'],
     ['exportMidi', 'writeFailed', 'Export failed: could not write the file.'],
     ['exportMidi', 'path not absolute', 'Export failed: the path is not absolute.'],
+    ['setStep', 'gate-out-of-range', 'That gate length is not valid.'],
     ['setBpm', 'missing arg: bpm', 'missing arg: bpm'],
     ['setPatch', 'weird', 'weird'],
   ])('%s + %s', (command, token, text) => {

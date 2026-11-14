@@ -178,7 +178,7 @@ describe('mock bridge setStep mirrors the host', () => {
     expect(before.edited).toBe(false);
     expect(before.scaleNotes).toEqual(C_MINOR_36_72);
     const after = snapshotOf(await setStep(mock, 2, 50, false));
-    expect(after.steps[2]).toEqual({ note: 50, active: false, skipped: false, velocity: 100 });
+    expect(after.steps[2]).toEqual({ note: 50, active: false, skipped: false, velocity: 100, gatePercent: 100 });
     expect(after.steps[3]).toEqual(before.steps[3]);
     expect(after.edited).toBe(true);
   });
@@ -186,7 +186,7 @@ describe('mock bridge setStep mirrors the host', () => {
   it('skipped: absent keeps the flag, true and false set it, a non-boolean is invalid type', async () => {
     const mock = createMockBridge();
     const send = (extra: object) => run(mock, { name: 'setStep', args: { index: 4, note: 52, active: true, ...extra } });
-    expect(snapshotOf(await send({ skipped: true })).steps[4]).toEqual({ note: 52, active: true, skipped: true, velocity: 100 });
+    expect(snapshotOf(await send({ skipped: true })).steps[4]).toEqual({ note: 52, active: true, skipped: true, velocity: 100, gatePercent: 100 });
     expect(snapshotOf(await send({})).steps[4].skipped).toBe(true);
     expect(snapshotOf(await send({ skipped: false })).steps[4].skipped).toBe(false);
     expect(await send({ skipped: 'x' })).toEqual({ ok: false, error: 'invalid type: skipped' });
@@ -196,21 +196,44 @@ describe('mock bridge setStep mirrors the host', () => {
     const mock = createMockBridge();
     const send = (extra: object) => run(mock, { name: 'setStep', args: { index: 4, note: 52, active: true, ...extra } });
     expect((await mock.getSnapshot())!.steps[4].velocity).toBe(100);
-    expect(snapshotOf(await send({ velocity: 127 })).steps[4].velocity).toBe(127);
+    expect(snapshotOf(await send({ velocity: 127, gatePercent: 100 })).steps[4].velocity).toBe(127);
     expect(snapshotOf(await send({})).steps[4].velocity).toBe(127);
-    expect(snapshotOf(await send({ velocity: 1 })).steps[4].velocity).toBe(1);
-    expect(await send({ velocity: 0 })).toEqual({ ok: false, error: 'velocity-out-of-range' });
-    expect(await send({ velocity: 128 })).toEqual({ ok: false, error: 'velocity-out-of-range' });
+    expect(snapshotOf(await send({ velocity: 1, gatePercent: 100 })).steps[4].velocity).toBe(1);
+    expect(await send({ velocity: 0, gatePercent: 100 })).toEqual({ ok: false, error: 'velocity-out-of-range' });
+    expect(await send({ velocity: 128, gatePercent: 100 })).toEqual({ ok: false, error: 'velocity-out-of-range' });
     expect(await send({ velocity: 1.5 })).toEqual({ ok: false, error: 'invalid type: velocity' });
     expect(snapshotOf(await send({})).steps[4].velocity).toBe(1); // rejected edits changed nothing
   });
 
   it('validates velocity after the index and the note, before busy', async () => {
     const mock = createMockBridge();
-    const args = (index: number, note: number) => ({ index, note, active: true, velocity: 0 });
+    const args = (index: number, note: number) => ({ index, note, active: true, velocity: 0, gatePercent: 100 });
     expect(await run(mock, { name: 'setStep', args: args(16, 50) })).toEqual({ ok: false, error: 'step-out-of-range' });
     expect(await run(mock, { name: 'setStep', args: args(2, 49) })).toEqual({ ok: false, error: 'note-out-of-scale' });
     expect(await run(mock, { name: 'setStep', args: args(2, 50) })).toEqual({ ok: false, error: 'velocity-out-of-range' });
+  });
+
+  it('gate: stored (default 100), absent keeps it, 0 and 101 are gate-out-of-range, a non-integer is invalid type', async () => {
+    const mock = createMockBridge();
+    const send = (extra: object) => run(mock, { name: 'setStep', args: { index: 4, note: 52, active: true, ...extra } });
+    expect((await mock.getSnapshot())!.steps[4].gatePercent).toBe(100);
+    expect(snapshotOf(await send({ gatePercent: 25 })).steps[4].gatePercent).toBe(25);
+    expect(snapshotOf(await send({})).steps[4].gatePercent).toBe(25);
+    expect(snapshotOf(await send({ gatePercent: 1 })).steps[4].gatePercent).toBe(1);
+    expect(snapshotOf(await send({ gatePercent: 100 })).steps[4].gatePercent).toBe(100);
+    expect(await send({ gatePercent: 0 })).toEqual({ ok: false, error: 'gate-out-of-range' });
+    expect(await send({ gatePercent: 101 })).toEqual({ ok: false, error: 'gate-out-of-range' });
+    expect(await send({ gatePercent: 1.5 })).toEqual({ ok: false, error: 'invalid type: gatePercent' });
+    expect(snapshotOf(await send({})).steps[4].gatePercent).toBe(100); // rejected edits changed nothing
+  });
+
+  it('validates the gate after the velocity, before busy', async () => {
+    const mock = createMockBridge();
+    const args = (index: number, note: number, velocity: number) => ({ index, note, active: true, velocity, gatePercent: 0 });
+    expect(await run(mock, { name: 'setStep', args: args(16, 50, 0) })).toEqual({ ok: false, error: 'step-out-of-range' });
+    expect(await run(mock, { name: 'setStep', args: args(2, 49, 0) })).toEqual({ ok: false, error: 'note-out-of-scale' });
+    expect(await run(mock, { name: 'setStep', args: args(2, 50, 0) })).toEqual({ ok: false, error: 'velocity-out-of-range' });
+    expect(await run(mock, { name: 'setStep', args: args(2, 50, 90) })).toEqual({ ok: false, error: 'gate-out-of-range' });
   });
 
   it('validates the index first, then the note', async () => {
@@ -227,7 +250,7 @@ describe('mock bridge setStep mirrors the host', () => {
     const before = (await mock.getSnapshot())!;
     const note = before.steps[1].note; // mock steps are not all in scale
     expect(before.scaleNotes).not.toContain(note);
-    expect(snapshotOf(await setStep(mock, 1, note, false)).steps[1]).toEqual({ note, active: false, skipped: false, velocity: 100 });
+    expect(snapshotOf(await setStep(mock, 1, note, false)).steps[1]).toEqual({ note, active: false, skipped: false, velocity: 100, gatePercent: 100 });
     expect(await setStep(mock, 2, note)).toEqual({ ok: false, error: 'note-out-of-scale' });
   });
 

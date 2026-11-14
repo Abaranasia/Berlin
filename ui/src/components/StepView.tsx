@@ -2,7 +2,8 @@ import { memo, useEffect, useRef, useState, type KeyboardEvent, type PointerEven
 import { accumulateWheel, classifyGesture, dragSteps, focusTarget, noteAfter } from '../lib/stepEdit';
 import { noteName } from '../lib/noteName';
 import { ROW_SIZE, stepRow } from '../state/steps';
-import { nearestLevel, nextLevel } from '../lib/dynamics';
+import { GATE_LEVELS, VELOCITY_LEVELS, nearestLevel, nextLevel } from '../lib/dynamics';
+import { DEFAULT_GATE, DEFAULT_VELOCITY } from '../bridge/limits';
 import { sendStep, type StepState } from '../store/actions';
 import { useStore, useStoreApi } from '../store/context';
 import { shown, type Store } from '../store/store';
@@ -36,7 +37,12 @@ function toggleSkip(store: Store, index: number): void {
 
 function cycleVelocity(store: Store, index: number): void {
   const current = shownStep(store, index);
-  if (current) sendStep(store, index, { ...current, velocity: nextLevel(current.velocity) });
+  if (current) sendStep(store, index, { ...current, velocity: nextLevel(VELOCITY_LEVELS, current.velocity) });
+}
+
+function cycleGate(store: Store, index: number): void {
+  const current = shownStep(store, index);
+  if (current) sendStep(store, index, { ...current, gatePercent: nextLevel(GATE_LEVELS, current.gatePercent) });
 }
 
 interface StepCellProps {
@@ -46,6 +52,7 @@ interface StepCellProps {
   gate: boolean | undefined;
   skipped: boolean | undefined;
   velocity: number | undefined;
+  gatePercent: number | undefined;
   count: number; // steps in the sequence, for the Home/End focus targets
   focusable: boolean; // the roving tabindex stop
   onFocusCell(index: number): void;
@@ -59,7 +66,7 @@ interface Drag {
 
 // Styled through the data-* attributes (see components.css); a muted step keeps its note, shown dimmed.
 // Click toggles mute, a vertical drag changes the note; the keyboard follows the roving-tabindex button pattern.
-const StepCell = memo(function StepCell({ index, active, note, gate, skipped, velocity, count, focusable, onFocusCell }: StepCellProps) {
+const StepCell = memo(function StepCell({ index, active, note, gate, skipped, velocity, gatePercent, count, focusable, onFocusCell }: StepCellProps) {
   const store = useStoreApi();
   const drag = useRef<Drag | null>(null);
 
@@ -99,10 +106,11 @@ const StepCell = memo(function StepCell({ index, active, note, gate, skipped, ve
 
   const label = note === undefined ? `Step ${index + 1}` : `Step ${index + 1}, ${noteName(note)}, ${gate ? 'on' : 'off'}${skipped ? ', skipped' : ''}`;
 
-  const level = nearestLevel(velocity ?? 100); // 100 (normal) until the first snapshot
+  const level = nearestLevel(VELOCITY_LEVELS, velocity ?? DEFAULT_VELOCITY); // normal until the first snapshot
+  const gateLevel = nearestLevel(GATE_LEVELS, gatePercent ?? DEFAULT_GATE); // full until the first snapshot
 
-  // The velocity and skip toggles are siblings of the cell, not nested in it: a button inside role=button is invalid a11y.
-  // They join the roving tabindex, so the row stays one tab stop for the cells and one each for the two button kinds.
+  // The velocity, gate and skip buttons are siblings of the cell, not nested in it: a button inside role=button is invalid a11y.
+  // They join the roving tabindex, so the row stays one tab stop for the cells and one each for the three button kinds.
   return (
     <div className="step-slot">
       <div
@@ -117,6 +125,7 @@ const StepCell = memo(function StepCell({ index, active, note, gate, skipped, ve
         data-gate={gate}
         data-skipped={skipped === true}
         data-velocity={level.name}
+        data-gate-length={gateLevel.name}
         onFocus={() => onFocusCell(index)}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -138,6 +147,16 @@ const StepCell = memo(function StepCell({ index, active, note, gate, skipped, ve
           onClick={() => cycleVelocity(store, index)}
         >
           {level.name[0].toUpperCase()}
+        </button>
+        <button
+          type="button"
+          className="step-gate"
+          tabIndex={focusable ? 0 : -1}
+          aria-label={`Gate step ${index + 1}: ${gateLevel.name}`}
+          title={`Gate ${gateLevel.name}: click for the next length`}
+          onClick={() => cycleGate(store, index)}
+        >
+          <span className="gate-bar" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -192,7 +211,7 @@ export function StepView() {
         {Array.from({ length: count }, (_, i) => {
           const value = (overlay[`step.${i}`] as StepState | undefined) ?? steps?.[i];
           return (
-            <StepCell key={i} index={i} active={row[i]} note={value?.note} gate={value?.active} skipped={value?.skipped} velocity={value?.velocity} count={count} focusable={i === tabStop} onFocusCell={setFocused} />
+            <StepCell key={i} index={i} active={row[i]} note={value?.note} gate={value?.active} skipped={value?.skipped} velocity={value?.velocity} gatePercent={value?.gatePercent} count={count} focusable={i === tabStop} onFocusCell={setFocused} />
           );
         })}
       </div>

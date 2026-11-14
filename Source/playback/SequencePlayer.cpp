@@ -9,10 +9,27 @@
 
 #include "SequencePlayer.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "core/StepCursor.h"
 
 namespace berlin
 {
+
+namespace
+{
+    // Absolute sample of a note's gate off, at least one sample after its on. A full
+    // gate returns the sentinel so no new event is ever produced for it.
+    long long gateOffAbs (long long onAbs, double samplesPerStep, int gatePercent) noexcept
+    {
+        if (gatePercent >= kMaxGatePercent)
+            return kNoGateOff;
+
+        const long long length = std::llround (samplesPerStep * gatePercent / kMaxGatePercent);
+        return onAbs + std::max (1LL, length);
+    }
+}
 
 SequencePlayer::SequencePlayer (Sequence sequenceToPlay, Transport transportToUse)
     : sequence (std::move (sequenceToPlay)), transport (std::move (transportToUse))
@@ -30,6 +47,7 @@ void SequencePlayer::prepare (double sampleRate) noexcept
     // 0, so the next step-0 boundary would read as a false wrap.
     playhead.store (0, std::memory_order_relaxed);
     cursor = -1;   // nothing played yet: the first boundary can never be a wrap
+    pendingOffAbs = kNoGateOff;   // D5: position restarts at 0, a surviving note falls back to the boundary off
 }
 
 void SequencePlayer::start() noexcept
@@ -59,6 +77,7 @@ void SequencePlayer::reset() noexcept
     transport.reset();
     pendingNote = -1;
     pendingStep = 0;
+    pendingOffAbs = kNoGateOff;   // D5
     playhead.store (0, std::memory_order_relaxed);
     cursor = -1;
 }
@@ -150,10 +169,21 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
     if (sequence.size() > 0)
     {
         const int n = transport.countBoundaries (numSamples);
+        const long long blockStart = transport.getSamplePosition();
 
         for (int i = 0; i < n; ++i)
         {
             const StepBoundary b = transport.getBoundary (i);
+            const long long boundaryAbs = blockStart + b.sampleOffset;
+
+            // Gate off BEFORE the boundary. Strictly less-than (D3): an off that lands on
+            // (or past) the boundary falls through to the legacy off below, so each note
+            // gets exactly one off.
+            if (pendingNote >= 0 && pendingOffAbs < boundaryAbs)
+            {
+                out.push ({ static_cast<int> (pendingOffAbs - blockStart), pendingStep, pendingNote, false });
+                pendingNote = -1;
+            }
 
             if (pendingNote >= 0)   // note-off FIRST, same offset
                 out.push ({ b.sampleOffset, pendingStep, pendingNote, false });
@@ -174,6 +204,7 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
                 out.push ({ b.sampleOffset, adv.index, step.note, true, step.velocity });
                 pendingNote = step.note;
                 pendingStep = adv.index;
+                pendingOffAbs = gateOffAbs (boundaryAbs, transport.getSamplesPerStep(), step.gatePercent);
             }
 
             if (adv.wrapped)
@@ -181,6 +212,14 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
 
             cursor = adv.index;
             playhead.store (cursor, std::memory_order_relaxed);
+        }
+
+        // Gate off that falls inside this block after its last boundary. Only while the
+        // transport runs (D4): time is frozen after a direct stop(), so nothing fires.
+        if (transport.isRunning() && pendingNote >= 0 && pendingOffAbs < blockStart + numSamples)
+        {
+            out.push ({ static_cast<int> (pendingOffAbs - blockStart), pendingStep, pendingNote, false });
+            pendingNote = -1;
         }
     }
 

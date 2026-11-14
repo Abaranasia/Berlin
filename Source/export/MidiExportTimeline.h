@@ -8,8 +8,11 @@
    tick-stamped note-on/note-off event timeline - the sole source of musical
    correctness for the exported .mid file, mirroring SequencePlayer::process's
    note-off-before-note-on convention exactly (design.md Decision 7). This is
-   a deliberate tick-domain duplicate of that algorithm; a future gate-length
-   change must update both.
+   a deliberate tick-domain duplicate of that algorithm; a gate-length
+   change must update both. A step with gatePercent < 100 gets its note-off at
+   clamp ((gatePercent * ticksPerStep + 50) / 100, 1, ticksPerStep) ticks after
+   its note-on, so no terminal note-off is needed for it; gate 100 keeps the
+   boundary / terminal note-off exactly as before.
 
    JUCE-free: <vector> + core/Sequence.h only, so Tests/BerlinTests.jucer's
    juce_core-only harness can reach it completely. Definitions live in

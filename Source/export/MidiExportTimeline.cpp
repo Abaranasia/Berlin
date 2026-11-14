@@ -8,6 +8,8 @@
 
 #include "MidiExportTimeline.h"
 
+#include <algorithm>
+
 #include "core/StepCursor.h"
 
 namespace berlin
@@ -50,7 +52,19 @@ MidiExportStatus buildMidiExportTimeline (const Sequence& sequence,
         if (step.active)
         {
             out.events.push_back ({ tick, step.note, true, step.velocity });
-            pendingNote = step.note;
+
+            if (step.gatePercent < kMaxGatePercent)
+            {
+                // Gate-scaled off, at most one step after the on, so the list stays ordered
+                // without a sort. Gate 100 keeps the pending/terminal path (bit-identical).
+                const int gateTicks = std::clamp ((step.gatePercent * ticksPerStep + kMaxGatePercent / 2) / kMaxGatePercent,
+                                                  1, ticksPerStep);
+                out.events.push_back ({ tick + gateTicks, step.note, false });
+            }
+            else
+            {
+                pendingNote = step.note;
+            }
         }
     }
 

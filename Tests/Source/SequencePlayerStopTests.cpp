@@ -293,6 +293,84 @@ public:
 
             expectEquals (player.getPlayheadStep(), 6);
         }
+
+        // ---- step-gate stop/flush/reset (D4, D5). 4 samples per step; gate 50 is 2 samples.
+
+        beginTest ("a direct stop() fires no gate off, and flush emits exactly one off while the note still sounds");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (1, buffer);   // on at 0, gate off would be at 2
+            expectEquals (buffer.size(), 1);
+
+            player.stop();
+            player.process (8, buffer);   // time is frozen: no boundary and no gate off
+            expectEquals (buffer.size(), 0);
+
+            expect (player.flushPendingNoteOff (buffer));
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, false });
+            expect (! player.flushPendingNoteOff (buffer));   // idempotent
+        }
+
+        beginTest ("flush emits nothing once the gate off has already fired");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (3, buffer);   // [0, 3): on at 0, gate off at 2 (still before the boundary at 4)
+            expectEquals (buffer.size(), 2);
+            expect (buffer[1] == berlin::StepEvent { 2, 0, 60, false });
+
+            player.stop();
+            expect (! player.flushPendingNoteOff (buffer));
+            expectEquals (buffer.size(), 0);
+        }
+
+        beginTest ("after prepare() or reset() a sounding note falls back to the legacy off at the first boundary");
+        {
+            {
+                auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true } });
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+                player.prepare (4.0);
+                player.start();
+
+                berlin::StepEventBuffer buffer;
+                player.process (1, buffer);   // step 0 sounding, gate off pending at 2
+
+                player.prepare (4.0);         // position restarts at 0, cursor -1
+                player.process (3, buffer);   // boundary 0: legacy off first, then step 0 again; its gate off at 2
+
+                expectEquals (buffer.size(), 3);
+                expect (buffer[0] == berlin::StepEvent { 0, 0, 60, false });
+                expect (buffer[1] == berlin::StepEvent { 0, 0, 60, true });
+                expect (buffer[2] == berlin::StepEvent { 2, 0, 60, false });
+            }
+
+            {
+                auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true } });
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+                player.prepare (4.0);
+                player.start();
+
+                berlin::StepEventBuffer buffer;
+                player.process (1, buffer);
+
+                player.reset();               // discards the sounding note
+                expect (! player.flushPendingNoteOff (buffer));
+
+                player.process (1, buffer);   // fresh pass from step 0: a plain note-on, no stale off
+                expectEquals (buffer.size(), 1);
+                expect (buffer[0] == berlin::StepEvent { 0, 0, 60, true });
+            }
+        }
     }
 };
 

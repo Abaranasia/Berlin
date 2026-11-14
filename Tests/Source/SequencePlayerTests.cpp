@@ -29,6 +29,7 @@
 
 #include <vector>
 
+#include "GateStreamSupport.h"
 #include "core/Sequence.h"
 #include "core/Step.h"
 #include "playback/SequencePlayer.h"
@@ -531,6 +532,223 @@ public:
             player.process (4, buffer);
             expectEquals (buffer.size(), 1);
             expectEquals (buffer[0].velocity, berlin::kDefaultVelocity);
+        }
+
+        // ---- step-gate: gate-scaled note-off. 96 kHz, 60 BPM, 4 steps per beat
+        // gives samplesPerStep == 24000 exactly; every test compares the full
+        // StepEvent vector at ABSOLUTE samples.
+
+        beginTest ("gate 50 on two active steps puts each note-off at half a step, in order");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true, false, 100, 50 } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+            player.prepare (96000.0);
+            player.start();
+
+            long long position = 0;
+            bool ok = true;
+            const auto events = drain (player, position, 48000, 48000, ok);
+
+            expect (ok);
+            expect (events == std::vector<berlin::StepEvent> { { 0, 0, 60, true },      { 12000, 0, 60, false },
+                                                               { 24000, 1, 62, true },  { 36000, 1, 62, false } });
+        }
+
+        beginTest ("gate levels 25, 50 and 75 give note lengths of 6000, 12000 and 18000 samples");
+        {
+            const int gates[]   = { 25, 50, 75 };
+            const int lengths[] = { 6000, 12000, 18000 };
+
+            for (int g = 0; g < 3; ++g)
+            {
+                auto sequence = makeSequence ({ { 60, true, false, 100, gates[g] } });
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+                player.prepare (96000.0);
+                player.start();
+
+                long long position = 0;
+                bool ok = true;
+                const auto events = drain (player, position, 24000, 24000, ok);
+
+                expect (ok);
+                expect (events == std::vector<berlin::StepEvent> { { 0, 0, 60, true }, { lengths[g], 0, 60, false } },
+                        "gate " + juce::String (gates[g]));
+            }
+        }
+
+        beginTest ("the gate stream is identical at block sizes 1, 64, 511 and 4096");
+        {
+            for (const int block : { 1, 64, 511, 4096 })
+            {
+                auto sequence = makeSequence ({ { 60, true, false, 100, 75 }, { 62, true, false, 100, 75 } });
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+                player.prepare (96000.0);
+                player.start();
+
+                long long position = 0;
+                bool ok = true;
+                const auto events = drain (player, position, 48000, block, ok);
+
+                expect (ok, "ordered offsets, block " + juce::String (block));
+                expect (events == std::vector<berlin::StepEvent> { { 0, 0, 60, true },      { 18000, 0, 60, false },
+                                                                   { 24000, 1, 62, true },  { 42000, 1, 62, false } },
+                        "block " + juce::String (block));
+            }
+        }
+
+        beginTest ("a note-off landing exactly on a block end appears at offset 0 of the next block; a later-block off is emitted once");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 100, 50 } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+            player.prepare (96000.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (12000, buffer);   // off at absolute 12000 == block end: not in this block
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, true });
+
+            player.process (12000, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, false });
+
+            auto laterSequence = makeSequence ({ { 60, true, false, 100, 75 } });
+            berlin::SequencePlayer later (laterSequence, berlin::Transport (60.0, 4));
+            later.prepare (96000.0);
+            later.start();
+
+            int offs = 0;
+            int offBlock = -1;
+            int offOffset = -1;
+
+            for (int b = 0; b < 5; ++b)   // blocks of 4000: [16000, 20000) holds absolute 18000
+            {
+                later.process (4000, buffer);
+
+                for (int i = 0; i < buffer.size(); ++i)
+                    if (! buffer[i].isNoteOn)
+                    {
+                        ++offs;
+                        offBlock = b;
+                        offOffset = buffer[i].sampleOffset;
+                    }
+            }
+
+            expectEquals (offs, 1);
+            expectEquals (offBlock, 4);
+            expectEquals (offOffset, 2000);
+        }
+
+        beginTest ("a gate that rounds to zero samples still sounds one sample; a gate that rounds onto the boundary gives exactly one off");
+        {
+            {   // samplesPerStep == 60: gate 1 is 0.6 samples, rounded to 1
+                auto sequence = makeSequence ({ { 60, true, false, 100, 1 } });
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+                player.prepare (60.0);
+                player.start();
+
+                long long position = 0;
+                bool ok = true;
+                const auto events = drain (player, position, 60, 60, ok);
+                expect (events == std::vector<berlin::StepEvent> { { 0, 0, 60, true }, { 1, 0, 60, false } });
+            }
+
+            {   // samplesPerStep == 10: gate 1 is 0.1 samples, clamped up to 1
+                auto sequence = makeSequence ({ { 60, true, false, 100, 1 } });
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+                player.prepare (10.0);
+                player.start();
+
+                long long position = 0;
+                bool ok = true;
+                const auto events = drain (player, position, 10, 10, ok);
+                expect (events == std::vector<berlin::StepEvent> { { 0, 0, 60, true }, { 1, 0, 60, false } });
+            }
+
+            {   // samplesPerStep == 10: gate 99 is 9.9 samples, rounded onto the boundary at 10
+                auto sequence = makeSequence ({ { 60, true, false, 100, 99 }, { 62, true } });
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+                player.prepare (10.0);
+                player.start();
+
+                long long position = 0;
+                bool ok = true;
+                const auto events = drain (player, position, 20, 20, ok);
+
+                expect (ok);
+                expect (events == std::vector<berlin::StepEvent> { { 0, 0, 60, true }, { 10, 0, 60, false }, { 10, 1, 62, true } });
+            }
+        }
+
+        beginTest ("rest and skipped steps ignore their gate, and gate 100 equals the legacy stream");
+        {
+            const std::vector<berlin::Step> gated   { { 60, true }, { 62, false, false, 100, 25 }, { 64, true, true, 100, 25 }, { 65, true } };
+            const std::vector<berlin::Step> neutral { { 60, true }, { 62, false },                 { 64, true, true },          { 65, true } };
+
+            std::vector<berlin::StepEvent> streams[2];
+
+            for (int k = 0; k < 2; ++k)
+            {
+                auto sequence = makeSequence (k == 0 ? gated : neutral);
+                berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+                player.prepare (96000.0);
+                player.start();
+
+                long long position = 0;
+                bool ok = true;
+                streams[k] = drain (player, position, 96000, 1000, ok);
+                expect (ok);
+            }
+
+            // legacy expectation: step 0 on@0 and its off at the boundary 24000; step 1 is a
+            // rest (takes time); step 2 is skipped (takes none), so step 3 lands on 48000
+            // and the cycle wraps to step 0 at 72000
+            expect (streams[0] == std::vector<berlin::StepEvent> { { 0, 0, 60, true },     { 24000, 0, 60, false },
+                                                                   { 48000, 3, 65, true }, { 72000, 3, 65, false },
+                                                                   { 72000, 0, 60, true } });
+            expect (streams[0] == streams[1]);
+        }
+
+        beginTest ("a slower tempo mid-gate keeps the absolute note-off sample");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true, false, 100, 50 } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+            player.prepare (96000.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (6000, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, true });
+
+            player.setBpm (30.0);   // sps 48000; the in-flight off stays at absolute 12000
+            player.process (12000, buffer);   // [6000, 18000)
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 6000, 0, 60, false });   // 6000 + 6000 == absolute 12000
+        }
+
+        beginTest ("a faster tempo that brings the boundary first gives exactly one off at that boundary, before the next on");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 100, 50 }, { 62, true, false, 100, 50 } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 4));
+            player.prepare (96000.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (6000, buffer);   // step 0 on; the old gate off would be at 12000
+
+            player.setBpm (240.0);   // sps 6000: the remaining 75 percent of the step is 4500 -> boundary at 10500
+            player.process (6000, buffer);   // [6000, 12000)
+
+            expectEquals (buffer.size(), 2);
+            expect (buffer[0] == berlin::StepEvent { 4500, 0, 60, false });   // legacy boundary off, absolute 10500
+            expect (buffer[1] == berlin::StepEvent { 4500, 1, 62, true });
+
+            player.process (6000, buffer);   // [12000, 18000): step 1 gate off at 10500 + 3000, then step 0 at 16500
+
+            expectEquals (buffer.size(), 2);
+            expect (buffer[0] == berlin::StepEvent { 1500, 1, 62, false });   // absolute 13500
+            expect (buffer[1] == berlin::StepEvent { 4500, 0, 60, true });    // absolute 16500; no second off for step 0
         }
     }
 };

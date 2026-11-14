@@ -59,6 +59,7 @@
 #pragma once
 
 #include <atomic>
+#include <limits>
 
 #include "core/Sequence.h"
 #include "playback/StepEventBuffer.h"
@@ -70,6 +71,10 @@ namespace berlin
 // How the audio thread adopts a published Sequence: restart resets the
 // transport and playhead to step 0; keepPosition leaves both untouched.
 enum class PublishMode { restart, keepPosition };
+
+// SequencePlayer's pendingOffAbs value meaning "no gate off scheduled": gate 100 keeps
+// the legacy boundary note-off, bit for bit (step-gate D2).
+inline constexpr long long kNoGateOff = std::numeric_limits<long long>::max();
 
 class SequencePlayer
 {
@@ -144,6 +149,7 @@ private:
     Transport transport;
     int pendingNote { -1 };    // -1 = nothing sounding
     int pendingStep { 0 };
+    long long pendingOffAbs { kNoGateOff };   // absolute sample of the sounding note's gate off; kNoGateOff = use the boundary off (step-gate)
     int cursor { -1 };         // AUDIO-THREAD-EXCLUSIVE: last played step index, -1 = nothing played yet
     std::atomic<int> playhead { 0 };
     std::atomic<int> loopCount { 0 };

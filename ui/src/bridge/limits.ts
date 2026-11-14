@@ -37,6 +37,10 @@ export const GENERATION_LIMITS: Record<string, Range> = {
   rangeHigh: { min: 0, max: 127 },
   stepProbability: { min: 0, max: 1 },
 };
-// Source/core/Step.h kMinVelocity / kMaxVelocity.
+// Source/core/Step.h kMinVelocity / kMaxVelocity / kDefaultVelocity.
 export const VELOCITY: Range = { min: 1, max: 127 };
+export const DEFAULT_VELOCITY = 100;
+// Source/core/Step.h kMinGatePercent / kMaxGatePercent / kDefaultGatePercent.
+export const GATE: Range = { min: 1, max: 100 };
+export const DEFAULT_GATE = 100;
 export const AUTO_EVOLVE_RATE: Range = { min: 1, max: 16 };

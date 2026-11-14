@@ -219,14 +219,15 @@ bool BerlinAudioProcessor::regenerate (bool drawNewSeed)
 }
 
 StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active, std::optional<bool> skipped,
-                                          std::optional<int> velocity)
+                                          std::optional<int> velocity, std::optional<int> gatePercent)
 {
-    // Validate first (index, note, then velocity), then busy: neither touches state.
-    switch (validateStepEdit (currentSequence, scaleNotesFor (generationParams), index, note, velocity))
+    // Validate first (index, note, velocity, then gate), then busy: neither touches state.
+    switch (validateStepEdit (currentSequence, scaleNotesFor (generationParams), index, note, velocity, gatePercent))
     {
         case StepEditError::stepOutOfRange: return StepEditResult::stepOutOfRange;
         case StepEditError::noteOutOfScale: return StepEditResult::noteOutOfScale;
         case StepEditError::velocityOutOfRange: return StepEditResult::velocityOutOfRange;
+        case StepEditError::gateOutOfRange: return StepEditResult::gateOutOfRange;
         case StepEditError::none:           break;
     }
 
@@ -245,6 +246,9 @@ StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active,
 
     if (velocity)
         step.velocity = *velocity;
+
+    if (gatePercent)
+        step.gatePercent = *gatePercent;
 
     // publishSequence swaps through its argument, so publish a COPY (same
     // reasoning as regenerate()).

@@ -669,6 +669,45 @@ public:
             velocityFollowsNote (berlin::MutationEngine::rotate (input, random));
             velocityFollowsNote (berlin::MutationEngine::stretch (input, random));
         }
+
+        beginTest ("gate: generated steps default to 100, addNote/removeNote keep every gate, transforms carry it with its step");
+        {
+            berlin::Sequence fresh (8);
+            for (int i = 0; i < 8; ++i)
+                expectEquals (fresh[i].gatePercent, berlin::kDefaultGatePercent);
+
+            berlin::Sequence input (8);
+            for (int i = 0; i < 8; ++i)
+            {
+                input[i].active = (i < 3);
+                input[i].note = 60 + i;           // unique, so gate = 20 + 5 * (note - 60) pairs each step
+                input[i].gatePercent = 20 + 5 * i;
+            }
+
+            auto gateFollowsNote = [this] (const berlin::Sequence& s)
+            {
+                expect (s.size() > 0);
+
+                for (int i = 0; i < s.size(); ++i)
+                    expectEquals (s[i].gatePercent, 20 + 5 * (s[i].note - 60));
+            };
+
+            berlin::DeterministicRandom random (7);
+
+            const berlin::Sequence added = berlin::MutationEngine::addNote (input, random);
+            const berlin::Sequence removed = berlin::MutationEngine::removeNote (input, random);
+            const berlin::Sequence reversed = berlin::MutationEngine::reverse (input, random);
+
+            for (int i = 0; i < 8; ++i)
+            {
+                expectEquals (added[i].gatePercent, input[i].gatePercent);     // the activated step keeps its OWN gate
+                expectEquals (removed[i].gatePercent, input[i].gatePercent);
+                expectEquals (reversed[i].gatePercent, input[7 - i].gatePercent);
+            }
+
+            gateFollowsNote (berlin::MutationEngine::rotate (input, random));
+            gateFollowsNote (berlin::MutationEngine::stretch (input, random));
+        }
     }
 };
 
