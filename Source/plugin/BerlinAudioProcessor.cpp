@@ -120,6 +120,7 @@ void BerlinAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     preset.rootPitchClass = generationParams.rootPitchClass;
     preset.rangeLow       = generationParams.rangeLow;
     preset.rangeHigh      = generationParams.rangeHigh;
+    preset.melody         = generationParams.melody;   // schema v4 (musical-notes)
     preset.bpm            = currentBpm;   // schema v3 (tempo-delay-ui, design.md D7)
 
     if (auto xml = PresetManager::toValueTree (preset).createXml())
@@ -166,6 +167,7 @@ void BerlinAudioProcessor::setStateInformation (const void* data, int sizeInByte
             generationParams.rootPitchClass = preset.rootPitchClass;
             generationParams.rangeLow       = preset.rangeLow;
             generationParams.rangeHigh      = preset.rangeHigh;
+            generationParams.melody         = preset.melody;   // schema v4 (musical-notes)
 
             // re-derive the sequence from the restored seed; does NOT replay mutation history (D4).
             // If busy, the edited sequence keeps playing and `edited` stays true until the
@@ -290,6 +292,7 @@ PresetResult BerlinAudioProcessor::save (const juce::String& name)
     preset.rootPitchClass = generationParams.rootPitchClass;
     preset.rangeLow       = generationParams.rangeLow;
     preset.rangeHigh      = generationParams.rangeHigh;
+    preset.melody         = generationParams.melody;   // schema v4 (musical-notes)
     preset.bpm            = currentBpm;   // schema v3 (tempo-delay-ui, design.md D7)
     return presetManager.save (preset);   // unconditional; editor owns the overwrite prompt (D2)
 }
@@ -322,6 +325,7 @@ PresetResult BerlinAudioProcessor::loadPreset (const juce::String& name)
     generationParams.rootPitchClass = preset.rootPitchClass;
     generationParams.rangeLow       = preset.rangeLow;
     generationParams.rangeHigh      = preset.rangeHigh;
+    generationParams.melody         = preset.melody;   // schema v4 (musical-notes)
 
     // drawNewSeed=false: the preset's saved seed applies even if Lock Seed is on.
     // Defensive second guard: the pending check above makes a refusal unreachable.

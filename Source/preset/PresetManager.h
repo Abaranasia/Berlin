@@ -62,7 +62,7 @@ namespace berlin
 class PresetManager
 {
 public:
-    static constexpr int kSchemaVersion = 3;
+    static constexpr int kSchemaVersion = 4;
 
     explicit PresetManager (juce::File presetDirectoryToUse = defaultPresetDirectory());
 
@@ -107,6 +107,9 @@ public:
 
     static juce::String scaleTypeName (ScaleType type);
     static bool         parseScaleType (const juce::String& name, ScaleType& out);
+
+    static juce::String melodyStyleName (MelodyStyle style);
+    static bool         parseMelodyStyle (const juce::String& name, MelodyStyle& out);
 
     static juce::String divisionName (SyncDivision division);
     static bool         parseDivision (const juce::String& name, SyncDivision& out);

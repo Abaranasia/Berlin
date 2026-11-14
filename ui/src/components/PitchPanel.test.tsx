@@ -3,7 +3,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { act } from 'react';
 import { PitchPanel } from './PitchPanel';
 import { change, field, makeHarness, render, settle } from '../testing/harness';
-import { SCALE_TYPES, type DispatchResult } from '../bridge/protocol';
+import { MELODY_STYLES, SCALE_TYPES, type DispatchResult, type Snapshot } from '../bridge/protocol';
 
 let unmount = () => {};
 afterEach(() => unmount());
@@ -76,5 +76,36 @@ describe('PitchPanel: range', () => {
     await settle();
     expect(field(host, 'Range low').value).toBe('70');
     expect(field(host, 'Range high').value).toBe('82');
+  });
+});
+
+describe('PitchPanel: melody', () => {
+  it('offers exactly Random and Smooth, defaulting to Random', async () => {
+    const { host } = await mount();
+    const melody = field<HTMLSelectElement>(host, 'Melody');
+    expect(options(melody)).toEqual([...MELODY_STYLES]);
+    expect(options(melody)).toEqual(['random', 'smooth']);
+    expect(melody.value).toBe('random');
+  });
+
+  it('choosing Smooth sends only setGenerationParams {melody} and leaves the steps unchanged', async () => {
+    const { host, dispatch, store } = await mount();
+    const stepsBefore = store.getState().engine?.steps;
+    await change(field<HTMLSelectElement>(host, 'Melody'), 'smooth');
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenLastCalledWith({ name: 'setGenerationParams', args: { melody: 'smooth' } });
+    expect(field<HTMLSelectElement>(host, 'Melody').value).toBe('smooth');
+    expect(store.getState().engine?.steps).toEqual(stepsBefore);
+  });
+
+  it('follows a later snapshot event back to Random', async () => {
+    let emit: (s: Snapshot) => void = () => {};
+    const harness = makeHarness({ onSnapshot: (listener) => ((emit = listener), () => {}) });
+    const { host } = await mount(harness);
+    await change(field<HTMLSelectElement>(host, 'Melody'), 'smooth');
+    await settle();
+    const snapshot = (await harness.bridge.getSnapshot())!;
+    await act(async () => emit({ ...snapshot, generationParams: { ...snapshot.generationParams, melody: 'random' } }));
+    expect(field<HTMLSelectElement>(host, 'Melody').value).toBe('random');
   });
 });

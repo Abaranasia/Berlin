@@ -1,5 +1,5 @@
 import { GENERATION_LIMITS } from '../bridge/limits';
-import { SCALE_TYPES, type ScaleType } from '../bridge/protocol';
+import { MELODY_STYLES, SCALE_TYPES, type MelodyStyle, type ScaleType } from '../bridge/protocol';
 import { ROOT_NAMES } from '../lib/noteName';
 import { sendGen, sendRange } from '../store/actions';
 import { useStore, useStoreApi } from '../store/context';
@@ -17,6 +17,7 @@ const rangeOf = (state: State) =>
 export function PitchPanel() {
   const store = useStoreApi();
   const scale = useShown('gen.scaleType', (s) => s.generationParams.scaleType, 'minor');
+  const melody = useShown('gen.melody', (s) => s.generationParams.melody, 'random');
   const root = useShown('gen.rootPitchClass', (s) => s.generationParams.rootPitchClass, 0);
   // gen.range is a tuple and a selector must return a primitive, so each end is selected as its own number.
   const low = useStore((s) => rangeOf(s)[0]);
@@ -27,6 +28,7 @@ export function PitchPanel() {
   return (
     <section>
       <Select label="Scale" value={scale} options={SCALE_TYPES} onChange={(next) => sendGen(store, 'scaleType', next as ScaleType)} />{' '}
+      <Select label="Melody" value={melody} options={MELODY_STYLES} onChange={(next) => sendGen(store, 'melody', next as MelodyStyle)} />{' '}
       <Select label="Root" value={String(root)} options={ROOTS} onChange={(next) => sendGen(store, 'rootPitchClass', Number(next))} />{' '}
       <Slider label="Range low" value={low} min={PITCH.min} max={PITCH.max} step={1} onChange={(next) => sendRange(store, next, currentRange()[1])} />{' '}
       <Slider label="Range high" value={high} min={PITCH.min} max={PITCH.max} step={1} onChange={(next) => sendRange(store, currentRange()[0], next)} />

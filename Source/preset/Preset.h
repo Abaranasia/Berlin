@@ -32,6 +32,7 @@
 #include <juce_core/juce_core.h>
 
 #include "core/Scale.h"
+#include "generation/GenerationParams.h"
 #include "synth/SynthPatch.h"
 
 namespace berlin
@@ -55,6 +56,12 @@ struct Preset
     // header comment above for why this is a Preset-level field, not a
     // SynthPatch one.
     double bpm = kDefaultBpm;
+
+    // Persisted since schema v4 (musical-notes slice 1b): the Melody style
+    // (Random/Smooth) is an explicit scalar like scaleType, applied field-wise
+    // so a load never clobbers the unpersisted rhythm fields. A pre-v4 file
+    // loads as Random, which regenerates byte-identically.
+    MelodyStyle melody = MelodyStyle::random;
 };
 
 // PresetManager::fromValueTree's outcome, and MainComponent::describePresetFailure's

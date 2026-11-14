@@ -3,7 +3,7 @@
 import type { Bridge } from './bridge';
 import { AUTO_EVOLVE_RATE, DEFAULT_GATE, DEFAULT_VELOCITY, GATE, GENERATION_LIMITS, LIMITS, VELOCITY, type Range } from './limits';
 import {
-  DELAY_DIVISIONS, LFO_DESTINATIONS, RHYTHM_MODES, SCALE_TYPES, WAVEFORMS,
+  DELAY_DIVISIONS, LFO_DESTINATIONS, MELODY_STYLES, RHYTHM_MODES, SCALE_TYPES, WAVEFORMS,
   type ApplyAudioSettingsResult, type AudioSettings, type Command, type DispatchResult, type PlayheadEvent, type SettingsBridge, type Snapshot,
 } from './protocol';
 
@@ -20,7 +20,7 @@ const initial = (): Snapshot => ({
   },
   generationParams: {
     mode: 'random', pulses: 5, rotation: 0, stepProbability: 0.5, lockSeed: false, length: 16,
-    scaleType: 'minor', rootPitchClass: 0, rangeLow: 36, rangeHigh: 72,
+    scaleType: 'minor', rootPitchClass: 0, rangeLow: 36, rangeHigh: 72, melody: 'random',
   },
   seed: '42', bpm: 120, playing: false, playheadStep: 0, loopCount: 0, synthEnabled: true, effectsEnabled: true,
   masterLevel: 0.8, autoEvolveEnabled: false, autoEvolveRate: 4, mutationCount: 0,
@@ -35,7 +35,7 @@ const PATCH_RANGES: Record<string, Range> = {
   ...LIMITS, attack: LIMITS.attackSeconds, decay: LIMITS.decaySeconds, release: LIMITS.releaseSeconds,
 };
 const ENUMS: Record<string, readonly string[]> = {
-  waveform: WAVEFORMS, lfoDestination: LFO_DESTINATIONS, delayDivision: DELAY_DIVISIONS, mode: RHYTHM_MODES, scaleType: SCALE_TYPES,
+  waveform: WAVEFORMS, lfoDestination: LFO_DESTINATIONS, delayDivision: DELAY_DIVISIONS, mode: RHYTHM_MODES, scaleType: SCALE_TYPES, melody: MELODY_STYLES,
 };
 const BOOLEANS = new Set(['delaySynced', 'lockSeed']);
 const INT_FIELDS = new Set(['length', 'pulses', 'rotation', 'rootPitchClass', 'rangeLow', 'rangeHigh']);

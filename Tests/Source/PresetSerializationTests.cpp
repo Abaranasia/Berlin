@@ -31,6 +31,7 @@
 
 #include "core/Scale.h"
 #include "generation/GenerationParams.h"
+#include "generation/SequenceBuilder.h"
 #include "preset/Preset.h"
 #include "preset/PresetManager.h"
 #include "synth/SynthPatch.h"
@@ -520,6 +521,122 @@ public:
             expectEquals (out.patch.delayTimeSeconds, berlin::kMaxDelaySeconds);
             expectEquals (out.patch.delayFeedback, berlin::kMaxDelayFeedback);
             expectEquals (out.patch.outputLevel, berlin::kMinOutputLevel);
+        }
+
+        // ---- musical-notes slice 1b: schema v4 (melody) ----
+
+        beginTest ("a saved preset writes schemaVersion 4 and melody as text on <Generation>");
+        {
+            berlin::Preset in;
+            in.melody = berlin::MelodyStyle::smooth;
+            const auto tree = berlin::PresetManager::toValueTree (in);
+            expectEquals (tree.getProperty ("schemaVersion").toString(), juce::String ("4"));
+            expectEquals (tree.getChildWithName ("Generation").getProperty ("melody").toString(), juce::String ("smooth"));
+
+            const auto xml = tree.toXmlString();
+            expect (xml.contains ("melody=\"smooth\""));
+
+            const auto randomTree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            expectEquals (randomTree.getChildWithName ("Generation").getProperty ("melody").toString(), juce::String ("random"));
+        }
+
+        beginTest ("v4 round trips melody smooth and random; a loaded Smooth preset regenerates the Smooth build");
+        {
+            for (auto style : { berlin::MelodyStyle::random, berlin::MelodyStyle::smooth })
+            {
+                berlin::Preset in;
+                in.melody = style;
+                in.seed = 4242;
+                berlin::Preset out;
+                expect (roundTripThroughXml (in, out));
+                expect (out.melody == style);
+            }
+
+            berlin::Preset in;
+            in.melody = berlin::MelodyStyle::smooth;
+            in.seed = 987654321LL;
+            in.scaleType = berlin::ScaleType::dorian;
+            berlin::Preset out;
+            expect (roundTripThroughXml (in, out));
+
+            berlin::GenerationParams params;
+            params.scaleType = out.scaleType;
+            params.rootPitchClass = out.rootPitchClass;
+            params.rangeLow = out.rangeLow;
+            params.rangeHigh = out.rangeHigh;
+            params.melody = out.melody;
+
+            berlin::GenerationParams expected = params;
+            expected.melody = berlin::MelodyStyle::smooth;
+            expect (berlin::buildSeededSequence (out.seed, params) == berlin::buildSeededSequence (in.seed, expected));
+        }
+
+        beginTest ("a v3 preset (no melody) loads as random and regenerates byte-identically to the pre-change build");
+        {
+            berlin::Preset in;
+            in.seed = 31337;
+            in.scaleType = berlin::ScaleType::mixolydian;
+            auto tree = berlin::PresetManager::toValueTree (in);
+            tree.setProperty ("schemaVersion", juce::String (3), nullptr);
+            tree.getChildWithName ("Generation").removeProperty ("melody", nullptr);
+
+            berlin::Preset out;
+            expect (berlin::PresetManager::fromValueTree (tree, out) == berlin::PresetResult::ok);
+            expect (out.melody == berlin::MelodyStyle::random);
+
+            berlin::GenerationParams loaded;
+            loaded.scaleType = out.scaleType;
+            loaded.rootPitchClass = out.rootPitchClass;
+            loaded.rangeLow = out.rangeLow;
+            loaded.rangeHigh = out.rangeHigh;
+            loaded.melody = out.melody;
+
+            berlin::GenerationParams preChange = loaded;   // default melody is random: the pre-change path
+            preChange.melody = berlin::MelodyStyle::random;
+            expect (berlin::buildSeededSequence (out.seed, loaded) == berlin::buildSeededSequence (in.seed, preChange));
+        }
+
+        beginTest ("a v4 preset missing melody is parseFailed, out left untouched");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.getChildWithName ("Generation").removeProperty ("melody", nullptr);
+
+            berlin::Preset out;
+            out.name = "Sentinel";
+            expect (berlin::PresetManager::fromValueTree (tree, out) == berlin::PresetResult::parseFailed);
+            expect (out.name == "Sentinel");
+        }
+
+        beginTest ("an unknown melody name is parseFailed, out left untouched");
+        {
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.getChildWithName ("Generation").setProperty ("melody", "wobbly", nullptr);
+
+            berlin::Preset out;
+            out.name = "Sentinel";
+            out.melody = berlin::MelodyStyle::smooth;
+            expect (berlin::PresetManager::fromValueTree (tree, out) == berlin::PresetResult::parseFailed);
+            expect (out.name == "Sentinel");
+            expect (out.melody == berlin::MelodyStyle::smooth);
+        }
+
+        beginTest ("schema version 5 is unsupportedVersion; kSchemaVersion is 4");
+        {
+            expectEquals (berlin::PresetManager::kSchemaVersion, 4);
+            auto tree = berlin::PresetManager::toValueTree (berlin::Preset{});
+            tree.setProperty ("schemaVersion", juce::String (5), nullptr);
+            berlin::Preset out;
+            expect (berlin::PresetManager::fromValueTree (tree, out) == berlin::PresetResult::unsupportedVersion);
+        }
+
+        beginTest ("the melody name helpers map random/smooth and reject unknown names");
+        {
+            berlin::MelodyStyle style {};
+            expect (berlin::PresetManager::parseMelodyStyle ("smooth", style) && style == berlin::MelodyStyle::smooth);
+            expect (berlin::PresetManager::parseMelodyStyle ("random", style) && style == berlin::MelodyStyle::random);
+            expect (! berlin::PresetManager::parseMelodyStyle ("Smooth", style));
+            expectEquals (berlin::PresetManager::melodyStyleName (berlin::MelodyStyle::smooth), juce::String ("smooth"));
+            expectEquals (berlin::PresetManager::melodyStyleName (berlin::MelodyStyle::random), juce::String ("random"));
         }
     }
 };

@@ -560,10 +560,10 @@ public:
 
             auto* generationObject = snap["generationParams"].getDynamicObject();
             expect (generationObject != nullptr);
-            expectEquals (generationObject->getProperties().size(), 10);
+            expectEquals (generationObject->getProperties().size(), 11);
 
             for (auto* key : { "mode", "pulses", "rotation", "stepProbability", "lockSeed", "length",
-                                "scaleType", "rootPitchClass", "rangeLow", "rangeHigh" })
+                                "scaleType", "rootPitchClass", "rangeLow", "rangeHigh", "melody" })
                 expect (snap["generationParams"].hasProperty (key), juce::String ("generationParams missing key: ") + key);
 
             expect (snap["steps"].isArray());
@@ -1075,6 +1075,87 @@ public:
 
             for (int i = 0; i < 8; ++i)
                 expectEquals (static_cast<int> (snap["scaleNotes"][i]), expected[i]);
+        }
+
+        beginTest ("melody: setGenerationParams {melody} appears in the snapshot; partial merge keeps other fields; fresh snapshot is random");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+
+            expectEquals (bridge.snapshot()["generationParams"]["melody"].toString(), juce::String ("random"));
+
+            auto first = new juce::DynamicObject();
+            first->setProperty ("length", 24);
+            first->setProperty ("scaleType", "dorian");
+            expect (static_cast<bool> (bridge.dispatch ("setGenerationParams", juce::var (first))["ok"]));
+
+            auto args = new juce::DynamicObject();
+            args->setProperty ("melody", "smooth");
+            const auto result = bridge.dispatch ("setGenerationParams", juce::var (args));
+            expect (static_cast<bool> (result["ok"]));
+            expectEquals (result["snapshot"]["generationParams"]["melody"].toString(), juce::String ("smooth"));
+            expectEquals ((int) result["snapshot"]["generationParams"]["length"], 24);
+            expectEquals (result["snapshot"]["generationParams"]["scaleType"].toString(), juce::String ("dorian"));
+
+            auto back = new juce::DynamicObject();
+            back->setProperty ("melody", "random");
+            const auto backResult = bridge.dispatch ("setGenerationParams", juce::var (back));
+            expectEquals (backResult["snapshot"]["generationParams"]["melody"].toString(), juce::String ("random"));
+        }
+
+        beginTest ("melody: an unknown name or a non-string is rejected with state unchanged; a typo field is still unknown");
+        {
+            berlin::BerlinAudioProcessor processor;
+            berlin::UiBridge bridge (processor);
+
+            auto check = [&] (juce::DynamicObject* args, const char* expectedError)
+            {
+                const auto before = snapshotText (bridge);
+                const auto result = bridge.dispatch ("setGenerationParams", juce::var (args));
+                expect (! static_cast<bool> (result["ok"]));
+                expectEquals (result["error"].toString(), juce::String (expectedError));
+                expect (! result.hasProperty ("snapshot"));
+                expect (snapshotText (bridge) == before);
+            };
+
+            auto wobbly = new juce::DynamicObject();
+            wobbly->setProperty ("melody", "wobbly");
+            check (wobbly, "invalid enum: melody");
+
+            auto numeric = new juce::DynamicObject();
+            numeric->setProperty ("melody", 1);
+            check (numeric, "invalid type: melody");
+
+            auto typo = new juce::DynamicObject();
+            typo->setProperty ("lenght", 8);
+            check (typo, "unknown field: lenght");
+        }
+
+        beginTest ("melody: the snapshot follows a preset load");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor processor (temp.dir);
+            berlin::UiBridge bridge (processor);
+
+            auto params = new juce::DynamicObject();
+            params->setProperty ("melody", "smooth");
+            expect (static_cast<bool> (bridge.dispatch ("setGenerationParams", juce::var (params))["ok"]));
+
+            auto saveArgs = new juce::DynamicObject();
+            saveArgs->setProperty ("name", "Melody Snap");
+            saveArgs->setProperty ("overwrite", false);
+            expect (static_cast<bool> (bridge.dispatch ("savePreset", juce::var (saveArgs))["ok"]));
+
+            auto back = new juce::DynamicObject();
+            back->setProperty ("melody", "random");
+            expect (static_cast<bool> (bridge.dispatch ("setGenerationParams", juce::var (back))["ok"]));
+            expectEquals (bridge.snapshot()["generationParams"]["melody"].toString(), juce::String ("random"));
+
+            auto loadArgs = new juce::DynamicObject();
+            loadArgs->setProperty ("name", "Melody Snap");
+            const auto loaded = bridge.dispatch ("loadPreset", juce::var (loadArgs));
+            expect (static_cast<bool> (loaded["ok"]));
+            expectEquals (loaded["snapshot"]["generationParams"]["melody"].toString(), juce::String ("smooth"));
         }
     }
 };
