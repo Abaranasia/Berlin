@@ -223,6 +223,23 @@ namespace
         return {};
     }
 
+    // Optional absolute integer arg: absent leaves `out` empty (keep the current
+    // value); present must pass readRequiredInt's checks (so the same
+    // "invalid type: <field>" / "non-finite: <field>" tokens apply).
+    juce::String readOptionalInt (const juce::var& args, const char* field, std::optional<int>& out)
+    {
+        if (! args.hasProperty (field))
+            return {};
+
+        int value = 0;
+
+        if (auto err = readRequiredInt (args, field, value); err.isNotEmpty())
+            return err;
+
+        out = value;
+        return {};
+    }
+
     juce::String readRequiredBool (const juce::var& args, const char* field, bool& out)
     {
         if (! args.hasProperty (field))
@@ -558,6 +575,7 @@ namespace
             stepObject->setProperty ("note", sequence[i].note);
             stepObject->setProperty ("active", sequence[i].active);
             stepObject->setProperty ("skipped", sequence[i].skipped);
+            stepObject->setProperty ("velocity", sequence[i].velocity);
             steps.add (juce::var (stepObject));
         }
 
@@ -629,8 +647,8 @@ namespace
         return processor.regenerate (randomize) ? juce::String() : juce::String ("busy");
     }
 
-    // setStep {index, note, active, skipped?}: parse everything into locals first, then one
-    // editStep call (validation order index, note, busy lives in the processor).
+    // setStep {index, note, active, skipped?, velocity?}: parse everything into locals first, then one
+    // editStep call (validation order index, note, velocity, busy lives in the processor).
     juce::String handleSetStep (BerlinAudioProcessor& processor, const juce::var& args)
     {
         int index = 0;
@@ -656,12 +674,18 @@ namespace
             skipped = value;
         }
 
-        switch (processor.editStep (index, note, active, skipped))
+        // Optional: absent keeps the step's current velocity; the 1-127 range is the processor's call.
+        std::optional<int> velocity;
+        if (auto err = readOptionalInt (args, "velocity", velocity); err.isNotEmpty())
+            return err;
+
+        switch (processor.editStep (index, note, active, skipped, velocity))
         {
             case StepEditResult::ok:             return {};
             case StepEditResult::busy:           return "busy";
             case StepEditResult::stepOutOfRange: return "step-out-of-range";
             case StepEditResult::noteOutOfScale: return "note-out-of-scale";
+            case StepEditResult::velocityOutOfRange: return "velocity-out-of-range";
         }
 
         return "busy";   // unreachable for a valid enumerator

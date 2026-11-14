@@ -53,7 +53,7 @@ describe('step editing protocol', () => {
 
   it('setStep accepts an optional skipped flag and the snapshot carries skipped steps and the length', () => {
     const cmd: Command = { name: 'setStep', args: { index: 2, note: 50, active: true, skipped: true } };
-    const step: Snapshot['steps'][number] = { note: 50, active: true, skipped: false };
+    const step: Snapshot['steps'][number] = { note: 50, active: true, skipped: false, velocity: 100 };
     const length: GenerationParams['length'] = 24;
     expect(cmd.args).toMatchObject({ skipped: true });
     expect(step.skipped).toBe(false);

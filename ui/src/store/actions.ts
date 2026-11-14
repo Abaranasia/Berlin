@@ -1,5 +1,5 @@
 // Typed senders: one place maps a control to its command, key and optimistic value (see the key convention in store.ts).
-import type { GenerationParams, Patch } from '../bridge/protocol';
+import type { GenerationParams, Patch, Snapshot } from '../bridge/protocol';
 import type { Store, StoreKey } from './store';
 
 type LiveGenerationField = Exclude<keyof GenerationParams, 'rangeLow' | 'rangeHigh'>;
@@ -16,6 +16,8 @@ export function sendGen<F extends LiveGenerationField>(store: Store, field: F, v
 export const sendRange = (store: Store, rangeLow: number, rangeHigh: number): void =>
   store.send('gen.range', { name: 'setGenerationParams', args: { rangeLow, rangeHigh } }, [rangeLow, rangeHigh]);
 
-// One lane per step (`step.<i>`): absolute {note, active, skipped} values, so the latest pending one replaces any earlier one.
-export const sendStep = (store: Store, index: number, note: number, active: boolean, skipped: boolean): void =>
-  store.send(`step.${index}`, { name: 'setStep', args: { index, note, active, skipped } }, { note, active, skipped });
+export type StepState = Snapshot['steps'][number];
+
+// One lane per step (`step.<i>`): the whole absolute step, so the latest pending one replaces any earlier one and no field can be reset by omission.
+export const sendStep = (store: Store, index: number, step: StepState): void =>
+  store.send(`step.${index}`, { name: 'setStep', args: { index, ...step } }, step);

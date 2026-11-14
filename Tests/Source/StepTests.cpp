@@ -14,6 +14,10 @@
 
 #include "core/Step.h"
 
+static_assert (berlin::kDefaultVelocity == 100 && berlin::kMinVelocity == 1 && berlin::kMaxVelocity == 127);
+static_assert (! berlin::isValidVelocity (0) && berlin::isValidVelocity (1)
+               && berlin::isValidVelocity (127) && ! berlin::isValidVelocity (128));
+
 class StepTests final : public juce::UnitTest
 {
 public:
@@ -70,16 +74,34 @@ public:
             expect (b == berlin::Step { 60, true, true });
         }
 
+        beginTest ("velocity defaults to 100 and an existing three-field init compiles");
+        {
+            const berlin::Step step { 60, true, false };
+
+            expectEquals (step.velocity, 100);
+            expectEquals (berlin::Step {}.velocity, berlin::kDefaultVelocity);
+            expectEquals (berlin::Step { 60, true, false, 40 }.velocity, 40);
+        }
+
+        beginTest ("equality - differing velocity compares unequal");
+        {
+            const berlin::Step a { 60, true, false, 40 };
+            const berlin::Step b { 60, true, false, 127 };
+
+            expect (! (a == b));
+            expect (a == berlin::Step { 60, true, false, 40 });
+        }
+
         beginTest ("no extra fields (review note)");
         {
             // C++ has no runtime member reflection, so this cannot be a real
             // assertion - it is a documented review check. Step.h's
             // static_assert(std::is_aggregate_v<Step>) enforces aggregate
             // shape; a reviewer must additionally confirm the type still
-            // exposes exactly `note`, `active` and `skipped` and nothing else (no
-            // velocity, gate length, duration, probability, timing-offset,
-            // or accent fields per the sequencing-core spec).
-            expect (true, "Reviewer must confirm Step exposes exactly {note, active, skipped} - see comment above.");
+            // exposes exactly `note`, `active`, `skipped` and `velocity` and nothing
+            // else (no gate length, duration, probability, or timing-offset
+            // fields).
+            expect (true, "Reviewer must confirm Step exposes exactly {note, active, skipped, velocity} - see comment above.");
         }
     }
 };

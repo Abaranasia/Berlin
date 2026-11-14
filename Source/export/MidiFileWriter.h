@@ -13,8 +13,8 @@
    ONLY.
 
    Decision 8 (design.md): depends on Source/core/ only, NOT on
-   midi/MidiMessageBytes.h - velocity and channel are injected via the
-   constructor from MainComponent's single definitions, so exactly one
+   midi/MidiMessageBytes.h - the channel is injected via the
+   constructor and each event carries its own velocity (step-velocity D6), so one
    definition of each constant exists project-wide. Note-off is emitted as
    juce::MidiMessage::noteOff (channel, note, (juce::uint8) 0) - a REAL 0x80
    status with release velocity 0, distinguishable from a velocity-0 note-on.
@@ -43,7 +43,7 @@ enum class MidiFileWriteResult { ok, invalidTimeline, pathUnavailable, writeFail
 class MidiFileWriter
 {
 public:
-    MidiFileWriter (int outputChannel, int velocity) noexcept;   // both clamped, Decision 8
+    explicit MidiFileWriter (int outputChannel) noexcept;   // clamped, Decision 8; each event carries its own velocity
 
     // No musical decisions: translates an ALREADY-CORRECT timeline 1:1.
     // Track order: tempoMetaEvent(0), timeSignatureMetaEvent(4,4)@0, events, endOfTrack@endTick.
@@ -59,7 +59,6 @@ public:
 
 private:
     const int channel;    // [1, 16]
-    const int velocity;   // [0, 127]
 };
 
 } // namespace berlin

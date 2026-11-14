@@ -87,7 +87,7 @@ describe('App: tempo and playhead', () => {
   it('a snapshot event updates the step display (evolved pattern)', async () => {
     const { host, initial, emitSnapshot } = await mount();
     expect(host.querySelector('[data-step="0"]')!.getAttribute('data-note')).toBe(String(initial.steps[0].note));
-    const steps = initial.steps.map((s, i) => (i === 0 ? { note: 99, active: false, skipped: false } : s));
+    const steps = initial.steps.map((s, i) => (i === 0 ? { note: 99, active: false, skipped: false, velocity: 100 } : s));
     await act(async () => { emitSnapshot({ ...initial, steps }); });
     expect(host.querySelector('[data-step="0"]')!.getAttribute('data-note')).toBe('99');
     expect(host.querySelector('[data-step="0"]')!.getAttribute('data-gate')).toBe('false');
@@ -167,7 +167,7 @@ describe('App: disabled states and the status line', () => {
 
 const region = (host: HTMLElement, selector: string) => host.querySelector<HTMLElement>(selector)!;
 const synthToggle = (host: HTMLElement) => field<HTMLButtonElement>(host, 'Synth panel');
-const withSteps = (initial: Snapshot, patch: Record<number, { note: number; active: boolean; skipped: boolean }>): Snapshot => ({
+const withSteps = (initial: Snapshot, patch: Record<number, { note: number; active: boolean; skipped: boolean; velocity: number }>): Snapshot => ({
   ...initial,
   steps: initial.steps.map((s, i) => patch[i] ?? s),
 });
@@ -280,7 +280,7 @@ describe('App: collapsible synth panel', () => {
 describe('App: step view', () => {
   it('distinguishes gated steps (LED on) from rests (LED off, note kept and flagged for dimming)', async () => {
     const { host, initial, emitSnapshot } = await mount();
-    await act(async () => { emitSnapshot(withSteps(initial, { 1: { note: 48, active: true, skipped: false }, 2: { note: 50, active: false, skipped: false } })); });
+    await act(async () => { emitSnapshot(withSteps(initial, { 1: { note: 48, active: true, skipped: false, velocity: 100 }, 2: { note: 50, active: false, skipped: false, velocity: 100 } })); });
     const gated = region(host, '[data-step="1"]');
     const rest = region(host, '[data-step="2"]');
     expect(gated.querySelector('.led')!.getAttribute('data-on')).toBe('true');

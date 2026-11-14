@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "core/Sequence.h"
@@ -22,15 +23,17 @@
 namespace berlin
 {
 
-enum class StepEditError { none, stepOutOfRange, noteOutOfScale };
+enum class StepEditError { none, stepOutOfRange, noteOutOfScale, velocityOutOfRange };
 
 // Ascending in-scale MIDI notes within the normalized pitch range.
 std::vector<int> scaleNotesFor (const GenerationParams& params);
 
-// Index is checked first, then the note. A muted step keeps its note, so the
+// Index is checked first, then the note, then the velocity (1-127 when
+// present; nullopt keeps the step's velocity). A muted step keeps its note, so the
 // gate is not part of validation. A note equal to the step's current note is
 // always accepted, even if it is no longer in scaleNotes.
 StepEditError validateStepEdit (const Sequence& sequence, const std::vector<int>& scaleNotes,
-                                int index, int note) noexcept;
+                                int index, int note,
+                                std::optional<int> velocity = {}) noexcept;
 
 } // namespace berlin

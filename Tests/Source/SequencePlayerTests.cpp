@@ -501,6 +501,37 @@ public:
                 }
             }
         }
+
+        beginTest ("a note-on carries its step's velocity and the note-off keeps the default");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 40 }, { 62, true, false, 127 } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, true, 40 });
+
+            player.process (4, buffer);   // boundary 1: note-off for step 0, then step 1 note-on
+            expectEquals (buffer.size(), 2);
+            expect (buffer[0] == berlin::StepEvent { 0, 0, 60, false });
+            expect (buffer[1] == berlin::StepEvent { 0, 1, 62, true, 127 });
+        }
+
+        beginTest ("a default sequence yields note-ons at velocity 100");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true } });
+            berlin::SequencePlayer player (sequence, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            expectEquals (buffer.size(), 1);
+            expectEquals (buffer[0].velocity, berlin::kDefaultVelocity);
+        }
     }
 };
 

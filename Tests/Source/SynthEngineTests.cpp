@@ -21,6 +21,7 @@
   ==============================================================================
 */
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <limits>
@@ -40,6 +41,52 @@ namespace
     juce::dsp::ProcessSpec makeSpec (double sampleRate, int blockSize, int numChannels = 2)
     {
         return { sampleRate, static_cast<juce::uint32> (blockSize), static_cast<juce::uint32> (numChannels) };
+    }
+
+    // 3 s of 512-sample blocks at 44.1 kHz, default master level: note-ons at `velocity`
+    // cycling notes 36/48/60/72 every 5512 samples, each note-off at the next note-on's offset.
+    float accentPatternPeak (int velocity, bool effects)
+    {
+        berlin::SynthEngine engine;   // default master level, not overridden
+        engine.prepare (makeSpec (44100.0, 512));
+        engine.setEffectsEnabled (effects);
+
+        constexpr int blockSize = 512;
+        constexpr int stepLength = 5512;
+        constexpr int totalSamples = 3 * 44100;
+        constexpr int notes[] = { 36, 48, 60, 72 };
+
+        float maxAbs = 0.0f;
+
+        for (int rendered = 0; rendered < totalSamples; rendered += blockSize)
+        {
+            berlin::StepEventBuffer events;
+
+            for (int offset = 0; offset < blockSize; ++offset)
+            {
+                const int position = rendered + offset;
+
+                if (position % stepLength != 0)
+                    continue;
+
+                const int step = position / stepLength;
+
+                if (step > 0)
+                    events.push ({ offset, step - 1, notes[(step - 1) % 4], false });
+
+                events.push ({ offset, step, notes[step % 4], true, velocity });
+            }
+
+            juce::AudioBuffer<float> out (2, blockSize);
+            out.clear();
+            engine.render (events, out, 0, blockSize);
+
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = 0; i < blockSize; ++i)
+                    maxAbs = std::max (maxAbs, std::abs (out.getSample (ch, i)));
+        }
+
+        return maxAbs;
     }
 }
 
@@ -604,6 +651,64 @@ public:
 
             engine.setEffectsEnabled (true);
             expect (engine.isEffectsEnabled());
+        }
+
+        beginTest ("the engine forwards the event velocity to the voice");
+        {
+            auto renderWith = [&] (int velocity)
+            {
+                berlin::SynthEngine engine;
+                engine.setMasterLevel (1.0f);
+                engine.prepare (makeSpec (sampleRate, 512));
+
+                berlin::StepEventBuffer events;
+                events.push ({ 0, 0, 60, true, velocity });
+
+                juce::AudioBuffer<float> out (2, 512);
+                out.clear();
+                engine.render (events, out, 0, 512);
+                return out;
+            };
+
+            berlin::SynthVoice voice;
+            voice.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+            voice.noteOn (static_cast<float> (juce::MidiMessage::getMidiNoteInHertz (60)), 40);
+            std::vector<float> left (512, 0.0f), right (512, 0.0f);
+            voice.render (left.data(), right.data(), 512);
+
+            const auto engineOut  = renderWith (40);
+            const auto defaultOut = renderWith (100);
+            int differing = 0;
+
+            for (int i = 0; i < 512; ++i)
+            {
+                expectEquals (engineOut.getSample (0, i), left[(size_t) i]);
+                differing += engineOut.getSample (0, i) != defaultOut.getSample (0, i) ? 1 : 0;
+            }
+
+            expect (differing > 100);
+        }
+
+        beginTest ("velocity-127 accents never clip at the default master level (effects bypassed, the default)");
+        {
+            const float peak = accentPatternPeak (127, false);
+
+            expect (peak > 0.1f, "signal must be present, got " + juce::String (peak));
+            expect (peak <= 1.0f, "peak " + juce::String (peak));
+        }
+
+        beginTest ("with effects on, an accent adds no more than the velocity ceiling over velocity 100");
+        {
+            // Effects-on output already exceeds 1.0 at velocity 100 (pre-existing gain staging,
+            // see the apply-progress note), so the achievable guarantee is relative: the accent
+            // may only add its own capped gain, never anything else.
+            const float normalPeak = accentPatternPeak (100, true);
+            const float accentPeak = accentPatternPeak (127, true);
+
+            expect (normalPeak > 0.1f);
+            expect (accentPeak > normalPeak);
+            expect (accentPeak <= normalPeak * berlin::kMaxVelocityGain * 1.001f,
+                    "accent " + juce::String (accentPeak) + " normal " + juce::String (normalPeak));
         }
     }
 };

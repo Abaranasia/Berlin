@@ -171,7 +171,7 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
 
             if (step.active)
             {
-                out.push ({ b.sampleOffset, adv.index, step.note, true });
+                out.push ({ b.sampleOffset, adv.index, step.note, true, step.velocity });
                 pendingNote = step.note;
                 pendingStep = adv.index;
             }

@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "core/Sequence.h"
+#include "core/Step.h"
 
 namespace berlin
 {
@@ -40,6 +41,7 @@ struct MidiExportEvent
     long long tick   = 0;       // absolute ticks from the start of the file
     int       note   = 0;       // MIDI note number
     bool      noteOn = false;   // false => note-off
+    int       velocity = kDefaultVelocity;   // note-on only; the writer clamps it to 1-127
 };
 static_assert (std::is_aggregate_v<MidiExportEvent>);
 bool operator== (const MidiExportEvent& lhs, const MidiExportEvent& rhs);   // non-member: keeps it an aggregate

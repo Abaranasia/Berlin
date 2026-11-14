@@ -109,6 +109,19 @@ public:
             expectEquals (berlin::remapChannelStatus (0x90, 0), static_cast<unsigned char> (0x90));   // clamped like the other helpers
             expectEquals (berlin::remapChannelStatus (0x90, 99), static_cast<unsigned char> (0x9F));
         }
+
+        beginTest ("clampNoteOnVelocity clamps into [1, 127] because velocity 0 is a note-off on the wire");
+        {
+            static_assert (berlin::clampNoteOnVelocity (0) == 1);
+            static_assert (berlin::clampNoteOnVelocity (100) == 100);
+            static_assert (berlin::clampNoteOnVelocity (200) == 127);
+            static_assert (berlin::clampNoteOnVelocity (-5) == 1);
+
+            expectEquals (berlin::clampNoteOnVelocity (0), 1);
+            expectEquals (berlin::clampNoteOnVelocity (127), 127);
+            expectEquals (berlin::clampNoteOnVelocity (200), 127);
+            expectEquals (berlin::clampNoteOnVelocity (-5), 1);
+        }
     }
 };
 

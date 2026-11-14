@@ -1,7 +1,7 @@
 // Dev-only stand-in for the host: a minimal engine with the same envelopes and error tokens as UiBridge.
 // Only reachable through the import.meta.env.DEV-guarded dynamic import in main.tsx.
 import type { Bridge } from './bridge';
-import { AUTO_EVOLVE_RATE, GENERATION_LIMITS, LIMITS, type Range } from './limits';
+import { AUTO_EVOLVE_RATE, GENERATION_LIMITS, LIMITS, VELOCITY, type Range } from './limits';
 import {
   DELAY_DIVISIONS, LFO_DESTINATIONS, RHYTHM_MODES, SCALE_TYPES, WAVEFORMS,
   type ApplyAudioSettingsResult, type AudioSettings, type Command, type DispatchResult, type PlayheadEvent, type SettingsBridge, type Snapshot,
@@ -9,7 +9,7 @@ import {
 
 // Fixed fixture pattern: step i has note 48 + i and is gated on even steps. Nothing generated is skipped.
 const mockSteps = (count: number): Snapshot['steps'] =>
-  Array.from({ length: count }, (_, i) => ({ note: 48 + i, active: i % 2 === 0, skipped: false }));
+  Array.from({ length: count }, (_, i) => ({ note: 48 + i, active: i % 2 === 0, skipped: false, velocity: 100 }));
 
 const initial = (): Snapshot => ({
   patch: {
@@ -198,14 +198,17 @@ export function createMockBridge({ busy = false, standalone = false, applyResult
         if (!/^([A-Za-z]:[\\/]|\/)/.test(text(args, 'path'))) reject('path not absolute');
         break;
       case 'setStep': {
-        // Host order (D4): arguments, then index, then note, then busy.
+        // Host order (D4): arguments, then index, then note, then velocity, then busy.
         const [index, note, active] = [int(args, 'index'), int(args, 'note'), flag(args, 'active')];
         const skipped = args.skipped === undefined ? undefined : flag(args, 'skipped'); // absent keeps the flag
+        const velocity = args.velocity === undefined ? undefined : int(args, 'velocity'); // absent keeps the velocity
         if (index < 0 || index >= state.steps.length) reject('step-out-of-range');
         // The step's current note is always accepted (mute after a scale change); a changed note must be in scale.
         if (note !== state.steps[index].note && !state.scaleNotes.includes(note)) reject('note-out-of-scale');
+        if (velocity !== undefined && (velocity < VELOCITY.min || velocity > VELOCITY.max)) reject('velocity-out-of-range');
         if (busy) reject('busy');
-        state.steps[index] = { note, active, skipped: skipped ?? state.steps[index].skipped };
+        const current = state.steps[index];
+        state.steps[index] = { note, active, skipped: skipped ?? current.skipped, velocity: velocity ?? current.velocity };
         state.edited = true;
         break;
       }

@@ -860,6 +860,87 @@ public:
             expect (! static_cast<bool> (result["snapshot"]["steps"][2]["active"]));
         }
 
+        beginTest ("setStep velocity: appears in the snapshot, absent keeps it, every step encodes all four keys with default 100");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            berlin::UiBridge bridge (processor);
+            const int note = bridge.snapshot()["steps"][2]["note"];
+
+            const auto initial = bridge.snapshot()["steps"];
+            expectEquals (initial.size(), 16);
+
+            for (int i = 0; i < initial.size(); ++i)
+            {
+                expect (initial[i].hasProperty ("note") && initial[i].hasProperty ("active")
+                        && initial[i].hasProperty ("skipped") && initial[i].hasProperty ("velocity"));
+                expectEquals (static_cast<int> (initial[i]["velocity"]), 100);
+            }
+
+            auto args = new juce::DynamicObject();
+            args->setProperty ("index", 2);
+            args->setProperty ("note", note);
+            args->setProperty ("active", true);
+            args->setProperty ("velocity", 127);
+            auto result = bridge.dispatch ("setStep", juce::var (args));
+            expect (static_cast<bool> (result["ok"]));
+            expectEquals (static_cast<int> (result["snapshot"]["steps"][2]["velocity"]), 127);
+            expectEquals (static_cast<int> (result["snapshot"]["steps"][3]["velocity"]), 100);
+
+            adoptPending (processor);
+            auto keep = new juce::DynamicObject();
+            keep->setProperty ("index", 2);
+            keep->setProperty ("note", note);
+            keep->setProperty ("active", false);   // velocity absent
+            result = bridge.dispatch ("setStep", juce::var (keep));
+            expect (static_cast<bool> (result["ok"]));
+            expectEquals (static_cast<int> (result["snapshot"]["steps"][2]["velocity"]), 127);
+        }
+
+        beginTest ("setStep velocity errors: out of range, wrong type, non-finite, and ordering; state unchanged");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            berlin::UiBridge bridge (processor);
+            const int note = bridge.snapshot()["steps"][2]["note"];
+
+            auto setStep = [&] (int index, int noteValue, const juce::var& velocity)
+            {
+                auto args = new juce::DynamicObject();
+                args->setProperty ("index", index);
+                args->setProperty ("note", noteValue);
+                args->setProperty ("active", true);
+                args->setProperty ("velocity", velocity);
+                return bridge.dispatch ("setStep", juce::var (args));
+            };
+
+            auto expectError = [&] (const juce::var& result, const char* error)
+            {
+                expect (! static_cast<bool> (result["ok"]));
+                expect (result["error"].toString() == juce::String (error),
+                        juce::String ("expected \"") + error + "\" got \"" + result["error"].toString() + "\"");
+                expect (! result.hasProperty ("snapshot"));
+            };
+
+            const auto before = snapshotText (bridge);
+
+            expectError (setStep (2, note, 0), "velocity-out-of-range");
+            expectError (setStep (2, note, 128), "velocity-out-of-range");
+            expectError (setStep (2, note, "x"), "invalid type: velocity");
+            expectError (setStep (2, note, 1.5), "invalid type: velocity");
+            expectError (setStep (2, note, std::numeric_limits<double>::infinity()), "non-finite: velocity");
+
+            // Ordering: index, then note, then velocity, then busy.
+            expectError (setStep (16, note, 0), "step-out-of-range");
+            expectError (setStep (2, 49, 0), "note-out-of-scale");
+
+            expect (snapshotText (bridge) == before);
+
+            expect (processor.regenerate (false));   // publish pending
+            expectError (setStep (2, note, 0), "velocity-out-of-range");   // validation precedes busy
+            expectError (setStep (2, note, 90), "busy");
+        }
+
         beginTest ("dispatch surface is exactly 16 commands; settings functions are not dispatch commands");
         {
             berlin::BerlinAudioProcessor processor;

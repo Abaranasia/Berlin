@@ -498,6 +498,56 @@ public:
             expectEquals (player.getPlayheadStep(), 1);
             expectEquals (player.getLoopCount(), 0);
         }
+
+        beginTest ("keepPosition: a velocity-only change on the sounding step emits no event at adopt, and the next pass carries the new velocity");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true }, { 64, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            player.process (3, buffer);   // step 1 (62, velocity 100) sounding
+
+            auto edited = makeSequence ({ { 60, true }, { 62, true, false, 40 }, { 64, true } });   // velocity only
+            expect (player.publishSequence (edited, berlin::PublishMode::keepPosition));
+
+            player.process (0, buffer);
+            expectEquals (buffer.size(), 0);   // no note-off, no retrigger
+
+            int step1NoteOnVelocity = -1;
+
+            for (int i = 0; i < 4 && step1NoteOnVelocity < 0; ++i)
+            {
+                player.process (4, buffer);
+
+                for (int e = 0; e < buffer.size(); ++e)
+                    if (buffer[e].isNoteOn && buffer[e].stepIndex == 1)
+                        step1NoteOnVelocity = buffer[e].velocity;
+            }
+
+            expectEquals (step1NoteOnVelocity, 40);
+        }
+
+        beginTest ("keepPosition: a velocity change plus a note change on the sounding step still emits the note-off at offset 0");
+        {
+            auto sequenceA = makeSequence ({ { 60, true }, { 62, true }, { 64, true } });
+            berlin::SequencePlayer player (sequenceA, berlin::Transport (60.0, 1));
+            player.prepare (4.0);
+            player.start();
+
+            berlin::StepEventBuffer buffer;
+            player.process (4, buffer);
+            player.process (3, buffer);   // step 1 (62) sounding
+
+            auto edited = makeSequence ({ { 60, true }, { 63, true, false, 127 }, { 64, true } });
+            expect (player.publishSequence (edited, berlin::PublishMode::keepPosition));
+
+            player.process (0, buffer);
+            expectEquals (buffer.size(), 1);
+            expect (buffer[0] == berlin::StepEvent { 0, 1, 62, false });
+        }
     }
 };
 

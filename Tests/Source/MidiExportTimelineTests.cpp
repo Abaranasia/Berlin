@@ -21,6 +21,7 @@
   ==============================================================================
 */
 
+#include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_core/juce_core.h>
 
 #include <algorithm>
@@ -30,6 +31,7 @@
 #include "core/Sequence.h"
 #include "core/Step.h"
 #include "export/MidiExportTimeline.h"
+#include "export/MidiFileWriter.h"
 #include "playback/SequencePlayer.h"
 #include "playback/StepEventBuffer.h"
 #include "playback/Transport.h"
@@ -69,6 +71,31 @@ namespace
         }
 
         return sounding.empty();
+    }
+
+    // Writes `timeline` through MidiFileWriter and returns the note-on velocities
+    // (and, via `offVelocities`, the note-off ones) read back from the file bytes.
+    std::vector<int> writtenVelocities (const berlin::MidiExportTimeline& timeline, bool noteOns)
+    {
+        juce::MemoryOutputStream stream;
+        const berlin::MidiFileWriter writer (1);
+        writer.writeTo (timeline, 120.0, stream);
+
+        juce::MidiFile file;
+        juce::MemoryInputStream input (stream.getData(), stream.getDataSize(), false);
+        file.readFrom (input);
+
+        std::vector<int> velocities;
+
+        for (auto* event : *file.getTrack (0))
+        {
+            if (noteOns && event->message.isNoteOn())
+                velocities.push_back (event->message.getVelocity());
+            else if (! noteOns && event->message.isNoteOff())
+                velocities.push_back (event->message.getVelocity());
+        }
+
+        return velocities;
     }
 
     bool isNonDecreasingInTick (const std::vector<berlin::MidiExportEvent>& events)
@@ -411,6 +438,64 @@ public:
                 expectEquals (exported.events[i].note, live[i].note);
                 expect (exported.events[i].noteOn == live[i].noteOn);
             }
+        }
+
+        beginTest ("note-ons carry the step velocity and note-offs keep the default");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 40 }, { 62, true, false, 127 }, { 64, false } });
+            berlin::MidiExportTimeline out;
+
+            expect (berlin::buildMidiExportTimeline (sequence, 4, 1, out) == berlin::MidiExportStatus::ok);
+
+            expectEquals ((int) out.events.size(), 4);
+            expect (out.events[0] == berlin::MidiExportEvent { 0, 60, true, 40 });
+            expect (out.events[1] == berlin::MidiExportEvent { 240, 60, false });
+            expect (out.events[2] == berlin::MidiExportEvent { 240, 62, true, 127 });
+            expect (out.events[3] == berlin::MidiExportEvent { 480, 62, false });
+        }
+
+        beginTest ("a default sequence exports every note-on at velocity 100");
+        {
+            auto sequence = makeSequence ({ { 60, true }, { 62, true }, { 64, true } });
+            berlin::MidiExportTimeline out;
+
+            expect (berlin::buildMidiExportTimeline (sequence, 4, 2, out) == berlin::MidiExportStatus::ok);
+
+            int noteOns = 0;
+
+            for (const auto& e : out.events)
+                if (e.noteOn)
+                {
+                    expectEquals (e.velocity, 100);
+                    ++noteOns;
+                }
+
+            expectEquals (noteOns, 6);
+        }
+
+        beginTest ("MidiFileWriter writes each event's own velocity, clamps note-ons to 1-127, and note-offs stay 0");
+        {
+            auto sequence = makeSequence ({ { 60, true, false, 40 }, { 62, true, false, 127 }, { 64, true } });
+            berlin::MidiExportTimeline out;
+            expect (berlin::buildMidiExportTimeline (sequence, 4, 1, out) == berlin::MidiExportStatus::ok);
+
+            const auto onVelocities = writtenVelocities (out, true);
+            expectEquals ((int) onVelocities.size(), 3);
+            expectEquals (onVelocities[0], 40);
+            expectEquals (onVelocities[1], 127);
+            expectEquals (onVelocities[2], 100);
+
+            for (int offVelocity : writtenVelocities (out, false))
+                expectEquals (offVelocity, 0);
+
+            auto outOfRange = out;
+            outOfRange.events[0].velocity = 0;      // would be a note-off on the wire
+            outOfRange.events[4].velocity = 200;
+            const auto clamped = writtenVelocities (outOfRange, true);
+            expectEquals ((int) clamped.size(), 3);   // still three note-ons
+            expectEquals (clamped[0], 1);
+            expectEquals (clamped[1], 127);
+            expectEquals (clamped[2], 127);
         }
     }
 };

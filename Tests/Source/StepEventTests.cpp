@@ -15,6 +15,7 @@
 
 #include <type_traits>
 
+#include "core/Step.h"
 #include "playback/StepEvent.h"
 
 static_assert (std::is_aggregate_v<berlin::StepEvent>);
@@ -84,6 +85,24 @@ public:
             const berlin::StepEvent b { 128, 3, 60, false };
 
             expect (! (a == b));
+        }
+
+        beginTest ("velocity defaults to 100 and an existing four-field init compiles");
+        {
+            const berlin::StepEvent event { 128, 3, 60, true };
+
+            expectEquals (event.velocity, 100);
+            expectEquals (berlin::StepEvent {}.velocity, berlin::kDefaultVelocity);
+            expectEquals (berlin::StepEvent { 0, 0, 60, true, 127 }.velocity, 127);
+        }
+
+        beginTest ("equality - differing velocity compares unequal");
+        {
+            const berlin::StepEvent a { 128, 3, 60, true, 40 };
+            const berlin::StepEvent b { 128, 3, 60, true, 127 };
+
+            expect (! (a == b));
+            expect (a == berlin::StepEvent { 128, 3, 60, true, 40 });
         }
     }
 };

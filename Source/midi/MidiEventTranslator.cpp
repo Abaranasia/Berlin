@@ -28,7 +28,7 @@ void MidiEventTranslator::translate (const StepEventBuffer& events, juce::MidiBu
         const StepEvent& event = events[i];
 
         const MidiMessageBytes bytes = event.isNoteOn
-            ? makeNoteOn (channel, event.note, kNoteVelocity)
+            ? makeNoteOn (channel, event.note, clampNoteOnVelocity (event.velocity))
             : makeNoteOff (channel, event.note);
 
         destination.addEvent (juce::MidiMessage (bytes.status, bytes.data1, bytes.data2),

@@ -80,7 +80,7 @@
 namespace berlin
 {
 
-enum class StepEditResult { ok, busy, stepOutOfRange, noteOutOfScale };
+enum class StepEditResult { ok, busy, stepOutOfRange, noteOutOfScale, velocityOutOfRange };
 
 class BerlinAudioProcessor final : public juce::AudioProcessor,
                                     public juce::ChangeBroadcaster,
@@ -131,8 +131,11 @@ public:
     // refuses with busy while a publish is pending (so a busy retry only re-sends
     // edits that can succeed). On ok it publishes with PublishMode::keepPosition
     // (no restart), commits currentSequence and sets `edited`.
-    // `skipped` absent keeps the step's current flag (step-model).
-    StepEditResult editStep (int index, int note, bool active, std::optional<bool> skipped = {});
+    // `skipped` absent keeps the step's current flag (step-model); `velocity`
+    // absent keeps the step's current velocity, a value outside 1-127 is
+    // rejected after the note check and before the busy check (step-velocity).
+    StepEditResult editStep (int index, int note, bool active, std::optional<bool> skipped = {},
+                             std::optional<int> velocity = {});
     bool isEdited() const { return edited; }
 
     // The auto-evolve Timer's body, public so tests can drive one tick without a

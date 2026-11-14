@@ -36,7 +36,7 @@ describe('StepView: mute and note gestures', () => {
     await fire(cell(host, 2), 'pointerdown', { clientY: 100 });
     await fire(cell(host, 2), 'pointerup', { clientY: 102 });
     await settle();
-    expect(setSteps(harness)).toEqual([{ index: 2, note: 50, active: false, skipped: false }]);
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 50, active: false, skipped: false, velocity: 100 }]);
     expect(cell(host, 2).getAttribute('aria-pressed')).toBe('false');
   });
 
@@ -45,7 +45,7 @@ describe('StepView: mute and note gestures', () => {
     const { host } = await mount(harness);
     await fire(cell(host, 1), 'pointerdown', { clientY: 100 });
     await fire(cell(host, 1), 'pointerup', { clientY: 100 });
-    expect(setSteps(harness)).toEqual([{ index: 1, note: 49, active: true, skipped: false }]);
+    expect(setSteps(harness)).toEqual([{ index: 1, note: 49, active: true, skipped: false, velocity: 100 }]);
   });
 
   it('a vertical drag steps through the scale at 12 px per note and does not toggle mute', async () => {
@@ -58,8 +58,8 @@ describe('StepView: mute and note gestures', () => {
     await fire(cell(host, 2), 'pointerup', { clientY: 64 });
     await settle();
     const sent = setSteps(harness);
-    expect(sent[0]).toEqual({ index: 2, note: 51, active: true, skipped: false });
-    expect(sent.at(-1)).toEqual({ index: 2, note: 55, active: true, skipped: false });
+    expect(sent[0]).toEqual({ index: 2, note: 51, active: true, skipped: false, velocity: 100 });
+    expect(sent.at(-1)).toEqual({ index: 2, note: 55, active: true, skipped: false, velocity: 100 });
     expect(sent.every((s) => s.active)).toBe(true);
   });
 
@@ -68,7 +68,7 @@ describe('StepView: mute and note gestures', () => {
     const { host } = await mount(harness);
     await fire(cell(host, 2), 'pointerdown', { clientY: 100 });
     await fire(cell(host, 2), 'pointermove', { clientY: 112 });
-    expect(setSteps(harness)).toEqual([{ index: 2, note: 48, active: true, skipped: false }]);
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 48, active: true, skipped: false, velocity: 100 }]);
   });
 
   it('a wheel notch up moves one scale note up and prevents the page scroll', async () => {
@@ -76,14 +76,14 @@ describe('StepView: mute and note gestures', () => {
     const { host } = await mount(harness);
     const event = await wheel(cell(host, 2), -100);
     expect(event.defaultPrevented).toBe(true);
-    expect(setSteps(harness)).toEqual([{ index: 2, note: 51, active: true, skipped: false }]);
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 51, active: true, skipped: false, velocity: 100 }]);
   });
 
   it('a wheel notch down moves one scale note down', async () => {
     const harness = makeHarness();
     const { host } = await mount(harness);
     await wheel(cell(host, 2), 100);
-    expect(setSteps(harness)).toEqual([{ index: 2, note: 48, active: true, skipped: false }]);
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 48, active: true, skipped: false, velocity: 100 }]);
   });
 
   it('small wheel deltas accumulate on one step, and the remainder is dropped when the step changes', async () => {
@@ -93,7 +93,7 @@ describe('StepView: mute and note gestures', () => {
     await wheel(cell(host, 3), -60);
     expect(setSteps(harness)).toEqual([]);
     await wheel(cell(host, 3), -60);
-    expect(setSteps(harness)).toEqual([{ index: 3, note: 53, active: false, skipped: false }]); // step 3 is D#3 (51), muted
+    expect(setSteps(harness)).toEqual([{ index: 3, note: 53, active: false, skipped: false, velocity: 100 }]); // step 3 is D#3 (51), muted
   });
 });
 
@@ -115,9 +115,9 @@ describe('StepView: keyboard', () => {
     await key(cell(host, 2), 'ArrowDown');
     await settle();
     expect(setSteps(harness)).toEqual([
-      { index: 2, note: 50, active: false, skipped: false },
-      { index: 2, note: 51, active: false, skipped: false },
-      { index: 2, note: 50, active: false, skipped: false },
+      { index: 2, note: 50, active: false, skipped: false, velocity: 100 },
+      { index: 2, note: 51, active: false, skipped: false, velocity: 100 },
+      { index: 2, note: 50, active: false, skipped: false, velocity: 100 },
     ]);
   });
 
@@ -139,7 +139,7 @@ describe('StepView: keyboard', () => {
     await key(cell(host, 2), 'ArrowUp');
     await key(cell(host, 2), 'ArrowUp');
     expect(cell(host, 2).getAttribute('aria-label')).toBe('Step 3, F3, on'); // 50 -> 51 -> 53
-    expect(setSteps(harness)).toEqual([{ index: 2, note: 51, active: true, skipped: false }]); // the second one waits as the pending value
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 51, active: true, skipped: false, velocity: 100 }]); // the second one waits as the pending value
   });
 });
 
@@ -217,7 +217,7 @@ describe('StepView: skip and length', () => {
     const { host } = await mount(harness);
     await click(skipButton(host, 2));
     await settle();
-    expect(setSteps(harness)).toEqual([{ index: 2, note: 50, active: true, skipped: true }]);
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 50, active: true, skipped: true, velocity: 100 }]);
     expect(cell(host, 2).getAttribute('aria-pressed')).toBe('true');
   });
 
@@ -233,7 +233,7 @@ describe('StepView: skip and length', () => {
     expect(skipButton(host, 2).getAttribute('aria-pressed')).toBe('true');
     await click(skipButton(host, 2));
     await settle();
-    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: true, skipped: false });
+    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: true, skipped: false, velocity: 100 });
     expect(cell(host, 2).getAttribute('data-skipped')).toBe('false');
   });
 
@@ -245,6 +245,75 @@ describe('StepView: skip and length', () => {
     await fire(cell(host, 2), 'pointerdown', { clientY: 100 });
     await fire(cell(host, 2), 'pointerup', { clientY: 100 });
     await settle();
-    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: false, skipped: true });
+    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: false, skipped: true, velocity: 100 });
+  });
+});
+
+describe('StepView: velocity button', () => {
+  const velocityButton = (host: HTMLElement, index: number, level: string) =>
+    host.querySelector<HTMLButtonElement>(`button[aria-label="Velocity step ${index + 1}: ${level}"]`);
+  const click = (el: Element) => act(async () => void el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+
+  it('every step shows its dynamics level on the cell and on a velocity button', async () => {
+    const { host } = await mount();
+    expect(host.querySelectorAll('button.step-vel')).toHaveLength(16);
+    expect(cell(host, 2).getAttribute('data-velocity')).toBe('normal');
+    expect(velocityButton(host, 2, 'normal')?.textContent).toBe('N');
+  });
+
+  it('a click advances normal to accent and sends the whole step with velocity 127', async () => {
+    const harness = makeHarness();
+    const { host } = await mount(harness);
+    await click(velocityButton(host, 2, 'normal')!);
+    await settle();
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 50, active: true, skipped: false, velocity: 127 }]);
+    expect(cell(host, 2).getAttribute('data-velocity')).toBe('accent');
+    expect(velocityButton(host, 2, 'accent')?.textContent).toBe('A');
+    expect(cell(host, 3).getAttribute('data-velocity')).toBe('normal'); // other steps are untouched
+  });
+
+  it('an accent click wraps to ghost, and ghost advances to soft', async () => {
+    const harness = makeHarness();
+    const { host } = await mount(harness);
+    await click(velocityButton(host, 2, 'normal')!);
+    await settle();
+    await click(velocityButton(host, 2, 'accent')!);
+    await settle();
+    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: true, skipped: false, velocity: 40 });
+    expect(velocityButton(host, 2, 'ghost')?.textContent).toBe('G');
+    await click(velocityButton(host, 2, 'ghost')!);
+    await settle();
+    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: true, skipped: false, velocity: 70 });
+    expect(velocityButton(host, 2, 'soft')?.textContent).toBe('S');
+  });
+
+  it('keeps the gate and skip flags when the velocity changes, and keeps the velocity when the step is muted', async () => {
+    const harness = makeHarness();
+    const { host } = await mount(harness);
+    await fire(cell(host, 2), 'pointerdown', { clientY: 100 });
+    await fire(cell(host, 2), 'pointerup', { clientY: 100 }); // mute
+    await settle();
+    await click(velocityButton(host, 2, 'normal')!);
+    await settle();
+    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: false, skipped: false, velocity: 127 });
+    await fire(cell(host, 2), 'pointerdown', { clientY: 100 });
+    await fire(cell(host, 2), 'pointerup', { clientY: 100 }); // unmute
+    await settle();
+    expect(setSteps(harness).at(-1)).toEqual({ index: 2, note: 50, active: true, skipped: false, velocity: 127 });
+  });
+
+  it('the velocity buttons join the roving tabindex: only the focused cell column is a tab stop', async () => {
+    const { host } = await mount();
+    const stops = [...host.querySelectorAll<HTMLElement>('button.step-vel')].filter((b) => b.tabIndex === 0);
+    expect(stops).toHaveLength(1);
+    expect(stops[0].getAttribute('aria-label')).toBe('Velocity step 1: normal');
+  });
+
+  it('the skip button still works next to the velocity button', async () => {
+    const harness = makeHarness();
+    const { host } = await mount(harness);
+    await click(host.querySelector('button[aria-label="Skip step 3"]')!);
+    await settle();
+    expect(setSteps(harness)).toEqual([{ index: 2, note: 50, active: true, skipped: true, velocity: 100 }]);
   });
 });

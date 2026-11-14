@@ -15,7 +15,8 @@ namespace berlin
 
 bool operator== (const MidiExportEvent& lhs, const MidiExportEvent& rhs)
 {
-    return lhs.tick == rhs.tick && lhs.note == rhs.note && lhs.noteOn == rhs.noteOn;
+    return lhs.tick == rhs.tick && lhs.note == rhs.note && lhs.noteOn == rhs.noteOn
+        && lhs.velocity == rhs.velocity;
 }
 
 MidiExportStatus buildMidiExportTimeline (const Sequence& sequence,
@@ -48,7 +49,7 @@ MidiExportStatus buildMidiExportTimeline (const Sequence& sequence,
         const Step& step = sequence[cursor];
         if (step.active)
         {
-            out.events.push_back ({ tick, step.note, true });
+            out.events.push_back ({ tick, step.note, true, step.velocity });
             pendingNote = step.note;
         }
     }

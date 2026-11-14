@@ -60,6 +60,9 @@
 .step[data-active='true'] { border-color: var(--accent); background: var(--accent-active-bg); }
 .step[data-skipped='true'] { opacity: 0.45; border-style: dashed; background: transparent; }
 .step[data-skipped='true'] .step-note { text-decoration: line-through; }
+.step-controls { display: flex; gap: 4px; }
+.step-controls > button { flex: 1; min-width: 0; }
+.step-vel,
 .step-skip {
   padding: 2px 0;
   font: 10px var(--font-mono);
@@ -70,6 +73,7 @@
   cursor: pointer;
 }
 .step-skip[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
+.step[data-velocity='accent'] ~ .step-controls .step-vel { color: var(--accent); border-color: var(--accent); }
 .step-num { font: 10px var(--font-mono); color: var(--muted); }
 .step-note { font: 12px var(--font-mono); color: var(--muted); }
 .step[data-gate='true'] .step-note { color: var(--text); }
@@ -88,6 +92,9 @@
 }
 .led { width: 12px; height: 12px; border-radius: 50%; background: var(--border); }
 .led[data-on='true'] { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+/* The dynamics level shows as LED brightness: ghost dim, soft mid, normal and accent full. */
+.step[data-velocity='ghost'] .led[data-on='true'] { opacity: 0.4; }
+.step[data-velocity='soft'] .led[data-on='true'] { opacity: 0.7; }
 @media (max-width: 899.98px) {
   .steps { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 }

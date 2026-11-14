@@ -619,6 +619,56 @@ public:
                 expect (berlin::MutationEngine::applyRandomTransform (input, random).size() >= 1);
             }
         }
+
+        beginTest ("velocity: addNote and removeNote leave every step's velocity alone, and transforms carry it with its step");
+        {
+            berlin::Sequence input (8);
+            for (int i = 0; i < 8; ++i)
+            {
+                input[i].active = (i < 3);
+                input[i].note = 60 + i;           // unique, so velocity = 10 + (note - 60) pairs each step
+                input[i].velocity = 10 + i;
+            }
+
+            auto velocityFollowsNote = [this] (const berlin::Sequence& s)
+            {
+                expect (s.size() > 0);
+
+                for (int i = 0; i < s.size(); ++i)
+                    expectEquals (s[i].velocity, 10 + (s[i].note - 60));
+            };
+
+            berlin::DeterministicRandom random (7);
+
+            const berlin::Sequence added = berlin::MutationEngine::addNote (input, random);
+            int activated = 0;
+
+            for (int i = 0; i < 8; ++i)
+            {
+                expectEquals (added[i].velocity, input[i].velocity);   // the activated step keeps its OWN velocity
+                activated += (added[i].active && ! input[i].active) ? 1 : 0;
+            }
+
+            expectEquals (activated, 1);
+
+            const berlin::Sequence removed = berlin::MutationEngine::removeNote (input, random);
+            int deactivated = 0;
+
+            for (int i = 0; i < 8; ++i)
+            {
+                expectEquals (removed[i].velocity, input[i].velocity);
+                deactivated += (input[i].active && ! removed[i].active) ? 1 : 0;
+            }
+
+            expectEquals (deactivated, 1);
+
+            const berlin::Sequence reversed = berlin::MutationEngine::reverse (input, random);
+            for (int i = 0; i < 8; ++i)
+                expectEquals (reversed[i].velocity, input[7 - i].velocity);
+
+            velocityFollowsNote (berlin::MutationEngine::rotate (input, random));
+            velocityFollowsNote (berlin::MutationEngine::stretch (input, random));
+        }
     }
 };
 

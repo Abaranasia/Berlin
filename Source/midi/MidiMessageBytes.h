@@ -54,6 +54,13 @@ constexpr int clampMidiData (int value) noexcept
     return value < 0 ? 0 : (value > 127 ? 127 : value);
 }
 
+// A note-on with velocity 0 is a note-off on the wire, so a note-on velocity is
+// clamped to 1-127 (step-velocity D4).
+constexpr int clampNoteOnVelocity (int velocity) noexcept
+{
+    return velocity < 1 ? 1 : (velocity > 127 ? 127 : velocity);
+}
+
 // Rewrites the channel nibble of a channel-voice status (0x80-0xEF) to
 // `channel` (clamped to 1-16); every other byte (SysEx 0xF0, realtime 0xF8+,
 // data bytes) is returned unchanged. Used by the standalone-only output

@@ -1269,6 +1269,89 @@ public:
             expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, false });
         }
 
+        beginTest ("editStep() velocity: absent keeps it, present sets it, independent of note and gate");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto original = processor.getCurrentSequence()[4];
+            expectEquals (original.velocity, 100);
+
+            expect (processor.editStep (4, original.note, true, {}, 127) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expectEquals (processor.getCurrentSequence()[4].velocity, 127);
+
+            expect (processor.editStep (4, 41, false) == berlin::StepEditResult::ok);   // velocity absent
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, original.skipped, 127 });
+
+            expect (processor.editStep (4, 41, false, true, 40) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, true, 40 });
+        }
+
+        beginTest ("editStep() velocity out of range is rejected with the sequence and edited unchanged, before the busy check");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto before = processor.getCurrentSequence();
+
+            expect (processor.editStep (2, before[2].note, true, {}, 0) == berlin::StepEditResult::velocityOutOfRange);
+            expect (processor.editStep (2, before[2].note, true, {}, 128) == berlin::StepEditResult::velocityOutOfRange);
+            expect (processor.getCurrentSequence() == before);
+            expect (! processor.isEdited());
+
+            expect (processor.editStep (2, 41, true) == berlin::StepEditResult::ok);   // publish now pending
+            expect (processor.editStep (3, before[3].note, true, {}, 200) == berlin::StepEditResult::velocityOutOfRange);   // not busy
+            expect (processor.editStep (3, before[3].note, true, {}, 90) == berlin::StepEditResult::busy);
+        }
+
+        beginTest ("an edited velocity reaches the MIDI note-on and the exported file");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 1);
+
+            const int note = processor.getCurrentSequence()[0].note;
+            expect (processor.editStep (0, note, true, {}, 40) == berlin::StepEditResult::ok);
+
+            juce::AudioBuffer<float> buffer (2, 1);
+            juce::MidiBuffer midi;
+            processor.processBlock (buffer, midi);   // adopts the edit, then step 0's boundary at sample 0
+
+            int noteOns = 0;
+
+            for (const auto metadata : midi)
+                if (metadata.getMessage().isNoteOn())
+                {
+                    expectEquals (static_cast<int> (metadata.getMessage().getVelocity()), 40);
+                    ++noteOns;
+                }
+
+            expectEquals (noteOns, 1);
+
+            const juce::File tempFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                             .getNonexistentChildFile ("BerlinVelocityExportTest", ".mid", false);
+            expect (processor.exportMidiTo (tempFile) == berlin::MidiFileWriteResult::ok);
+
+            juce::FileInputStream stream (tempFile);
+            juce::MidiFile midiFile;
+            expect (stream.openedOk() && midiFile.readFrom (stream));
+
+            int exportedForStep0 = 0, exportedAt100 = 0;
+
+            for (auto* event : *midiFile.getTrack (0))
+                if (event->message.isNoteOn())
+                {
+                    if (event->message.getVelocity() == 40)
+                        ++exportedForStep0;
+                    else if (event->message.getVelocity() == 100)
+                        ++exportedAt100;
+                }
+
+            tempFile.deleteFile();
+            expectEquals (exportedForStep0, 4);   // kExportRepeats = 4 loops, step 0 once per loop
+            expect (exportedAt100 > 0);           // every other active step stays at the default
+        }
+
         beginTest ("setGenerationParams{length} is staged: the playing sequence is untouched, the next Generate rebuilds at that length");
         {
             berlin::BerlinAudioProcessor processor;
