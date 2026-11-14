@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Per-step mute and note editing of the live sequence, limited to the visible 16 steps, with scale-aware note stepping, an `edited` flag, and keep-position playback. Verification legend: [V] Vitest, [T] BerlinTests, [M] manual, [B] build.
+Per-step mute, note, skip and velocity editing of the live sequence (up to 64 steps), with scale-aware note stepping, an `edited` flag, and keep-position playback. Verification legend: [V] Vitest, [T] BerlinTests, [M] manual, [B] build.
 
 ## Requirements
 
@@ -33,8 +33,7 @@ The engine MUST accept an edit only for an index in `[0, size)`, where `size` is
 
 ### Requirement: Absolute Note and Gate Assignment
 
-A step edit MUST set the step's note and gate to the supplied absolute values, and, when the optional `skipped` value is supplied, MUST set the step's `skipped` flag to it; when `skipped` is absent the flag MUST be left unchanged. A note equal to the step's current note MUST always be accepted, even if it is no longer in `scaleNotes`. A changed note MUST be a member of the current `scaleNotes`, else the edit MUST be rejected with `note-out-of-scale`. A muted step (`active=false`) MUST keep its note, and a skipped step MUST keep its note and `active` value. Skipping or un-skipping MUST be independent of the gate: toggling `skipped` MUST NOT alter `active`. Skipping every step is permitted.
-(Previously: edits set note and gate only; no `skipped` value.)
+A step edit MUST set the step's note and gate to the supplied absolute values. When the optional `skipped` value is supplied it MUST set the flag; when absent the flag MUST be left unchanged. When the optional `velocity` is supplied it MUST set the step's velocity; when absent the step's current velocity MUST be kept. A `velocity` outside `[1, 127]` MUST be rejected with `velocity-out-of-range` (never clamped) and leave all state unchanged. Validation order is index, note, velocity, then busy. A note equal to the step's current note MUST always be accepted, even if no longer in `scaleNotes`. A changed note MUST be a member of the current `scaleNotes`, else the edit MUST be rejected with `note-out-of-scale`. A muted step (`active=false`) MUST keep its note and velocity, and a skipped step MUST keep its note, `active` value and velocity. Skipping or un-skipping MUST be independent of the gate and of velocity. Skipping every step is permitted.
 
 #### Scenario: Mute keeps the note [T]
 - GIVEN step 3 is active with note 48
@@ -76,6 +75,26 @@ A step edit MUST set the step's note and gate to the supplied absolute values, a
 - GIVEN a sequence of any length
 - WHEN every step is edited with skipped true
 - THEN all edits succeed and the sequence is all-skipped
+
+#### Scenario: Velocity edit sets the value [T]
+- GIVEN step 2 has velocity 100
+- WHEN it is edited with its note, active and velocity 127
+- THEN step 2 has velocity 127 and only step 2 differs
+
+#### Scenario: Omitted velocity keeps the current value [T]
+- GIVEN step 2 has velocity 40
+- WHEN it is edited with a new in-scale note and no `velocity`
+- THEN the note changes and velocity is still 40
+
+#### Scenario: Out-of-range velocity is rejected, not clamped [T]
+- GIVEN step 2 has velocity 100
+- WHEN it is edited with velocity 0, separately 128, separately -5
+- THEN each fails with `velocity-out-of-range` and the step is unchanged
+
+#### Scenario: Velocity bounds are accepted [T]
+- GIVEN any step
+- WHEN it is edited with velocity 1, then 127
+- THEN both succeed
 
 ### Requirement: Scale-Aware Stepping Notes
 
@@ -141,8 +160,7 @@ Edits MUST NOT be stored in presets. MIDI export MUST export the current, edited
 
 ### Requirement: Keep-Position Edit Playback
 
-A step edit MUST NOT reset the transport or playhead. If the edited step is the one currently sounding and its note, gate or skipped flag changed, the sounding note MUST receive a note-off at adoption. Otherwise no note-off MUST be sent. After adoption the cursor continues from its current index; if that index now lands on a skipped step it advances to the next non-skipped step (wrapping without counting a loop), per `step-event-scheduling`. An edit MUST be rejected with `busy` while a publish is pending or while a state restore is pending; in both cases the busy check comes after index and note validation.
-(Previously: note-off only on note or gate change; no skip.)
+A step edit MUST NOT reset the transport or playhead. If the edited step is the one currently sounding and its note, gate or skipped flag changed, the sounding note MUST receive a note-off at adoption. If the edit changes only the velocity of the currently sounding step, it MUST emit no note-off and no retrigger, and the new velocity applies from the next pass. Otherwise no note-off MUST be sent. After adoption the cursor continues from its current index; if that index now lands on a skipped step it advances to the next non-skipped step (wrapping without counting a loop), per `step-event-scheduling`. An edit MUST be rejected with `busy` while a publish is pending or while a state restore is pending; in both cases the busy check comes after index, note and velocity validation.
 
 #### Scenario: Playhead continues after edit [T]
 - GIVEN playback is at step 9
@@ -154,9 +172,20 @@ A step edit MUST NOT reset the transport or playhead. If the edited step is the 
 - WHEN step 5 is muted, skipped, or its note changed, then adopted
 - THEN a note-off for the old note is emitted
 
+#### Scenario: Velocity-only edit of the sounding step does not interrupt it [T]
+- GIVEN step 5 is sounding
+- WHEN only its velocity is changed and adopted
+- THEN no note-off and no new note-on are emitted
+- AND the next pass note-on carries the new velocity
+
+#### Scenario: Velocity plus note change still invalidates [T]
+- GIVEN step 5 is sounding
+- WHEN its note and velocity are both changed and adopted
+- THEN a note-off for the old note is emitted
+
 #### Scenario: Editing another step sends no note-off [T]
 - GIVEN step 5 is sounding
-- WHEN step 3 is edited (including skipped) and adopted
+- WHEN step 3 is edited (including skipped or velocity) and adopted
 - THEN no note-off is emitted for the sounding note
 
 #### Scenario: Busy rejects the edit [T]
@@ -172,23 +201,22 @@ A step edit MUST NOT reset the transport or playhead. If the edited step is the 
 
 #### Scenario: Validation precedes busy [T]
 - GIVEN a publish is pending, or a state restore is pending
-- WHEN an edit with an out-of-range index or an out-of-scale note is made
-- THEN it fails with `step-out-of-range` or `note-out-of-scale` (checked in that order), not `busy`
+- WHEN an edit with an out-of-range index, an out-of-scale note or an out-of-range velocity is made
+- THEN it fails with `step-out-of-range`, `note-out-of-scale` or `velocity-out-of-range` (checked in that order), not `busy`
 
 ### Requirement: Interactive Step Grid
 
-The grid MUST render one cell per step of the current sequence (`steps.length`, up to 64), wrapping into rows of 16. Each cell MUST toggle mute on a click without movement; a vertical drag MUST change the note through `scaleNotes` at a constant pixels-per-note; the wheel MUST step one scale note per notch with a non-passive listener calling `preventDefault`. Each cell MUST also provide a skip toggle that is a distinct control from the active/mute toggle and dispatches `setStep` with `skipped`. Keyboard MUST use a roving tabindex across all cells: Space toggles mute, Up/Down change the note, Left/Right/Home/End move focus. Each cell MUST have an aria-label like "Step 3, C3, on" (adding ", skipped" when skipped) and `aria-pressed` for the gate; the skip toggle MUST have its own accessible name and `aria-pressed`. Muted steps MUST show their note dimmed; skipped steps MUST be visibly distinct from muted steps. An "edited" indicator MUST show while `edited` is true.
-(Previously: a fixed 16-cell grid with no skip control.)
+The grid MUST render one cell per step of the current sequence (`steps.length`, up to 64), wrapping into rows of 16. Each cell MUST toggle mute on a click without movement; a vertical drag MUST change the note through `scaleNotes` at a constant pixels-per-note; the wheel MUST step one scale note per notch with a non-passive listener calling `preventDefault`. Each cell MUST also provide a skip toggle that is a distinct control from the active/mute toggle and dispatches `setStep` with `skipped`. Each cell MUST also provide a velocity button, a sibling of the cell (not nested in it), that is part of the roving tabindex, with an aria-label that includes the displayed level name. The displayed level is the nearest of the levels ghost 40, soft 70, normal 100, accent 127 to the step's velocity (ties to the higher level). Activating the button MUST advance to the next level strictly above the displayed level, wrapping accent to ghost, and dispatch `setStep` with the absolute velocity of that level. The cell MUST expose `data-velocity` with the displayed level name. Keyboard MUST use a roving tabindex across all cells: Space toggles mute, Up/Down change the note, Left/Right/Home/End move focus. Each cell MUST have an aria-label like "Step 3, C3, on" (adding ", skipped" when skipped) and `aria-pressed` for the gate; the skip toggle MUST have its own accessible name and `aria-pressed`. Muted steps MUST show their note dimmed; skipped steps MUST be visibly distinct from muted steps. An "edited" indicator MUST show while `edited` is true.
 
 #### Scenario: Click toggles mute [V]
 - GIVEN an active step
 - WHEN it is clicked without movement
-- THEN `setStep` is dispatched with its note and `active:false`
+- THEN `setStep` is dispatched with its note, `active:false` and its current velocity
 
 #### Scenario: Skip toggle is distinct from mute [V]
 - GIVEN a non-skipped step
 - WHEN its skip toggle is activated
-- THEN `setStep` is dispatched with the step's note, its current `active` and `skipped:true`, and the mute state does not change
+- THEN `setStep` is dispatched with the step's note, its current `active`, `skipped:true` and its current velocity, and the mute state does not change
 
 #### Scenario: Drag does not toggle [V]
 - GIVEN an active step
@@ -225,7 +253,41 @@ The grid MUST render one cell per step of the current sequence (`steps.length`, 
 - WHEN rendered
 - THEN the indicator is shown, then hidden
 
+#### Scenario: Velocity button cycles upward and wraps [V]
+- GIVEN a step with velocity 100 (displayed normal)
+- WHEN the velocity button is activated three times, each response applied
+- THEN `setStep` carries velocity 127, then 40, then 70
+
+#### Scenario: Off-level velocity snaps for display and cycling [V]
+- GIVEN velocities 85, 84 and 20
+- WHEN rendered and the button is activated once on each
+- THEN `data-velocity` is normal, soft and ghost, and the dispatched velocities are 127, 100 and 70
+
+#### Scenario: Velocity button is a sibling in the tab order [V]
+- GIVEN a rendered grid
+- WHEN the DOM and tabindex are inspected
+- THEN each velocity button is a sibling of its cell, its aria-label contains the level name, and only one control in the grid is tabbable
+
 #### Scenario: WebView2 input [M]
 - GIVEN standalone and plugin in WebView2 with auto-evolve on
 - WHEN wheel, drag, click and keyboard are used
 - THEN the page does not scroll and the loop keeps its position
+
+### Requirement: Velocity Is Session State
+
+Velocity edits MUST NOT be stored in presets and the preset schema (v3) MUST be unchanged. MIDI export MUST export the current, edited velocities. Regenerate, randomize and loadPreset MUST discard velocity edits (generated steps have velocity 100). There is no undo.
+
+#### Scenario: Export reflects velocity edits [T]
+- GIVEN a step's velocity was edited to 127
+- WHEN MIDI is exported
+- THEN that step's note-on carries velocity 127
+
+#### Scenario: Regenerate discards velocity edits [T]
+- GIVEN a velocity-edited sequence
+- WHEN regenerate runs with the same seed
+- THEN every step has velocity 100 and the sequence equals the seeded original
+
+#### Scenario: Preset round trip does not store velocity [T]
+- GIVEN a preset saved after a velocity edit
+- WHEN it is loaded
+- THEN the preset XML has no velocity data and the loaded sequence has velocity 100 everywhere

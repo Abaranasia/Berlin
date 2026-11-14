@@ -66,15 +66,27 @@ The system MUST accept a repeat count of 1 or greater and produce `repeats * non
 - WHEN the timeline is requested
 - THEN the system rejects the request instead of producing a timeline with a silently substituted count
 
-### Requirement: Fixed Velocity From the Shared Constant
+### Requirement: Per-Step Velocity On Note-On
 
-Every note-on event in the timeline MUST carry the existing fixed velocity constant (`MidiEventTranslator::kNoteVelocity`). No per-step or per-note velocity value is introduced.
+Every note-on event in the timeline (`MidiExportEvent`, with `velocity` appended last) MUST carry the `velocity` of the step that produced it, in every repeat. Note-off events MUST be unchanged. A sequence whose steps all have the default velocity 100 MUST produce a timeline, and exported bytes, identical to those before this change.
 
-#### Scenario: Every note-on uses the shared velocity constant
+#### Scenario: Each note-on uses its step's velocity
 
-- GIVEN any sequence with one or more active steps
+- GIVEN active steps with velocities 40, 70 and 127, repeats = 2
 - WHEN the timeline is built
-- THEN every emitted note-on's velocity equals `kNoteVelocity`, with no other value present anywhere in the timeline
+- THEN the note-ons carry 40, 70, 127, 40, 70, 127 in order
+
+#### Scenario: Default-velocity sequence is unchanged
+
+- GIVEN a sequence of default-velocity steps
+- WHEN the timeline is built and written
+- THEN the timeline and file bytes equal those produced before this change
+
+#### Scenario: Skipped and inactive steps contribute no velocity
+
+- GIVEN a skipped step and an inactive step, each with velocity 127
+- WHEN the timeline is built
+- THEN no event carries 127
 
 ### Requirement: Inactive Steps and Degenerate Inputs Emit No Notes
 
