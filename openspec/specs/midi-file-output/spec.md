@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A thin `juce::MidiFile`/`juce::MidiMessageSequence` wrapper that translates an already-correct `MidiExportTimeline` into Standard MIDI File bytes — PPQ header, tempo meta-event, hardcoded 4/4 time-signature meta-event, fixed channel/velocity note messages, end-of-track, and a reported write outcome. It contains no musical decisions of its own.
+A thin `juce::MidiFile`/`juce::MidiMessageSequence` wrapper that translates an already-correct `MidiExportTimeline` into Standard MIDI File bytes — PPQ header, tempo meta-event, hardcoded 4/4 time-signature meta-event, fixed channel, per-event velocity note messages, end-of-track, and a reported write outcome. It contains no musical decisions of its own.
 
 ## Requirements
 
@@ -42,15 +42,27 @@ The system MUST write exactly one 4/4 time-signature meta-event at tick 0, regar
 - WHEN the file is written
 - THEN exactly one time-signature meta-event exists at tick 0 encoding 4/4
 
-### Requirement: Fixed-Channel, Fixed-Velocity Note Translation
+### Requirement: Fixed-Channel, Per-Event-Velocity Note Translation
 
-The system MUST translate each timeline note-on/note-off pair into `juce::MidiMessage` note-on/note-off events on a single fixed channel, preserving the timeline's tick position and its fixed velocity unchanged. The writer MUST NOT introduce a different channel or velocity than what the timeline already carries.
+The system MUST translate each timeline note-on/note-off pair into `juce::MidiMessage` note-on/note-off events on a single fixed channel, preserving the timeline's tick position and writing each note-on with that event's own velocity. `MidiFileWriter` MUST NOT take a fixed velocity and MUST NOT substitute another velocity or channel. Default-velocity sequences MUST export byte-identically to before this change.
 
 #### Scenario: Written notes preserve channel, velocity, and tick
 
-- GIVEN a timeline with note-on/note-off events
+- GIVEN a timeline with note-on events of different velocities
 - WHEN the file is written
-- THEN each written MIDI message carries the fixed channel, the timeline's fixed velocity, and the timeline's exact tick position
+- THEN each note-on carries the fixed channel, its own event velocity and the exact tick position
+
+#### Scenario: Default velocity bytes unchanged
+
+- GIVEN a timeline of velocity-100 notes
+- WHEN the file is written
+- THEN the bytes equal those written before this change
+
+#### Scenario: Manual gate (M)
+
+- GIVEN an exported file with mixed velocities opened in a DAW
+- WHEN note velocities are inspected
+- THEN they match the step velocities
 
 ### Requirement: Well-Formed File With End-of-Track
 

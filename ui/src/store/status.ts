@@ -10,6 +10,7 @@ const BUSY = 'Busy, try again';
 const STEP: Record<string, string> = {
   'step-out-of-range': 'That step cannot be edited.',
   'note-out-of-scale': 'That note is not in the current scale.',
+  'gate-out-of-range': 'That gate length is not valid.',
 };
 const PRESET: Record<string, string> = {
   nameInvalid: 'Preset name is invalid.',

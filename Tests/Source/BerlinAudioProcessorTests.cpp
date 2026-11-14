@@ -1352,6 +1352,156 @@ public:
             expect (exportedAt100 > 0);           // every other active step stays at the default
         }
 
+        // ---- Gate length (step-gate)
+
+        beginTest ("editStep() gate: absent keeps it, present sets it, independent of note, active, skipped and velocity");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto original = processor.getCurrentSequence()[4];
+            expectEquals (original.gatePercent, 100);
+
+            expect (processor.editStep (4, original.note, true, {}, {}, 25) == berlin::StepEditResult::ok);
+            adoptPending (processor);
+            expectEquals (processor.getCurrentSequence()[4].gatePercent, 25);
+            expectEquals (processor.getCurrentSequence()[4].velocity, original.velocity);
+
+            expect (processor.editStep (4, 41, false) == berlin::StepEditResult::ok);   // gate absent
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, original.skipped, 100, 25 });
+
+            expect (processor.editStep (4, 41, false, true, 40) == berlin::StepEditResult::ok);   // velocity and skip, gate absent
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, true, 40, 25 });
+
+            expect (processor.editStep (4, 41, false, false, {}, 75) == berlin::StepEditResult::ok);   // muted, un-skipped
+            adoptPending (processor);
+            expect (processor.getCurrentSequence()[4] == berlin::Step { 41, false, false, 40, 75 });
+        }
+
+        beginTest ("editStep() gate out of range is rejected with the sequence and edited unchanged, after velocity and before busy");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto before = processor.getCurrentSequence();
+
+            expect (processor.editStep (2, before[2].note, true, {}, {}, 0) == berlin::StepEditResult::gateOutOfRange);
+            expect (processor.editStep (2, before[2].note, true, {}, {}, 101) == berlin::StepEditResult::gateOutOfRange);
+            expect (processor.editStep (2, before[2].note, true, {}, 0, 0) == berlin::StepEditResult::velocityOutOfRange);
+            expect (processor.getCurrentSequence() == before);
+            expect (! processor.isEdited());
+
+            expect (processor.editStep (2, 41, true) == berlin::StepEditResult::ok);   // publish now pending
+            expect (processor.editStep (3, before[3].note, true, {}, {}, 200) == berlin::StepEditResult::gateOutOfRange);   // not busy
+            expect (processor.editStep (3, before[3].note, true, {}, {}, 50) == berlin::StepEditResult::busy);
+        }
+
+        beginTest ("editStep() gate validation also precedes a pending restore's busy");
+        {
+            berlin::BerlinAudioProcessor source, processor;
+            source.setSeed (1234);
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+            processor.prepareToPlay (44100.0, 64);
+
+            expect (processor.editStep (2, 41, false) == berlin::StepEditResult::ok);
+            processor.setStateInformation (state.getData(), (int) state.getSize());
+            adoptPending (processor);
+            expect (processor.isRestorePending());
+
+            expect (processor.editStep (2, 41, true, {}, {}, 0) == berlin::StepEditResult::gateOutOfRange);
+            expect (processor.editStep (2, 41, true, {}, {}, 50) == berlin::StepEditResult::busy);
+
+            processor.runAutoEvolveTick();   // release the restore
+            expect (! processor.isRestorePending());
+        }
+
+        beginTest ("regenerate, randomize and loadPreset reset an edited gate to 100");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor processor (temp.dir);
+            processor.prepareToPlay (44100.0, 64);
+            expect (processor.save ("Gate Reset") == berlin::PresetResult::ok);
+
+            auto allFull = [this] (const berlin::Sequence& s)
+            {
+                for (int i = 0; i < s.size(); ++i)
+                    expectEquals (s[i].gatePercent, 100);
+            };
+
+            auto editGate = [&]
+            {
+                expect (processor.editStep (3, processor.getCurrentSequence()[3].note, true, {}, {}, 25) == berlin::StepEditResult::ok);
+                adoptPending (processor);
+                expectEquals (processor.getCurrentSequence()[3].gatePercent, 25);
+            };
+
+            editGate();
+            expect (processor.regenerate (false));
+            adoptPending (processor);
+            allFull (processor.getCurrentSequence());
+
+            editGate();
+            expect (processor.regenerate (true));   // randomize
+            adoptPending (processor);
+            allFull (processor.getCurrentSequence());
+
+            editGate();
+            expect (processor.loadPreset ("Gate Reset") == berlin::PresetResult::ok);
+            adoptPending (processor);
+            allFull (processor.getCurrentSequence());
+        }
+
+        beginTest ("an edited gate reaches the MIDI note-off sample and the exported note-off tick");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (48000.0, 6000);   // 120 BPM, 4 steps per beat: 6000 samples and 240 ticks per step
+
+            const int note = processor.getCurrentSequence()[0].note;
+            expect (processor.editStep (0, note, true, {}, {}, 50) == berlin::StepEditResult::ok);
+
+            juce::AudioBuffer<float> buffer (2, 6000);
+            juce::MidiBuffer midi;
+            processor.processBlock (buffer, midi);   // adopts the edit, then step 0 on at 0 and its gate off at 3000
+
+            int noteOnAt = -1, noteOffAt = -1, noteOffs = 0;
+
+            for (const auto metadata : midi)
+            {
+                const auto message = metadata.getMessage();
+
+                if (message.isNoteOn() && message.getNoteNumber() == note && noteOnAt < 0)
+                    noteOnAt = metadata.samplePosition;
+
+                if (message.isNoteOff() && message.getNoteNumber() == note)
+                {
+                    noteOffAt = metadata.samplePosition;
+                    ++noteOffs;
+                }
+            }
+
+            expectEquals (noteOnAt, 0);
+            expectEquals (noteOffAt, 3000);   // half a step, inside the block, not at the boundary
+            expectEquals (noteOffs, 1);
+
+            const juce::File tempFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                             .getNonexistentChildFile ("BerlinGateExportTest", ".mid", false);
+            expect (processor.exportMidiTo (tempFile) == berlin::MidiFileWriteResult::ok);
+
+            juce::FileInputStream stream (tempFile);
+            juce::MidiFile midiFile;
+            expect (stream.openedOk() && midiFile.readFrom (stream));
+
+            double firstOffTick = -1.0;
+
+            for (auto* event : *midiFile.getTrack (0))
+                if (event->message.isNoteOff() && event->message.getNoteNumber() == note && firstOffTick < 0.0)
+                    firstOffTick = event->message.getTimeStamp();
+
+            tempFile.deleteFile();
+            expectEquals (firstOffTick, 120.0);   // half of 240 ticks per step
+        }
+
         beginTest ("setGenerationParams{length} is staged: the playing sequence is untouched, the next Generate rebuilds at that length");
         {
             berlin::BerlinAudioProcessor processor;

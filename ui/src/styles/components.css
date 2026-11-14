@@ -60,9 +60,11 @@
 .step[data-active='true'] { border-color: var(--accent); background: var(--accent-active-bg); }
 .step[data-skipped='true'] { opacity: 0.45; border-style: dashed; background: transparent; }
 .step[data-skipped='true'] .step-note { text-decoration: line-through; }
-.step-controls { display: flex; gap: 4px; }
-.step-controls > button { flex: 1; min-width: 0; }
+.step-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.step-controls > button { min-width: 0; }
+.step-skip { grid-column: 1 / -1; }
 .step-vel,
+.step-gate,
 .step-skip {
   padding: 2px 0;
   font: 10px var(--font-mono);
@@ -74,6 +76,11 @@
 }
 .step-skip[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
 .step[data-velocity='accent'] ~ .step-controls .step-vel { color: var(--accent); border-color: var(--accent); }
+/* The gate length shows as a bar: its width is the note length as a share of the step. */
+.gate-bar { display: block; height: 4px; margin: 0 auto; background: var(--muted); border-radius: 2px; width: 100%; }
+.step[data-gate-length='staccato'] ~ .step-controls .gate-bar { width: 25%; }
+.step[data-gate-length='short'] ~ .step-controls .gate-bar { width: 50%; }
+.step[data-gate-length='long'] ~ .step-controls .gate-bar { width: 75%; }
 .step-num { font: 10px var(--font-mono); color: var(--muted); }
 .step-note { font: 12px var(--font-mono); color: var(--muted); }
 .step[data-gate='true'] .step-note { color: var(--text); }

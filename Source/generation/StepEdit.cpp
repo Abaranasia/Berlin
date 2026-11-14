@@ -34,7 +34,8 @@ std::vector<int> scaleNotesFor (const GenerationParams& params)
 
 StepEditError validateStepEdit (const Sequence& sequence, const std::vector<int>& scaleNotes,
                                 int index, int note,
-                                std::optional<int> velocity) noexcept
+                                std::optional<int> velocity,
+                                std::optional<int> gatePercent) noexcept
 {
     if (index < 0 || index >= sequence.size())
         return StepEditError::stepOutOfRange;
@@ -48,6 +49,9 @@ StepEditError validateStepEdit (const Sequence& sequence, const std::vector<int>
 
     if (velocity && ! isValidVelocity (*velocity))
         return StepEditError::velocityOutOfRange;
+
+    if (gatePercent && ! isValidGatePercent (*gatePercent))
+        return StepEditError::gateOutOfRange;
 
     return StepEditError::none;
 }

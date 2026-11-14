@@ -92,16 +92,52 @@ public:
             expect (a == berlin::Step { 60, true, false, 40 });
         }
 
+        beginTest ("gatePercent defaults to 100 and existing three/four-field inits compile");
+        {
+            static_assert (berlin::kDefaultGatePercent == 100);
+            static_assert (berlin::kMinGatePercent == 1);
+            static_assert (berlin::kMaxGatePercent == 100);
+
+            expectEquals (berlin::Step {}.gatePercent, 100);
+            expectEquals ((berlin::Step { 60, true }).gatePercent, 100);
+            expectEquals ((berlin::Step { 60, true, false }).gatePercent, 100);
+            expectEquals ((berlin::Step { 60, true, false, 40 }).gatePercent, 100);
+            expectEquals ((berlin::Step { 60, true, false, 40, 25 }).gatePercent, 25);
+            expectEquals ((berlin::Step { 60, true, false, 40, 25 }).velocity, 40);
+        }
+
+        beginTest ("equality - differing gatePercent compares unequal");
+        {
+            const berlin::Step a { 60, true, false, 100, 25 };
+            const berlin::Step b { 60, true, false, 100, 100 };
+
+            expect (! (a == b));
+            expect (a == berlin::Step { 60, true, false, 100, 25 });
+        }
+
+        beginTest ("isValidGatePercent is true exactly for 1..100");
+        {
+            static_assert (! berlin::isValidGatePercent (-1));
+            static_assert (! berlin::isValidGatePercent (0));
+            static_assert (berlin::isValidGatePercent (1));
+            static_assert (berlin::isValidGatePercent (50));
+            static_assert (berlin::isValidGatePercent (100));
+            static_assert (! berlin::isValidGatePercent (101));
+
+            expect (berlin::isValidGatePercent (37));
+            expect (! berlin::isValidGatePercent (150));
+        }
+
         beginTest ("no extra fields (review note)");
         {
             // C++ has no runtime member reflection, so this cannot be a real
             // assertion - it is a documented review check. Step.h's
             // static_assert(std::is_aggregate_v<Step>) enforces aggregate
             // shape; a reviewer must additionally confirm the type still
-            // exposes exactly `note`, `active`, `skipped` and `velocity` and nothing
-            // else (no gate length, duration, probability, or timing-offset
+            // exposes exactly `note`, `active`, `skipped`, `velocity` and `gatePercent`
+            // and nothing else (no duration, probability, or timing-offset
             // fields).
-            expect (true, "Reviewer must confirm Step exposes exactly {note, active, skipped, velocity} - see comment above.");
+            expect (true, "Reviewer must confirm Step exposes exactly {note, active, skipped, velocity, gatePercent} - see comment above.");
         }
     }
 };

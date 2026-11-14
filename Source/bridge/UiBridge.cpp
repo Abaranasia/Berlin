@@ -576,6 +576,7 @@ namespace
             stepObject->setProperty ("active", sequence[i].active);
             stepObject->setProperty ("skipped", sequence[i].skipped);
             stepObject->setProperty ("velocity", sequence[i].velocity);
+            stepObject->setProperty ("gatePercent", sequence[i].gatePercent);
             steps.add (juce::var (stepObject));
         }
 
@@ -647,8 +648,8 @@ namespace
         return processor.regenerate (randomize) ? juce::String() : juce::String ("busy");
     }
 
-    // setStep {index, note, active, skipped?, velocity?}: parse everything into locals first, then one
-    // editStep call (validation order index, note, velocity, busy lives in the processor).
+    // setStep {index, note, active, skipped?, velocity?, gatePercent?}: parse everything into locals first,
+    // then one editStep call (validation order index, note, velocity, gate, busy lives in the processor).
     juce::String handleSetStep (BerlinAudioProcessor& processor, const juce::var& args)
     {
         int index = 0;
@@ -679,13 +680,19 @@ namespace
         if (auto err = readOptionalInt (args, "velocity", velocity); err.isNotEmpty())
             return err;
 
-        switch (processor.editStep (index, note, active, skipped, velocity))
+        // Optional: absent keeps the step's current gate length; the 1-100 range is the processor's call.
+        std::optional<int> gatePercent;
+        if (auto err = readOptionalInt (args, "gatePercent", gatePercent); err.isNotEmpty())
+            return err;
+
+        switch (processor.editStep (index, note, active, skipped, velocity, gatePercent))
         {
             case StepEditResult::ok:             return {};
             case StepEditResult::busy:           return "busy";
             case StepEditResult::stepOutOfRange: return "step-out-of-range";
             case StepEditResult::noteOutOfScale: return "note-out-of-scale";
             case StepEditResult::velocityOutOfRange: return "velocity-out-of-range";
+            case StepEditResult::gateOutOfRange: return "gate-out-of-range";
         }
 
         return "busy";   // unreachable for a valid enumerator

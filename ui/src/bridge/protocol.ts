@@ -64,7 +64,7 @@ export interface Snapshot {
   mutationCount: number;
   edited: boolean; // true after a step edit until the next regenerate, randomize or preset load
   scaleNotes: number[]; // ascending in-scale MIDI notes within the range: the editable note set
-  steps: { note: number; active: boolean; skipped: boolean; velocity: number }[]; // skipped: not in the playback order at all; velocity 1-127
+  steps: { note: number; active: boolean; skipped: boolean; velocity: number; gatePercent: number }[]; // skipped: not in the playback order at all; velocity 1-127; gatePercent 1-100 of the step
   presetNames: string[];
 }
 
@@ -84,7 +84,7 @@ export type Command =
   | { name: 'savePreset'; args: { name: string; overwrite: boolean } }
   | { name: 'loadPreset'; args: { name: string } }
   | { name: 'exportMidi'; args: { path: string } }
-  | { name: 'setStep'; args: { index: number; note: number; active: boolean; skipped?: boolean; velocity?: number } };
+  | { name: 'setStep'; args: { index: number; note: number; active: boolean; skipped?: boolean; velocity?: number; gatePercent?: number } };
 
 export type CommandName = Command['name'];
 
@@ -96,7 +96,7 @@ export const COMMAND_NAMES: readonly CommandName[] = [
 
 // Fixed tokens; the parameterised ones (`missing arg: x`, ...) and anything unknown fall under `string`.
 export type ErrorToken =
-  | 'busy' | 'exists' | 'path not absolute' | 'step-out-of-range' | 'note-out-of-scale'
+  | 'busy' | 'exists' | 'path not absolute' | 'step-out-of-range' | 'note-out-of-scale' | 'gate-out-of-range'
   | 'nameInvalid' | 'directoryUnavailable' | 'writeFailed' | 'fileNotFound' | 'parseFailed' | 'unsupportedVersion'
   | 'invalidTimeline' | 'pathUnavailable'
   | (string & {});
