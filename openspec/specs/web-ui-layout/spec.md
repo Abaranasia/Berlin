@@ -164,8 +164,7 @@ Synth panel range controls MUST render as `Knob`, wrapping a visually hidden nat
 
 ### Requirement: Step View
 
-MainArea MUST show 16 steps, each with step number, gate LED, and note name. The playhead step MUST be highlighted and gated steps MUST be visually distinct from rests. Display MUST be driven only by the snapshot, optimistic `step.<i>` values and `playhead` events. Cells MUST be interactive as defined in capability `step-editing` (click mute, drag and wheel note change, roving-tabindex keyboard, aria-label and `aria-pressed`). Muted steps MUST show their note dimmed. A small "edited" indicator MUST show while `snapshot.edited` is true. Interactive targets keep the 44 px minimum.
-(Previously: read-only, driven only by the snapshot and `playhead` events; no handlers, dimming or indicator.)
+MainArea MUST show one cell per step of the current sequence (`steps.length`, 1 to 64 steps), wrapping into rows of 16, each with step number, gate LED, and note name. The playhead step MUST be highlighted and gated steps MUST be visually distinct from rests. Display MUST be driven only by the snapshot, optimistic `step.<i>` values and `playhead` events. Cells MUST be interactive as defined in capability `step-editing` (click mute, drag and wheel note change, roving-tabindex keyboard, aria-label and `aria-pressed`). Muted steps MUST show their note dimmed. A small "edited" indicator MUST show while `snapshot.edited` is true. Interactive targets keep the 44 px minimum.
 
 #### Scenario: Gate distinction [V]
 - GIVEN a snapshot with step 1 gated (MIDI 48; naming convention MIDI 60 = C4) and step 2 rest
@@ -210,3 +209,27 @@ The card MUST render each recommendation as a button labelled like "1/4 500 ms".
 - GIVEN the editor in Cakewalk Sonar
 - WHEN a chip is clicked
 - THEN the ms value pastes elsewhere, or "Copy failed" shows
+
+### Requirement: Step Controls Hold Three Buttons
+
+The `step-controls` area under each step cell MUST hold exactly three buttons, in DOM and tab order: the velocity button (`.step-vel`), the gate-length button (`.step-gate`) and the skip toggle (`.step-skip`). At the 16-steps-per-row layout a cell is too narrow for three buttons side by side, so `step-controls` MUST lay out as two columns: the velocity and gate-length buttons share the first row, and the skip toggle spans both columns in the second row. The buttons MUST NOT clip, overlap or overflow the cell horizontally. Each button MUST keep the same minimum-target treatment the existing step controls use. The area MUST NOT change the cell grid's wrapping into rows of 16.
+
+#### Scenario: Three buttons per cell [V]
+- GIVEN a rendered grid
+- WHEN each `step-controls` element is inspected
+- THEN it contains the velocity, gate-length and skip buttons in that DOM order
+
+#### Scenario: Controls fit at 16 steps [M]
+- GIVEN 16 steps in one row at the minimum supported window width
+- WHEN rendered
+- THEN velocity and gate-length sit side by side, skip spans the row below, and nothing overlaps or overflows the cell
+
+#### Scenario: Wrapping unchanged [V]
+- GIVEN a snapshot with 40 steps
+- WHEN rendered
+- THEN cells are shown in rows of 16, 16 and 8 as before
+
+#### Scenario: Gate level is visually distinct [M]
+- GIVEN steps at staccato, short, long and full
+- WHEN viewed
+- THEN the four gate levels are distinguishable by the button's bar width and the active-step visuals are unaffected
