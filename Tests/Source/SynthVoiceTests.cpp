@@ -17,6 +17,8 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 #include <vector>
 
@@ -32,6 +34,13 @@ namespace
     {
         return { sampleRate, static_cast<juce::uint32> (blockSize), static_cast<juce::uint32> (numChannels) };
     }
+
+    static_assert (berlin::velocityToGain (100) == 1.0f);
+    static_assert (berlin::velocityToGain (40) == 0.4f);
+    static_assert (berlin::velocityToGain (127) == (1.27f < berlin::kMaxVelocityGain ? 1.27f : berlin::kMaxVelocityGain));
+    static_assert (berlin::velocityToGain (0) == berlin::velocityToGain (1));      // clamped into 1..127
+    static_assert (berlin::velocityToGain (500) == berlin::velocityToGain (127));
+    static_assert (berlin::kMaxVelocityGain >= 1.0f);
 }
 
 class SynthVoiceTests final : public juce::UnitTest
@@ -745,6 +754,142 @@ public:
 
             for (float sample : left2)
                 expect (std::isfinite (sample));
+        }
+
+        beginTest ("default noteOn(hz) render is bit-identical to the pre-velocity output (golden fingerprint)");
+        {
+            berlin::SynthVoice voice;
+            voice.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+            voice.noteOn (220.0f);
+
+            std::vector<float> left (512, 0.0f), right (512, 0.0f);
+            std::uint64_t fingerprint = 1469598103934665603ull;   // FNV-1a over the raw float bits
+
+            auto fold = [&fingerprint] (const std::vector<float>& samples)
+            {
+                for (float sample : samples)
+                {
+                    std::uint32_t bits = 0;
+                    std::memcpy (&bits, &sample, sizeof (bits));
+                    fingerprint = (fingerprint ^ bits) * 1099511628211ull;
+                }
+            };
+
+            voice.render (left.data(), right.data(), 512);
+            fold (left);
+            voice.noteOff();
+            voice.render (left.data(), right.data(), 512);
+            fold (left);
+
+            // Captured from the pre-velocity voice: x * 1.0f == x, so velocity 100 must not move a bit.
+            expect (fingerprint == 0x8dd3ab4822fcb12cull, "fingerprint 0x" + juce::String::toHexString ((juce::int64) fingerprint));
+        }
+
+        beginTest ("noteOn with velocity 100 renders exactly like noteOn(hz), and 127 renders differently");
+        {
+            auto renderWith = [&] (int velocity)
+            {
+                berlin::SynthVoice voice;
+                voice.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+                voice.noteOn (220.0f, velocity);
+
+                std::vector<float> left (512, 0.0f), right (512, 0.0f);
+                voice.render (left.data(), right.data(), 512);
+                return left;
+            };
+
+            berlin::SynthVoice reference;
+            reference.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+            reference.noteOn (220.0f);
+            std::vector<float> referenceLeft (512, 0.0f), referenceRight (512, 0.0f);
+            reference.render (referenceLeft.data(), referenceRight.data(), 512);
+
+            const auto at100 = renderWith (berlin::kDefaultVelocity);
+            const auto at127 = renderWith (127);
+
+            bool anyDifferent = false;
+
+            for (size_t i = 0; i < 512; ++i)
+            {
+                expectEquals (at100[i], referenceLeft[i]);
+                anyDifferent = anyDifferent || at127[i] != at100[i];
+            }
+
+            expect (anyDifferent);
+        }
+
+        beginTest ("an idle voice applies the velocity gain exactly from the first sample (no ramp)");
+        {
+            auto renderWith = [&] (int velocity)
+            {
+                berlin::SynthVoice voice;
+                voice.prepare (makeSpec (sampleRate, 512), berlin::kDefaultPatch);
+                voice.noteOn (220.0f, velocity);
+
+                std::vector<float> left (512, 0.0f), right (512, 0.0f);
+                voice.render (left.data(), right.data(), 512);
+                return left;
+            };
+
+            const auto at100 = renderWith (100);
+
+            for (int velocity : { 127, 40 })
+            {
+                const auto rendered = renderWith (velocity);
+                const float gain = berlin::velocityToGain (velocity);
+                int nonZero = 0;
+
+                for (size_t i = 0; i < 512; ++i)
+                {
+                    expectEquals (rendered[i], at100[i] * gain);
+                    nonZero += at100[i] != 0.0f ? 1 : 0;
+                }
+
+                expect (nonZero > 100);   // production code really produced signal
+            }
+        }
+
+        beginTest ("a legato retrigger glides the velocity gain over about 2 ms instead of stepping");
+        {
+            berlin::SynthPatch patch = berlin::kDefaultPatch;
+            patch.attack  = 0.001f;
+            patch.decay   = 0.001f;
+            patch.sustain = 1.0f;
+
+            auto renderRetrigger = [&] (int secondVelocity)
+            {
+                berlin::SynthVoice voice;
+                voice.prepare (makeSpec (sampleRate, 4096), patch);
+                voice.noteOn (220.0f, 127);
+
+                std::vector<float> left (4096, 0.0f), right (4096, 0.0f);
+                voice.render (left.data(), right.data(), 4096);   // settle at sustain
+
+                voice.noteOn (220.0f, secondVelocity);   // legato: the voice is still sounding
+                voice.render (left.data(), right.data(), 400);
+                left.resize (400);
+                return left;
+            };
+
+            const auto twin    = renderRetrigger (127);
+            const auto lowered = renderRetrigger (40);
+
+            // Largest twin sample among the first few: the ratio there is well conditioned.
+            size_t first = 0;
+            for (size_t i = 1; i < 4; ++i)
+                if (std::abs (twin[i]) > std::abs (twin[first]))
+                    first = i;
+
+            expect (std::abs (twin[first]) > 1.0e-3f);
+            expect (lowered[first] / twin[first] > 0.9f);   // a hard step would be 0.315
+
+            size_t settled = 200;
+            for (size_t i = 201; i < 400; ++i)
+                if (std::abs (twin[i]) > std::abs (twin[settled]))
+                    settled = i;
+
+            expect (std::abs (twin[settled]) > 1.0e-3f);
+            expectWithinAbsoluteError (lowered[settled] / twin[settled], berlin::velocityToGain (40) / berlin::velocityToGain (127), 1.0e-5f);
         }
     }
 };

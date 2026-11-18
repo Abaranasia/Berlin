@@ -159,7 +159,7 @@ Sequence changeNote (const Sequence& input, DeterministicRandom& random)
 {
     std::vector<int> activeIndices;
     for (int i = 0; i < input.size(); ++i)
-        if (input[i].active)
+        if (input[i].active && ! input[i].skipped)
             activeIndices.push_back (i);
 
     if (activeIndices.size() < 2)
@@ -181,7 +181,8 @@ Sequence addNote (const Sequence& input, DeterministicRandom& random)
 {
     std::vector<int> activeIndices, inactiveIndices;
     for (int i = 0; i < input.size(); ++i)
-        (input[i].active ? activeIndices : inactiveIndices).push_back (i);
+        if (! input[i].skipped)   // skipped steps are neither candidates nor pitch sources
+            (input[i].active ? activeIndices : inactiveIndices).push_back (i);
 
     if (activeIndices.empty() || inactiveIndices.empty())
         return input; // no in-pattern pitch to copy, or nothing left to activate
@@ -201,7 +202,7 @@ Sequence removeNote (const Sequence& input, DeterministicRandom& random)
 {
     std::vector<int> activeIndices;
     for (int i = 0; i < input.size(); ++i)
-        if (input[i].active)
+        if (input[i].active && ! input[i].skipped)
             activeIndices.push_back (i);
 
     if (activeIndices.empty())
@@ -222,10 +223,10 @@ Sequence stretch (const Sequence& input, DeterministicRandom&)
         return input; // no step to duplicate
 
     // Duplicate each step in order; when the doubled size falls outside
-    // [4, 64] the target size is clamped and the (i / 2) % n index wraps,
+    // [4, kMaxSteps] the target size is clamped and the (i / 2) % n index wraps,
     // which reduces to a clean, ordered duplication in the un-clamped case
     // and a well-formed (if partial) result at either bound.
-    const int targetSize = std::clamp (n * 2, 4, 64);
+    const int targetSize = std::clamp (n * 2, 4, kMaxSteps);
     Sequence result (targetSize);
     for (int i = 0; i < targetSize; ++i)
         result[i] = input[(i / 2) % n];
@@ -243,7 +244,7 @@ Sequence compress (const Sequence& input, DeterministicRandom&)
     // target size is clamped and the (2 * i) % n index wraps, which reduces
     // to a clean "every other step" selection in the un-clamped case and a
     // well-formed (if partial) result at either bound.
-    const int targetSize = std::clamp (n / 2, 4, 64);
+    const int targetSize = std::clamp (n / 2, 4, kMaxSteps);
     Sequence result (targetSize);
     for (int i = 0; i < targetSize; ++i)
         result[i] = input[(2 * i) % n];
@@ -300,7 +301,7 @@ Sequence palindrome (const Sequence& input, DeterministicRandom&)
     if (n == 0)
         return input; // n == 0 would make the modulo below UB
 
-    const int targetSize = std::clamp (n * 2, 4, 64);
+    const int targetSize = std::clamp (n * 2, 4, kMaxSteps);
     Sequence result (targetSize);
 
     for (int i = 0; i < targetSize; ++i)

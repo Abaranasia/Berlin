@@ -11,7 +11,7 @@ import { describe, describeSuccess, describeThrown, type Status } from './status
 //   - bare command-level names for the single-value commands (bpm, playing, masterLevel, synthEnabled,
 //     effectsEnabled, autoEvolveEnabled, autoEvolveRate, seed) and the flow commands (regenerate, mutate,
 //     exportMidi, savePreset, loadPreset), whose optimistic value is the command's argument.
-//   - `step.<i>`       one step's absolute {note, active}, sent as setStep (retried on busy, see RETRY_ON_BUSY)
+//   - `step.<i>`       one step's absolute {note, active, skipped, velocity}, sent as setStep (retried on busy, see RETRY_ON_BUSY)
 // `send` and `shown` are both typed by KeyValues, so a control cannot read a value of another type than it writes.
 type PatchKeyValues = { [F in keyof Patch as `patch.${F}`]: Patch[F] };
 type GenKeyValues = { [F in Exclude<keyof GenerationParams, 'rangeLow' | 'rangeHigh'> as `gen.${F}`]: GenerationParams[F] };
@@ -31,7 +31,7 @@ export type KeyValues = PatchKeyValues &
     exportMidi: string;
     savePreset: string;
     loadPreset: string;
-  } & { [key in `step.${number}`]: { note: number; active: boolean } }; // one lane per step: absolute values
+  } & { [key in `step.${number}`]: { note: number; active: boolean; skipped: boolean; velocity: number } }; // one lane per step: absolute values
 export type StoreKey = keyof KeyValues;
 
 export interface State {

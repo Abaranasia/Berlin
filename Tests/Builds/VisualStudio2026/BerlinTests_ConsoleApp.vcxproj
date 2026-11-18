@@ -177,6 +177,7 @@
     <ClCompile Include="..\..\Source\PresetManagerFileTests.cpp"/>
     <ClCompile Include="..\..\Source\SequenceBuilderTests.cpp"/>
     <ClCompile Include="..\..\Source\StepEditTests.cpp"/>
+    <ClCompile Include="..\..\Source\StepCursorTests.cpp"/>
     <ClCompile Include="..\..\Source\AutoEvolveScheduleTests.cpp"/>
     <ClCompile Include="..\..\Source\BerlinAudioProcessorTests.cpp"/>
     <ClCompile Include="..\..\Source\TempoSyncTests.cpp"/>
@@ -1488,6 +1489,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\core\Step.h"/>
+    <ClInclude Include="..\..\..\Source\core\StepCursor.h"/>
     <ClInclude Include="..\..\..\Source\core\Sequence.h"/>
     <ClInclude Include="..\..\..\Source\core\Scale.h"/>
     <ClInclude Include="..\..\..\Source\core\TempoSync.h"/>

@@ -78,7 +78,7 @@ void SynthEngine::render (const StepEventBuffer& events,
 
         if (event.isNoteOn)
         {
-            voice.noteOn (static_cast<float> (juce::MidiMessage::getMidiNoteInHertz (event.note)));
+            voice.noteOn (static_cast<float> (juce::MidiMessage::getMidiNoteInHertz (event.note)), event.velocity);
             currentNote = event.note;
         }
         else if (event.note == currentNote)

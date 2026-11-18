@@ -178,9 +178,39 @@ describe('mock bridge setStep mirrors the host', () => {
     expect(before.edited).toBe(false);
     expect(before.scaleNotes).toEqual(C_MINOR_36_72);
     const after = snapshotOf(await setStep(mock, 2, 50, false));
-    expect(after.steps[2]).toEqual({ note: 50, active: false });
+    expect(after.steps[2]).toEqual({ note: 50, active: false, skipped: false, velocity: 100 });
     expect(after.steps[3]).toEqual(before.steps[3]);
     expect(after.edited).toBe(true);
+  });
+
+  it('skipped: absent keeps the flag, true and false set it, a non-boolean is invalid type', async () => {
+    const mock = createMockBridge();
+    const send = (extra: object) => run(mock, { name: 'setStep', args: { index: 4, note: 52, active: true, ...extra } });
+    expect(snapshotOf(await send({ skipped: true })).steps[4]).toEqual({ note: 52, active: true, skipped: true, velocity: 100 });
+    expect(snapshotOf(await send({})).steps[4].skipped).toBe(true);
+    expect(snapshotOf(await send({ skipped: false })).steps[4].skipped).toBe(false);
+    expect(await send({ skipped: 'x' })).toEqual({ ok: false, error: 'invalid type: skipped' });
+  });
+
+  it('velocity: stored, absent keeps it, 0 and 128 are velocity-out-of-range, a non-integer is invalid type', async () => {
+    const mock = createMockBridge();
+    const send = (extra: object) => run(mock, { name: 'setStep', args: { index: 4, note: 52, active: true, ...extra } });
+    expect((await mock.getSnapshot())!.steps[4].velocity).toBe(100);
+    expect(snapshotOf(await send({ velocity: 127 })).steps[4].velocity).toBe(127);
+    expect(snapshotOf(await send({})).steps[4].velocity).toBe(127);
+    expect(snapshotOf(await send({ velocity: 1 })).steps[4].velocity).toBe(1);
+    expect(await send({ velocity: 0 })).toEqual({ ok: false, error: 'velocity-out-of-range' });
+    expect(await send({ velocity: 128 })).toEqual({ ok: false, error: 'velocity-out-of-range' });
+    expect(await send({ velocity: 1.5 })).toEqual({ ok: false, error: 'invalid type: velocity' });
+    expect(snapshotOf(await send({})).steps[4].velocity).toBe(1); // rejected edits changed nothing
+  });
+
+  it('validates velocity after the index and the note, before busy', async () => {
+    const mock = createMockBridge();
+    const args = (index: number, note: number) => ({ index, note, active: true, velocity: 0 });
+    expect(await run(mock, { name: 'setStep', args: args(16, 50) })).toEqual({ ok: false, error: 'step-out-of-range' });
+    expect(await run(mock, { name: 'setStep', args: args(2, 49) })).toEqual({ ok: false, error: 'note-out-of-scale' });
+    expect(await run(mock, { name: 'setStep', args: args(2, 50) })).toEqual({ ok: false, error: 'velocity-out-of-range' });
   });
 
   it('validates the index first, then the note', async () => {
@@ -197,7 +227,7 @@ describe('mock bridge setStep mirrors the host', () => {
     const before = (await mock.getSnapshot())!;
     const note = before.steps[1].note; // mock steps are not all in scale
     expect(before.scaleNotes).not.toContain(note);
-    expect(snapshotOf(await setStep(mock, 1, note, false)).steps[1]).toEqual({ note, active: false });
+    expect(snapshotOf(await setStep(mock, 1, note, false)).steps[1]).toEqual({ note, active: false, skipped: false, velocity: 100 });
     expect(await setStep(mock, 2, note)).toEqual({ ok: false, error: 'note-out-of-scale' });
   });
 
@@ -228,5 +258,26 @@ describe('mock bridge setStep mirrors the host', () => {
     expect(snapshotOf(await run(mock, { name: 'regenerate', args: { randomize: false } })).edited).toBe(false);
     await setStep(mock, 0, 50);
     expect(snapshotOf(await run(mock, { name: 'loadPreset', args: { name: 'A' } })).edited).toBe(false);
+  });
+});
+
+describe('mock bridge length mirrors the host (staged)', () => {
+  it('clamps length to 1..64 and keeps pulses and rotation within it', async () => {
+    const mock = createMockBridge();
+    expect(snapshotOf(await run(mock, { name: 'setGenerationParams', args: { length: 0 } })).generationParams.length).toBe(1);
+    const wide = snapshotOf(await run(mock, { name: 'setGenerationParams', args: { length: 99, pulses: 70, rotation: 70 } })).generationParams;
+    expect([wide.length, wide.pulses, wide.rotation]).toEqual([64, 64, 63]);
+    const small = snapshotOf(await run(mock, { name: 'setGenerationParams', args: { length: 8 } })).generationParams;
+    expect([small.pulses, small.rotation]).toEqual([8, 7]);
+  });
+
+  it('a length change leaves the steps alone until the next regenerate resizes them', async () => {
+    const mock = createMockBridge();
+    expect(snapshotOf(await run(mock, { name: 'setGenerationParams', args: { length: 24 } })).steps).toHaveLength(16);
+    const after = snapshotOf(await run(mock, { name: 'regenerate', args: { randomize: false } }));
+    expect(after.steps).toHaveLength(24);
+    expect(after.steps.every((s) => s.skipped === false)).toBe(true);
+    await run(mock, { name: 'setGenerationParams', args: { length: 5 } });
+    expect(snapshotOf(await run(mock, { name: 'regenerate', args: { randomize: true } })).steps).toHaveLength(5);
   });
 });

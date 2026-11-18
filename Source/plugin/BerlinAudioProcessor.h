@@ -55,6 +55,9 @@
 
 #pragma once
 
+#include <algorithm>
+#include <optional>
+
 #include <juce_audio_processors_headless/juce_audio_processors_headless.h>
 #include <juce_events/juce_events.h>
 
@@ -77,7 +80,7 @@
 namespace berlin
 {
 
-enum class StepEditResult { ok, busy, stepOutOfRange, noteOutOfScale };
+enum class StepEditResult { ok, busy, stepOutOfRange, noteOutOfScale, velocityOutOfRange };
 
 class BerlinAudioProcessor final : public juce::AudioProcessor,
                                     public juce::ChangeBroadcaster,
@@ -128,7 +131,11 @@ public:
     // refuses with busy while a publish is pending (so a busy retry only re-sends
     // edits that can succeed). On ok it publishes with PublishMode::keepPosition
     // (no restart), commits currentSequence and sets `edited`.
-    StepEditResult editStep (int index, int note, bool active);
+    // `skipped` absent keeps the step's current flag (step-model); `velocity`
+    // absent keeps the step's current velocity, a value outside 1-127 is
+    // rejected after the note check and before the busy check (step-velocity).
+    StepEditResult editStep (int index, int note, bool active, std::optional<bool> skipped = {},
+                             std::optional<int> velocity = {});
     bool isEdited() const { return edited; }
 
     // The auto-evolve Timer's body, public so tests can drive one tick without a
@@ -150,7 +157,13 @@ public:
     // ---- State in / out (message thread) ----
     void setPatch (const SynthPatch& patch);
     const SynthPatch& getPatch() const { return currentPatch; }
-    void setGenerationParams (const GenerationParams& params) { generationParams = params; }
+    // `length` is STAGED like every other field: it is committed (clamped to
+    // 1..kMaxSteps) but only applies on the next Generate / Randomize / preset load.
+    void setGenerationParams (const GenerationParams& params)
+    {
+        generationParams = params;
+        generationParams.length = std::clamp (params.length, 1, kMaxSteps);
+    }
     const GenerationParams& getGenerationParams() const { return generationParams; }
     void setSeed (juce::int64 seed) { currentSeed = seed; }
     juce::int64 getSeed() const { return currentSeed; }

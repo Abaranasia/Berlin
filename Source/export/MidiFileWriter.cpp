@@ -19,17 +19,18 @@ namespace
         return channel < 1 ? 1 : (channel > 16 ? 16 : channel);
     }
 
-    constexpr int clampVelocity (int velocity) noexcept
+    // Note-on velocity 0 is a note-off on the wire, so the floor is 1.
+    constexpr int clampNoteOnVelocity (int velocity) noexcept
     {
-        return velocity < 0 ? 0 : (velocity > 127 ? 127 : velocity);
+        return velocity < 1 ? 1 : (velocity > 127 ? 127 : velocity);
     }
 }
 
 namespace berlin
 {
 
-MidiFileWriter::MidiFileWriter (int outputChannel, int velocityIn) noexcept
-    : channel (clampChannel (outputChannel)), velocity (clampVelocity (velocityIn))
+MidiFileWriter::MidiFileWriter (int outputChannel) noexcept
+    : channel (clampChannel (outputChannel))
 {
 }
 
@@ -48,7 +49,7 @@ void MidiFileWriter::buildFile (const MidiExportTimeline& timeline, double bpm, 
     for (const auto& event : timeline.events)
     {
         const auto message = event.noteOn
-            ? juce::MidiMessage::noteOn (channel, event.note, (juce::uint8) velocity)
+            ? juce::MidiMessage::noteOn (channel, event.note, (juce::uint8) clampNoteOnVelocity (event.velocity))
             : juce::MidiMessage::noteOff (channel, event.note, (juce::uint8) 0);
 
         sequence.addEvent (message, (double) event.tick);

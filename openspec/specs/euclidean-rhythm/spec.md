@@ -46,13 +46,38 @@ Bjorklund's algorithm as a pure, deterministic rhythm generator: given `(steps, 
 
 ### Requirement: Fixed Step Count This Slice
 
-`steps` MUST be fixed at `kNumSteps` (16) at the production call site in `MainComponent`. The generator's own constructor MAY accept any `numSteps` (needed so its unit tests can exercise the 8-step canonical oracles E(3,8)/E(5,8)) — the "fixed at 16" constraint is a call-site/UI constraint only, not a generator-level limitation. Variable-length sequences in the live app are out of scope for this slice.
+In the live app, `steps` MUST equal `GenerationParams.length` (default 16, range `[1, 64]`) at the production call site. The generator's own constructor MAY accept any `numSteps`. At `length == 16` the output MUST be identical to the pre-change fixed-16 output. `pulses` MUST be clamped to `[0, length]` and `rotation` MUST wrap into `[0, length - 1]` using the existing mathematical-modulo rule.
+(Previously: `steps` was fixed at `kNumSteps` (16) at the call site and variable-length sequences were out of scope.)
 
-#### Scenario: Steps parameter is not exposed as user-variable in the live app
+#### Scenario: Steps follows the length parameter
 
-- GIVEN the live app's Euclidean mode
+- GIVEN the live app's Euclidean mode with `length = 12`
 - WHEN a Sequence is generated
-- THEN `steps` is always 16, regardless of Pulses/Rotation UI values
+- THEN it has 12 steps, built by Bjorklund over 12 steps
+
+#### Scenario: Default length is unchanged behavior
+
+- GIVEN Euclidean mode with `length = 16`
+- WHEN a Sequence is generated
+- THEN `steps` is 16 and the output equals the pre-change output for the same pulses/rotation
+
+#### Scenario: Pulses clamp to the length
+
+- GIVEN `length = 8` and `pulses = 12`
+- WHEN a Sequence is generated
+- THEN pulses is clamped to 8 and all 8 steps are active
+
+#### Scenario: Rotation wraps within the length
+
+- GIVEN `length = 8` and `rotation = 8` (or `-1`)
+- WHEN a Sequence is generated
+- THEN the effective rotation is 0 (or 7 respectively)
+
+#### Scenario: Length 1
+
+- GIVEN `length = 1` with `pulses = 1`, and separately `pulses = 0`
+- WHEN a Sequence is generated
+- THEN the sequence has 1 step, active in the first case and inactive in the second, with no crash
 
 ### Requirement: Pulses and Rotation Are Clamped/Wrapped, Never Crash
 

@@ -95,6 +95,12 @@ public:
             expect (b[1] == berlin::Step { 62, true });
         }
 
+        beginTest ("kMaxSteps is 64");
+        {
+            static_assert (berlin::kMaxSteps == 64);
+            expectEquals (berlin::kMaxSteps, 64);
+        }
+
         beginTest ("swap() is noexcept (compile-time RT-safety contract)");
         {
             berlin::Sequence a (1);

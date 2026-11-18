@@ -43,6 +43,7 @@
 
 #include <algorithm>
 
+#include "core/Step.h"
 #include "core/TempoSync.h"
 
 namespace berlin
@@ -92,6 +93,21 @@ constexpr float clampParameter (float v, float lo, float hi) noexcept
         return lo;
 
     return std::clamp (v, lo, hi);
+}
+
+// Step velocity -> voice gain (step-velocity D5). Velocity 100 is exactly 1.0f
+// (neutral, bit-identical to the pre-velocity voice); 127 would be 1.27f, but
+// the ceiling keeps a dry accent under full scale at the default master level
+// (SynthEngineTests' accent test: 1.27 peaks at 1.097, 1.12 at 0.967). It was
+// lowered from 1.27 in 0.05 steps and stays >= 1.0f. Effects-on output already
+// exceeds 1.0 at velocity 100, so no ceiling can fix that case.
+inline constexpr float kMaxVelocityGain = 1.12f;
+
+constexpr float velocityToGain (int velocity) noexcept
+{
+    const int clamped = velocity < kMinVelocity ? kMinVelocity : (velocity > kMaxVelocity ? kMaxVelocity : velocity);
+    const float gain = static_cast<float> (clamped) / 100.0f;
+    return gain < kMaxVelocityGain ? gain : kMaxVelocityGain;
 }
 
 struct SynthPatch

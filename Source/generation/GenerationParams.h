@@ -14,7 +14,7 @@
    them.
 
    Persistence (scale-aware-generation design.md, scoped exception to prior
-   D4): `mode`, `pulses`, `rotation`, `stepProbability`, and `lockSeed` are
+   D4): `mode`, `pulses`, `rotation`, `stepProbability`, `length` and `lockSeed` are
    NOT persisted - they are transient GUI-adjacent configuration, not the
    versioned Preset schema. `scaleType`, `rootPitchClass`, `rangeLow`, and
    `rangeHigh` ARE a deliberate, scoped exception: they are musical identity
@@ -34,10 +34,8 @@ namespace berlin
 
 enum class RhythmMode { random, euclidean, probability };
 
-// Fixed step count for every generation mode (vst3-au-plugin followup-fixes
-// cleanup: previously redeclared separately in SequenceBuilder.cpp and the
-// editor - not configurable, so it lives here next to
-// the struct whose generation it drives, not as a GenerationParams member).
+// Default step count (GenerationParams::length). The live length is a
+// GenerationParams member (step-model); kMaxSteps (core/Sequence.h) bounds it.
 inline constexpr int kNumSteps = 16;
 
 // Pitch-range bounds (scale-aware-generation design.md). kMinPitchRangeSpan
@@ -58,6 +56,7 @@ struct GenerationParams
     int        rotation        = 0;
     float      stepProbability = 0.5f;
     bool       lockSeed        = false;
+    int        length          = kNumSteps;   // staged: applies on the next generation (clamped 1..kMaxSteps)
 
     // Persisted fields (see the header comment's exception to prior D4).
     // Defaults reproduce today's pre-change output byte-identically for an

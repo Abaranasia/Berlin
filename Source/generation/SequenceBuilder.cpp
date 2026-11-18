@@ -21,13 +21,14 @@
 #include <algorithm>
 #include <vector>
 
-namespace
-{
-    constexpr int kActiveSteps = 11;   // research's cited 16 -> 11 displacement (design.md Decision 3)
-}
-
 namespace berlin
 {
+
+int randomActiveCount (int length) noexcept
+{
+    // research's cited 16 -> 11 displacement (design.md Decision 3), scaled by length.
+    return std::max (1, (length * 11 + 8) / 16);
+}
 
 void normalizePitchRange (int& low, int& high) noexcept
 {
@@ -54,19 +55,21 @@ void normalizePitchRange (int& low, int& high) noexcept
 
 Sequence buildSeededSequence (juce::int64 seed, const GenerationParams& params)
 {
+    const int length = std::clamp (params.length, 1, kMaxSteps);
+
     DeterministicRandom rng (seed);
     auto sequence = [&]
     {
         switch (params.mode)
         {
             case RhythmMode::euclidean:
-                return EuclideanRhythmGenerator (kNumSteps, params.pulses, params.rotation).generate();   // 0 draws
+                return EuclideanRhythmGenerator (length, params.pulses, params.rotation).generate();   // 0 draws
             case RhythmMode::probability:
-                return RhythmGenerator (kNumSteps, std::vector<float> ((std::size_t) kNumSteps, params.stepProbability))
-                    .generate (rng);   // exactly kNumSteps draws (probability-matrices)
+                return RhythmGenerator (length, std::vector<float> ((std::size_t) length, params.stepProbability))
+                    .generate (rng);   // exactly `length` draws (probability-matrices)
             case RhythmMode::random:
             default:
-                return SkipMaskGenerator (kNumSteps, kActiveSteps).generate (rng);   // exactly 5 draws (design.md V1)
+                return SkipMaskGenerator (length, randomActiveCount (length)).generate (rng);   // 5 draws at length 16 (design.md V1)
         }
     }();
 

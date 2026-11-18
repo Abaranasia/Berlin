@@ -84,7 +84,8 @@ public:
     void setLfoDestination (LfoDestination newLfoDestination) noexcept;
 
     // ---- AUDIO THREAD; allocation-, lock- and log-free ----
-    void noteOn (float frequencyHz) noexcept;
+    // velocity is a MIDI-style 1-127 accent, applied as a 2 ms-smoothed gain (step-velocity D5).
+    void noteOn (float frequencyHz, int velocity = kDefaultVelocity) noexcept;
     void noteOff() noexcept;
     void render (float* left, float* right, int numSamples) noexcept;
     void reset() noexcept;
@@ -97,6 +98,11 @@ private:
     juce::dsp::StateVariableTPTFilter<float> filter;
     juce::ADSR adsr;
     Lfo lfo;
+
+    // Per-note accent gain: an idle voice snaps to the new level, a sounding
+    // (legato) voice ramps over 2 ms so the step cannot click. At velocity 100
+    // the target is exactly 1.0f, so the output is bit-identical to no gain.
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> velocityGain { 1.0f };
 
     // Message thread writes, audio thread reads (relaxed) - design.md Decision 2.
     // Continuous parameters get no edge latch: latches exist for booleans with

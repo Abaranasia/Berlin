@@ -9,6 +9,8 @@
 
 #include "SequencePlayer.h"
 
+#include "core/StepCursor.h"
+
 namespace berlin
 {
 
@@ -27,6 +29,7 @@ void SequencePlayer::prepare (double sampleRate) noexcept
     // left playhead stale and non-zero while the step counter restarted at
     // 0, so the next step-0 boundary would read as a false wrap.
     playhead.store (0, std::memory_order_relaxed);
+    cursor = -1;   // nothing played yet: the first boundary can never be a wrap
 }
 
 void SequencePlayer::start() noexcept
@@ -57,6 +60,7 @@ void SequencePlayer::reset() noexcept
     pendingNote = -1;
     pendingStep = 0;
     playhead.store (0, std::memory_order_relaxed);
+    cursor = -1;
 }
 
 bool SequencePlayer::publishSequence (Sequence& incoming, PublishMode mode) noexcept
@@ -87,8 +91,16 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
             // the sounding step against the ADOPTED content (design D2).
             sequence.swap (pendingSequence);   // O(1) pointer swap: no alloc, no free, no lock
 
+            // The cursor continues. Out of range, or a skipped cursor whose
+            // continuation would wrap, restarts at the first playable step so
+            // that re-positioning never counts as a loop (step-model D4).
+            if (cursor >= sequence.size()
+                || (cursor >= 0 && sequence[cursor].skipped && nextPlayableStep (sequence, cursor).wrapped))
+                cursor = -1;
+
             if (pendingNote >= 0
                 && (pendingStep >= sequence.size()
+                    || sequence[pendingStep].skipped
                     || ! sequence[pendingStep].active
                     || sequence[pendingStep].note != pendingNote))
             {
@@ -106,6 +118,7 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
             pendingStep = 0;
             transport.reset();                 // restart from step 0 (preserves running state)
             playhead.store (0, std::memory_order_relaxed);
+            cursor = -1;
         }
 
         sequencePending.store (false, std::memory_order_release);
@@ -138,12 +151,6 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
     {
         const int n = transport.countBoundaries (numSamples);
 
-        // Hoisted AFTER the adopt block above: on a post-adopt call this reads
-        // 0 (adopt already zeroed playhead before this loop runs), which
-        // correctly excludes the post-adopt step-0 boundary from counting as
-        // a genuine wrap (design.md Decision 1 / V2).
-        int previousStep = playhead.load (std::memory_order_relaxed);
-
         for (int i = 0; i < n; ++i)
         {
             const StepBoundary b = transport.getBoundary (i);
@@ -152,21 +159,28 @@ void SequencePlayer::process (int numSamples, StepEventBuffer& out) noexcept
                 out.push ({ b.sampleOffset, pendingStep, pendingNote, false });
             pendingNote = -1;
 
-            const int stepIndex = static_cast<int> (b.stepCounter % sequence.size());   // loop wrap
-            const Step& step = sequence[stepIndex];
+            // Skipped steps take no boundary. All-skipped (index < 0): no event,
+            // no loop, and the playhead holds. The first boundary after cursor -1
+            // (prepare/reset/restart-adopt) is never a wrap.
+            const StepAdvance adv = nextPlayableStep (sequence, cursor);
+
+            if (adv.index < 0)
+                continue;
+
+            const Step& step = sequence[adv.index];
 
             if (step.active)
             {
-                out.push ({ b.sampleOffset, stepIndex, step.note, true });
+                out.push ({ b.sampleOffset, adv.index, step.note, true, step.velocity });
                 pendingNote = step.note;
-                pendingStep = stepIndex;
+                pendingStep = adv.index;
             }
 
-            if (stepIndex == 0 && previousStep != 0)   // genuine wrap; post-adopt reads 0 -> excluded
+            if (adv.wrapped)
                 loopCount.store (loopCount.load (std::memory_order_relaxed) + 1, std::memory_order_relaxed);
 
-            playhead.store (stepIndex, std::memory_order_relaxed);
-            previousStep = stepIndex;
+            cursor = adv.index;
+            playhead.store (cursor, std::memory_order_relaxed);
         }
     }
 

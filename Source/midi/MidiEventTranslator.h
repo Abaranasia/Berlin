@@ -2,7 +2,7 @@
   ==============================================================================
 
    MidiEventTranslator - StepEvent -> juce::MidiBuffer translation on a fixed
-   channel and velocity (midi-output-routing spec, midi-output-dispatch
+   channel, with the per-event velocity (midi-output-routing spec, midi-output-dispatch
    Requirement 2 "Non-Allocating StepEvent-to-MidiBuffer Translation").
 
    JUCE-aware (juce_audio_basics): no automated test can reach this file
@@ -40,8 +40,6 @@ namespace berlin
 class MidiEventTranslator
 {
 public:
-    static constexpr int kNoteVelocity = 100;   // Step has no velocity field until Phase 6
-
     explicit MidiEventTranslator (int outputChannel) noexcept;
 
     // AUDIO THREAD, RT-safe. destination.clear() then one 3-byte message per

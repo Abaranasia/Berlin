@@ -1,0 +1,165 @@
+# Delta for Step Editing
+
+## MODIFIED Requirements
+
+### Requirement: Step Index Limit
+
+The engine MUST accept an edit only for an index in `[0, size)`, where `size` is the live sequence size (at most `kMaxSteps` = 64; the former fixed 16-step cap is removed). Otherwise it MUST reject with `step-out-of-range` and leave all state unchanged.
+(Previously: `[0, min(size, 16))`.)
+
+#### Scenario: Valid index edits the step [T]
+- GIVEN a 16-step sequence
+- WHEN step 15 is edited with an in-scale note
+- THEN the edit succeeds and only step 15 differs
+
+#### Scenario: Index beyond 16 is editable on a longer sequence [T]
+- GIVEN a 32-step sequence
+- WHEN step 20 is edited with an in-scale note
+- THEN the edit succeeds and only step 20 differs
+
+#### Scenario: Index beyond size is rejected [T]
+- GIVEN an 8-step sequence, and separately a 32-step sequence
+- WHEN index 8 is edited on the first, and index 32 on the second
+- THEN both fail with `step-out-of-range` and the sequence is unchanged
+
+#### Scenario: Negative index is rejected [T]
+- GIVEN any sequence
+- WHEN index -1 is edited
+- THEN the edit fails with `step-out-of-range`
+
+### Requirement: Absolute Note and Gate Assignment
+
+A step edit MUST set the step's note and gate to the supplied absolute values, and, when the optional `skipped` value is supplied, MUST set the step's `skipped` flag to it; when `skipped` is absent the flag MUST be left unchanged. A note equal to the step's current note MUST always be accepted, even if it is no longer in `scaleNotes`. A changed note MUST be a member of the current `scaleNotes`, else the edit MUST be rejected with `note-out-of-scale`. A muted step (`active=false`) MUST keep its note, and a skipped step MUST keep its note and `active` value. Skipping or un-skipping MUST be independent of the gate: toggling `skipped` MUST NOT alter `active`. Skipping every step is permitted.
+(Previously: edits set note and gate only; no `skipped` value.)
+
+#### Scenario: Mute keeps the note [T]
+- GIVEN step 3 is active with note 48
+- WHEN it is edited with note 48, active false
+- THEN the step is inactive and its note remains 48
+
+#### Scenario: Out-of-scale note is rejected [T]
+- GIVEN C minor and a note not in `scaleNotes`
+- WHEN a step is edited with that note
+- THEN the edit fails with `note-out-of-scale` and the step is unchanged
+
+#### Scenario: Mute allowed on an out-of-scale note [T]
+- GIVEN a step whose note is no longer in `scaleNotes` after a scale change
+- WHEN it is edited with its current note and active false
+- THEN the edit succeeds, the step is inactive and its note is unchanged
+- AND an edit that changes it to another out-of-scale note still fails with `note-out-of-scale`
+
+#### Scenario: Idempotent re-send [T]
+- GIVEN an edit has succeeded
+- WHEN the same absolute values are sent again
+- THEN the sequence is identical
+
+#### Scenario: Skip a step [T]
+- GIVEN step 4 is active and not skipped
+- WHEN it is edited with its note, active true and skipped true
+- THEN step 4 has `skipped == true`, `active == true` and the same note
+
+#### Scenario: Omitted skipped leaves the flag unchanged [T]
+- GIVEN step 4 is skipped
+- WHEN it is edited with a new in-scale note and no `skipped` value
+- THEN the note changes and step 4 is still skipped
+
+#### Scenario: Un-skip a step [T]
+- GIVEN step 4 is skipped
+- WHEN it is edited with skipped false
+- THEN step 4 is not skipped and its note and gate are unchanged
+
+#### Scenario: Skip every step [T]
+- GIVEN a sequence of any length
+- WHEN every step is edited with skipped true
+- THEN all edits succeed and the sequence is all-skipped
+
+### Requirement: Keep-Position Edit Playback
+
+A step edit MUST NOT reset the transport or playhead. If the edited step is the one currently sounding and its note, gate or skipped flag changed, the sounding note MUST receive a note-off at adoption. Otherwise no note-off MUST be sent. After adoption the cursor continues from its current index; if that index now lands on a skipped step it advances to the next non-skipped step (wrapping without counting a loop), per `step-event-scheduling`. An edit MUST be rejected with `busy` while a publish is pending or while a state restore is pending; in both cases the busy check comes after index and note validation.
+(Previously: note-off only on note or gate change; no skip.)
+
+#### Scenario: Playhead continues after edit [T]
+- GIVEN playback is at step 9
+- WHEN step 3 is edited and adopted
+- THEN the playhead continues from step 9 and loop count is unchanged
+
+#### Scenario: Editing the sounding step sends note-off [T]
+- GIVEN step 5 is sounding
+- WHEN step 5 is muted, skipped, or its note changed, then adopted
+- THEN a note-off for the old note is emitted
+
+#### Scenario: Editing another step sends no note-off [T]
+- GIVEN step 5 is sounding
+- WHEN step 3 is edited (including skipped) and adopted
+- THEN no note-off is emitted for the sounding note
+
+#### Scenario: Busy rejects the edit [T]
+- GIVEN a publish is pending
+- WHEN a valid step edit is made
+- THEN it fails with `busy` and state is unchanged
+
+#### Scenario: Pending restore rejects a valid edit [T]
+- GIVEN a state restore is pending and no publish is pending
+- WHEN a valid step edit is made
+- THEN it fails with `busy`, the sequence and `edited` are unchanged
+- AND once the restore has published, the same edit succeeds
+
+#### Scenario: Validation precedes busy [T]
+- GIVEN a publish is pending, or a state restore is pending
+- WHEN an edit with an out-of-range index or an out-of-scale note is made
+- THEN it fails with `step-out-of-range` or `note-out-of-scale` (checked in that order), not `busy`
+
+### Requirement: Interactive Step Grid
+
+The grid MUST render one cell per step of the current sequence (`steps.length`, up to 64), wrapping into rows of 16. Each cell MUST toggle mute on a click without movement; a vertical drag MUST change the note through `scaleNotes` at a constant pixels-per-note; the wheel MUST step one scale note per notch with a non-passive listener calling `preventDefault`. Each cell MUST also provide a skip toggle that is a distinct control from the active/mute toggle and dispatches `setStep` with `skipped`. Keyboard MUST use a roving tabindex across all cells: Space toggles mute, Up/Down change the note, Left/Right/Home/End move focus. Each cell MUST have an aria-label like "Step 3, C3, on" (adding ", skipped" when skipped) and `aria-pressed` for the gate; the skip toggle MUST have its own accessible name and `aria-pressed`. Muted steps MUST show their note dimmed; skipped steps MUST be visibly distinct from muted steps. An "edited" indicator MUST show while `edited` is true.
+(Previously: a fixed 16-cell grid with no skip control.)
+
+#### Scenario: Click toggles mute [V]
+- GIVEN an active step
+- WHEN it is clicked without movement
+- THEN `setStep` is dispatched with its note and `active:false`
+
+#### Scenario: Skip toggle is distinct from mute [V]
+- GIVEN a non-skipped step
+- WHEN its skip toggle is activated
+- THEN `setStep` is dispatched with the step's note, its current `active` and `skipped:true`, and the mute state does not change
+
+#### Scenario: Drag does not toggle [V]
+- GIVEN an active step
+- WHEN a vertical drag past one note threshold ends
+- THEN `setStep` carries the new scale note and no mute toggle occurs
+
+#### Scenario: Wheel steps and prevents scroll [V]
+- GIVEN a cell
+- WHEN one wheel notch up is dispatched
+- THEN the note moves one scale note up and `preventDefault` was called
+
+#### Scenario: Keyboard [V]
+- GIVEN a focused cell
+- WHEN Space, ArrowUp, ArrowRight and End are pressed
+- THEN mute toggles, note steps up, focus moves right, then to the last cell, with only one cell tabbable
+
+#### Scenario: Accessibility and dimming [V]
+- GIVEN step 3 at C3 muted
+- WHEN rendered
+- THEN aria-label is "Step 3, C3, off", `aria-pressed` is false and the note is dimmed
+
+#### Scenario: Skipped rendering [V]
+- GIVEN step 3 skipped
+- WHEN rendered
+- THEN its skip toggle has `aria-pressed` true and the cell has the skipped style, distinct from the muted style
+
+#### Scenario: Cell count follows the sequence length [V]
+- GIVEN a snapshot with 40 steps
+- WHEN rendered
+- THEN 40 cells are shown in rows of 16, 16 and 8
+
+#### Scenario: Edited indicator [V]
+- GIVEN `edited` true, then false
+- WHEN rendered
+- THEN the indicator is shown, then hidden
+
+#### Scenario: WebView2 input [M]
+- GIVEN standalone and plugin in WebView2 with auto-evolve on
+- WHEN wheel, drag, click and keyboard are used
+- THEN the page does not scroll and the loop keeps its position

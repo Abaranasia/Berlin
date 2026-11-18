@@ -30,8 +30,8 @@ The system MUST provide a `DeterministicRandom` type wrapping `juce::Random(int6
 
 ### Requirement: Seed-In, Identical-Out Reproducibility Contract
 
-Every generator in this capability MUST produce byte-identical output given the same seed and the same input parameters, within a single build. For the live app's composed Generate/Randomize path, this contract is scoped to: same seed + same rhythm mode + same mode parameters (`kActiveSteps`; or `pulses`/`rotation`; or the Probability-mode uniform probability value) + same pitch parameters (`scaleType`, `rootPitchClass`, `rangeLow`, `rangeHigh`) -> identical resulting Sequence. It does NOT guarantee identical output across different modes, or different scale/root/range combinations, for the same seed.
-(Previously: scoped to seed + rhythm mode + mode parameters only, with pitch always fixed to hardcoded `Scale::minor(48)`/`[36, 72]` and therefore never a variable in the contract.)
+Every generator in this capability MUST produce byte-identical output given the same seed and the same input parameters, within a single build. For the live app's composed Generate/Randomize path, this contract is scoped to: same seed + same rhythm mode + same mode parameters (`kActiveSteps` derived from `length`; or `pulses`/`rotation`; or the Probability-mode uniform probability value) + same `length` + same pitch parameters (`scaleType`, `rootPitchClass`, `rangeLow`, `rangeHigh`) -> identical resulting Sequence. It does NOT guarantee identical output across different modes, different `length` values, or different scale/root/range combinations, for the same seed.
+(Previously: scoped to seed + rhythm mode + mode parameters + pitch parameters, with the step count fixed at 16 and not a variable in the contract.)
 
 #### Scenario: Same seed, identical Sequence output
 
@@ -143,30 +143,37 @@ The system MUST provide a `RhythmGenerator` configured with `{numSteps, std::vec
 
 ### Requirement: Production Composition of a Rhythm Source and PitchGenerator
 
-The system MUST compose a rhythm-producing generator with `PitchGenerator` together in production code, driven by a single `DeterministicRandom` per generation, callable at runtime (not only during construction). For the live app's Generate/Randomize path, the rhythm source is selectable per a rhythm-mode switch with three branches: `SkipMaskGenerator` (Random mode), `EuclideanRhythmGenerator` (Euclidean mode), and `RhythmGenerator` (Probability mode, this change) — `buildSeededSequence` (static, ctor-member-init-list-safe) dispatches on `RhythmMode`. `EuclideanRhythmGenerator::generate()` consumes zero RNG draws before the `PitchGenerator` pass. `SkipMaskGenerator` consumes exactly `kNumSteps - kActiveSteps` draws (5 with current production constants). `RhythmGenerator` in Probability mode consumes exactly `kNumSteps` draws (16, one per step, per the stream-length invariant), regardless of the per-step probability values used. The same seed therefore produces different pitches depending on which of the three modes is active, because `PitchGenerator` begins drawing from a different `DeterministicRandom` stream position in each mode.
-(Previously: only two modes — Random and Euclidean — existed in the switch; Probability mode and its 16-draw stream-position contribution did not exist.)
+The system MUST compose a rhythm-producing generator with `PitchGenerator` together in production code, driven by a single `DeterministicRandom` per generation, callable at runtime (not only during construction). For the live app's Generate/Randomize path, the rhythm source is selectable per a rhythm-mode switch with three branches: `SkipMaskGenerator` (Random mode), `EuclideanRhythmGenerator` (Euclidean mode), and `RhythmGenerator` (Probability mode) — `buildSeededSequence` (static, ctor-member-init-list-safe) dispatches on `RhythmMode` and takes the step count from `GenerationParams.length`. `EuclideanRhythmGenerator::generate()` consumes zero RNG draws before the `PitchGenerator` pass. `SkipMaskGenerator` consumes exactly `length - activeCount` draws (5 at length 16). `RhythmGenerator` in Probability mode consumes exactly `length` draws (16 at length 16, one per step), regardless of the per-step probability values used. The same seed therefore produces different pitches depending on which of the three modes is active, because `PitchGenerator` begins drawing from a different `DeterministicRandom` stream position in each mode.
+(Previously: the step count was the constant `kNumSteps` (16) and draw counts were stated only for 16 steps.)
 
 #### Scenario: Production build composes all three rhythm sources at runtime
 
 - GIVEN a running app with an existing `Sequence`
 - WHEN a Generate or Randomize action is triggered
-- THEN the currently selected rhythm source (`SkipMaskGenerator`, `EuclideanRhythmGenerator`, or `RhythmGenerator` per the active `RhythmMode`) and `PitchGenerator` are recomposed against a fresh `DeterministicRandom`, not only during `MainComponent` construction
+- THEN the currently selected rhythm source (`SkipMaskGenerator`, `EuclideanRhythmGenerator`, or `RhythmGenerator` per the active `RhythmMode`) and `PitchGenerator` are recomposed against a fresh `DeterministicRandom` for `GenerationParams.length` steps, not only during `MainComponent` construction
 
 #### Scenario: Same seed diverges in pitch across all three modes — expected, not a bug
 
-- GIVEN the same seed value in Random mode (5 draws before the pitch pass), Euclidean mode (0 draws), and Probability mode (16 draws, one per step)
+- GIVEN the same seed value in Random mode (5 draws before the pitch pass at length 16), Euclidean mode (0 draws), and Probability mode (16 draws, one per step)
 - WHEN a Sequence is generated in each mode
 - THEN the three resulting Sequences' pitches differ from each other, because the pitch pass starts from a different `DeterministicRandom` stream position in each mode — expected, documented behavior
 
+#### Scenario: Probability mode draw count follows length
+
+- GIVEN Probability mode at `length = 8`
+- WHEN a Sequence is generated
+- THEN exactly 8 `nextFloat()` draws are consumed before the pitch pass
+
 #### Scenario: Probability mode uses a single staged-apply uniform-probability control
 
-- GIVEN Probability mode is selected and a user adjusts the single scalar probability control (analogous to Euclidean's pulses/rotation sliders)
+- GIVEN Probability mode is selected and a user adjusts the single scalar probability control
 - WHEN Generate is pressed
-- THEN the control's value is expanded into a uniform 16-element probability vector via the vector constructor and used for that generation — no per-step UI exists this slice
+- THEN the control's value is expanded into a uniform `length`-element probability vector via the vector constructor and used for that generation — no per-step UI exists
 
 ### Requirement: Per-Step Editing and Preset Persistence Are Explicit Non-Goals This Slice
 
-Per-step probability editing UI and persistence of rhythm-mode configuration (mode, pulses, rotation, probability value) in `Preset.h`/`PresetManager.cpp` MUST NOT be implemented in this slice. The single staged-apply scalar control is the entire UI surface for Probability mode; presets continue persisting only `seed`, unchanged from the prior two-mode state.
+Per-step probability editing UI and persistence of rhythm-mode configuration (mode, pulses, rotation, probability value, `length`) in `Preset.h`/`PresetManager.cpp` MUST NOT be implemented in this slice. The single staged-apply scalar control is the entire UI surface for Probability mode; presets continue persisting only `seed`, unchanged. Loading a preset or restoring plugin state MUST regenerate using the current live `GenerationParams`, including the current `length`, exactly as rhythm mode is handled today.
+(Previously: `length` did not exist; the non-goal listed mode, pulses, rotation and probability only.)
 
 #### Scenario: No per-step editor exists
 
@@ -174,11 +181,17 @@ Per-step probability editing UI and persistence of rhythm-mode configuration (mo
 - WHEN inspecting the UI
 - THEN no per-step (16-cell) probability editor exists; only the single scalar staged-apply control is present
 
-#### Scenario: Saving a preset does not persist mode, pulses, rotation, or probability
+#### Scenario: Saving a preset does not persist mode, pulses, rotation, probability or length
 
-- GIVEN Probability mode is active with a non-default probability value
+- GIVEN Probability mode is active with a non-default probability value and `length = 32`
 - WHEN a preset is saved and later loaded
-- THEN the loaded preset does not restore rhythm mode, pulses, rotation, or the probability value — only `seed` round-trips, an unchanged pre-existing gap
+- THEN the loaded preset does not restore rhythm mode, pulses, rotation, the probability value or `length` — only `seed` round-trips
+
+#### Scenario: Preset load regenerates at the live length
+
+- GIVEN `length = 8` is the current generation parameter
+- WHEN a preset is loaded
+- THEN the resulting Sequence has 8 steps, built from the preset's seed and the live parameters
 
 ### Requirement: Seed Is User-Editable, Not Display-Only
 
@@ -259,3 +272,37 @@ The system MUST provide a `SkipMaskGenerator` configured with `{numSteps, active
 - GIVEN `activeSteps` greater than `numSteps`
 - WHEN `SkipMaskGenerator::generate` is called
 - THEN the clamped value of `numSteps` is used, producing all steps active
+
+### Requirement: Variable Sequence Length Parameter
+
+`GenerationParams` MUST gain `length` (int, default 16, valid range `[1, kMaxSteps]` = `[1, 64]`). Generation in all three rhythm modes MUST produce a `Sequence` of exactly `length` steps. In Random mode the active-step count MUST be `(length * 11 + 8) / 16` (integer division, minimum 1 for `length >= 1`), which equals 11 at length 16. Generators MUST NOT produce skipped steps (`skipped` is always false in generated output). At `length == 16`, output MUST be byte-identical to the pre-change output for the same seed and parameters, including RNG draw counts per mode (Random: 5 draws before the pitch pass; Euclidean: 0; Probability: 16), so the existing reproducibility goldens are unchanged. Changing `length` and regenerating from the same seed MUST be reproducible (same seed + same `length` + same other params -> identical Sequence).
+
+#### Scenario: Default length reproduces pre-change output
+
+- GIVEN `GenerationParams` with `length` at its default 16 and an unchanged seed, in each of the three rhythm modes
+- WHEN a `Sequence` is generated before and after this change
+- THEN the resulting Sequences are byte-identical and the ReproducibilityTests goldens are unchanged
+
+#### Scenario: Output size equals length
+
+- GIVEN any `length` in `[1, 64]` and any rhythm mode
+- WHEN a `Sequence` is generated
+- THEN it has exactly `length` steps
+
+#### Scenario: Random mode active count scales with length
+
+- GIVEN Random mode
+- WHEN generating at lengths 16, 8, 64 and 1
+- THEN the active counts are 11, 6, 44 and 1 respectively
+
+#### Scenario: Generated sequences contain no skips
+
+- GIVEN any seed, mode and length
+- WHEN a `Sequence` is generated
+- THEN every step has `skipped == false`
+
+#### Scenario: Same seed and length reproduce identically
+
+- GIVEN a fixed seed, mode, parameters and `length = 24`
+- WHEN the Sequence is built twice
+- THEN both are byte-identical

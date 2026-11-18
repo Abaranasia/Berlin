@@ -521,6 +521,154 @@ public:
 
             expect (sawResize); // confirms selection is not stuck on a single transform
         }
+
+        // ---- Skipped steps (step-model) ----
+
+        beginTest ("addNote/removeNote/changeNote never select or modify a skipped step, and never copy its pitch");
+        {
+            berlin::Sequence input (8);
+            for (int i = 0; i < 8; ++i)
+                input[i].note = 60 + i;
+            input[0].active = true;
+            input[1].active = true;
+            input[2].active = true;
+            input[2].skipped = true;    // active but skipped: not a candidate, not a pitch source
+            input[5].skipped = true;    // inactive and skipped: not an activation candidate
+            input[7].active = true;
+            input[7].skipped = true;
+
+            for (juce::int64 seed = 0; seed < 300; ++seed)
+            {
+                for (auto transform : { berlin::MutationEngine::addNote, berlin::MutationEngine::removeNote,
+                                        berlin::MutationEngine::changeNote })
+                {
+                    berlin::DeterministicRandom random (seed);
+                    const auto result = transform (input, random);
+
+                    for (int i : { 2, 5, 7 })
+                        expect (result[i] == input[i]);
+
+                    for (int i = 0; i < result.size(); ++i)
+                        expect ((result[i].note != 62 && result[i].note != 67) || result[i] == input[i]);
+                }
+            }
+        }
+
+        beginTest ("addNote is an unmodified copy when every inactive step is skipped");
+        {
+            berlin::Sequence input (4);
+            input[0].active = true;
+            input[0].note = 60;
+            for (int i = 1; i < 4; ++i)
+                input[i].skipped = true;
+
+            berlin::DeterministicRandom random (3);
+            expect (berlin::MutationEngine::addNote (input, random) == input);
+        }
+
+        beginTest ("copy transforms carry the skipped flag with the step; pitch transforms keep every flag");
+        {
+            berlin::Sequence input (4);
+            for (int i = 0; i < 4; ++i)
+            {
+                input[i].active = true;
+                input[i].note = 60 + i;
+            }
+            input[0].skipped = true;
+
+            berlin::DeterministicRandom random (1);
+
+            const auto reversed = berlin::MutationEngine::reverse (input, random);
+            for (int i = 0; i < 4; ++i)
+                expect (reversed[i].skipped == (i == 3));
+
+            const auto stretched = berlin::MutationEngine::stretch (input, random);   // (i / 2) % n copies
+            expectEquals (stretched.size(), 8);
+            for (int i = 0; i < stretched.size(); ++i)
+                expect (stretched[i].skipped == (i / 2 == 0));
+
+            const auto palindromed = berlin::MutationEngine::palindrome (input, random);
+            expectEquals (palindromed.size(), 8);
+            expect (palindromed[0].skipped && palindromed[7].skipped);
+            for (int i = 1; i < 7; ++i)
+                expect (! palindromed[i].skipped);
+
+            for (auto transform : { berlin::MutationEngine::transpose, berlin::MutationEngine::invert,
+                                    berlin::MutationEngine::scaleIntervals, berlin::MutationEngine::changeNote })
+            {
+                berlin::DeterministicRandom r (5);
+                const auto result = transform (input, r);
+
+                for (int i = 0; i < 4; ++i)
+                    expect (result[i].skipped == input[i].skipped);
+            }
+        }
+
+        beginTest ("every transform is total on an all-skipped sequence");
+        {
+            berlin::Sequence input (6);
+            for (int i = 0; i < 6; ++i)
+            {
+                input[i].active = true;
+                input[i].skipped = true;
+            }
+
+            for (juce::int64 seed = 0; seed < 100; ++seed)
+            {
+                berlin::DeterministicRandom random (seed);
+                expect (berlin::MutationEngine::applyRandomTransform (input, random).size() >= 1);
+            }
+        }
+
+        beginTest ("velocity: addNote and removeNote leave every step's velocity alone, and transforms carry it with its step");
+        {
+            berlin::Sequence input (8);
+            for (int i = 0; i < 8; ++i)
+            {
+                input[i].active = (i < 3);
+                input[i].note = 60 + i;           // unique, so velocity = 10 + (note - 60) pairs each step
+                input[i].velocity = 10 + i;
+            }
+
+            auto velocityFollowsNote = [this] (const berlin::Sequence& s)
+            {
+                expect (s.size() > 0);
+
+                for (int i = 0; i < s.size(); ++i)
+                    expectEquals (s[i].velocity, 10 + (s[i].note - 60));
+            };
+
+            berlin::DeterministicRandom random (7);
+
+            const berlin::Sequence added = berlin::MutationEngine::addNote (input, random);
+            int activated = 0;
+
+            for (int i = 0; i < 8; ++i)
+            {
+                expectEquals (added[i].velocity, input[i].velocity);   // the activated step keeps its OWN velocity
+                activated += (added[i].active && ! input[i].active) ? 1 : 0;
+            }
+
+            expectEquals (activated, 1);
+
+            const berlin::Sequence removed = berlin::MutationEngine::removeNote (input, random);
+            int deactivated = 0;
+
+            for (int i = 0; i < 8; ++i)
+            {
+                expectEquals (removed[i].velocity, input[i].velocity);
+                deactivated += (input[i].active && ! removed[i].active) ? 1 : 0;
+            }
+
+            expectEquals (deactivated, 1);
+
+            const berlin::Sequence reversed = berlin::MutationEngine::reverse (input, random);
+            for (int i = 0; i < 8; ++i)
+                expectEquals (reversed[i].velocity, input[7 - i].velocity);
+
+            velocityFollowsNote (berlin::MutationEngine::rotate (input, random));
+            velocityFollowsNote (berlin::MutationEngine::stretch (input, random));
+        }
     }
 };
 

@@ -29,11 +29,14 @@ export const LIMITS: Record<string, Range> = {
 
 // Source/generation/GenerationParams.h and the UiBridge.cpp auto-evolve clamp.
 export const GENERATION_LIMITS: Record<string, Range> = {
-  pulses: { min: 0, max: 16 },
-  rotation: { min: 0, max: 15 },
+  length: { min: 1, max: 64 },
+  pulses: { min: 0, max: 64 },
+  rotation: { min: 0, max: 63 },
   rootPitchClass: { min: 0, max: 11 },
   rangeLow: { min: 0, max: 127 },
   rangeHigh: { min: 0, max: 127 },
   stepProbability: { min: 0, max: 1 },
 };
+// Source/core/Step.h kMinVelocity / kMaxVelocity.
+export const VELOCITY: Range = { min: 1, max: 127 };
 export const AUTO_EVOLVE_RATE: Range = { min: 1, max: 16 };

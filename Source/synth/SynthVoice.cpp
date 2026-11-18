@@ -23,6 +23,7 @@ namespace
     constexpr float kCutoffModOctaveRange   = 2.0f;    // full depth = +/-2 octaves around baseCutoffHz
     constexpr float kAmplitudeModDepthScale = 0.5f;    // full depth = tremolo down to (1 - depth) at trough
     constexpr float kPulseWidthModRange     = 0.45f;   // full depth = +/-0.45 around basePulseWidth
+    constexpr double kVelocityRampSeconds   = 0.002;   // legato retrigger gain glide (step-velocity D5)
     // kMinCutoffHz/kMinPulseWidth/kMaxPulseWidth now live in SynthPatch.h (Phase 9 parameter-controls).
 }
 
@@ -161,14 +162,23 @@ void SynthVoice::prepare (const juce::dsp::ProcessSpec& spec, const SynthPatch& 
     adsr.setSampleRate (spec.sampleRate);
     adsr.setParameters (cachedAdsrParams);
 
+    velocityGain.reset (spec.sampleRate, kVelocityRampSeconds);
+
     lfo.prepare (spec.sampleRate);
     lfo.setRate (clampedLfoRateHz);
 
     reset();
 }
 
-void SynthVoice::noteOn (float frequencyHz) noexcept
+void SynthVoice::noteOn (float frequencyHz, int velocity) noexcept
 {
+    const float gain = velocityToGain (velocity);
+
+    if (adsr.isActive())
+        velocityGain.setTargetValue (gain);              // legato retrigger: glide, no click
+    else
+        velocityGain.setCurrentAndTargetValue (gain);    // fresh note: exact level from the first sample
+
     baseFrequencyHz = frequencyHz;
     oscillator.setFrequency (frequencyHz, true);   // force=true: snap to pitch, no portamento glide
     adsr.noteOn();
@@ -283,6 +293,7 @@ void SynthVoice::render (float* left, float* right, int numSamples) noexcept
             const float oscillatorSample = oscillator.processSample (0.0f);   // additive: input + generator(...)
             const float filteredSample   = filter.processSample (0, oscillatorSample);
             float sample = filteredSample * adsr.getNextSample();
+            sample *= velocityGain.getNextValue();
 
             if (lfoDestination == LfoDestination::amplitude)
                 sample *= amplitudeLfoGain;
@@ -301,6 +312,7 @@ void SynthVoice::reset() noexcept
     oscillator.reset();
     filter.reset();
     adsr.reset();
+    velocityGain.setCurrentAndTargetValue (1.0f);
     lfo.reset();
 }
 

@@ -94,8 +94,9 @@ namespace
 
     constexpr IntField<GenerationParams> kGenerationIntFields[] =
     {
-        { "pulses",         &GenerationParams::pulses,         0, kNumSteps },
-        { "rotation",       &GenerationParams::rotation,       0, kNumSteps - 1 },
+        { "length",         &GenerationParams::length,         1, kMaxSteps },
+        { "pulses",         &GenerationParams::pulses,         0, kMaxSteps },
+        { "rotation",       &GenerationParams::rotation,       0, kMaxSteps - 1 },
         { "rootPitchClass", &GenerationParams::rootPitchClass, 0, 11 },
         { "rangeLow",       &GenerationParams::rangeLow,       kMinPitch, kMaxPitch },
         { "rangeHigh",      &GenerationParams::rangeHigh,      kMinPitch, kMaxPitch },
@@ -222,6 +223,23 @@ namespace
         return {};
     }
 
+    // Optional absolute integer arg: absent leaves `out` empty (keep the current
+    // value); present must pass readRequiredInt's checks (so the same
+    // "invalid type: <field>" / "non-finite: <field>" tokens apply).
+    juce::String readOptionalInt (const juce::var& args, const char* field, std::optional<int>& out)
+    {
+        if (! args.hasProperty (field))
+            return {};
+
+        int value = 0;
+
+        if (auto err = readRequiredInt (args, field, value); err.isNotEmpty())
+            return err;
+
+        out = value;
+        return {};
+    }
+
     juce::String readRequiredBool (const juce::var& args, const char* field, bool& out)
     {
         if (! args.hasProperty (field))
@@ -318,7 +336,7 @@ namespace
     {
         static const std::initializer_list<const char*> known =
         {
-            "mode", "pulses", "rotation", "stepProbability", "lockSeed",
+            "mode", "pulses", "rotation", "stepProbability", "lockSeed", "length",
             "scaleType", "rootPitchClass", "rangeLow", "rangeHigh",
         };
 
@@ -426,6 +444,10 @@ namespace
 
             params.*(f.member) = value;
         }
+
+        // Euclidean pulses/rotation can never exceed the (staged) length.
+        params.pulses   = std::clamp (params.pulses, 0, params.length);
+        params.rotation = std::clamp (params.rotation, 0, params.length - 1);
 
         for (auto& f : kGenerationFloatFields)
         {
@@ -552,6 +574,8 @@ namespace
             auto* stepObject = new juce::DynamicObject();
             stepObject->setProperty ("note", sequence[i].note);
             stepObject->setProperty ("active", sequence[i].active);
+            stepObject->setProperty ("skipped", sequence[i].skipped);
+            stepObject->setProperty ("velocity", sequence[i].velocity);
             steps.add (juce::var (stepObject));
         }
 
@@ -623,8 +647,8 @@ namespace
         return processor.regenerate (randomize) ? juce::String() : juce::String ("busy");
     }
 
-    // setStep {index, note, active}: parse everything into locals first, then one
-    // editStep call (validation order index, note, busy lives in the processor).
+    // setStep {index, note, active, skipped?, velocity?}: parse everything into locals first, then one
+    // editStep call (validation order index, note, velocity, busy lives in the processor).
     juce::String handleSetStep (BerlinAudioProcessor& processor, const juce::var& args)
     {
         int index = 0;
@@ -639,12 +663,29 @@ namespace
         if (auto err = readRequiredBool (args, "active", active); err.isNotEmpty())
             return err;
 
-        switch (processor.editStep (index, note, active))
+        // Optional: absent keeps the step's current flag; present must be a bool.
+        std::optional<bool> skipped;
+        if (args.hasProperty ("skipped"))
+        {
+            bool value = false;
+            if (auto err = readRequiredBool (args, "skipped", value); err.isNotEmpty())
+                return err;
+
+            skipped = value;
+        }
+
+        // Optional: absent keeps the step's current velocity; the 1-127 range is the processor's call.
+        std::optional<int> velocity;
+        if (auto err = readOptionalInt (args, "velocity", velocity); err.isNotEmpty())
+            return err;
+
+        switch (processor.editStep (index, note, active, skipped, velocity))
         {
             case StepEditResult::ok:             return {};
             case StepEditResult::busy:           return "busy";
             case StepEditResult::stepOutOfRange: return "step-out-of-range";
             case StepEditResult::noteOutOfScale: return "note-out-of-scale";
+            case StepEditResult::velocityOutOfRange: return "velocity-out-of-range";
         }
 
         return "busy";   // unreachable for a valid enumerator

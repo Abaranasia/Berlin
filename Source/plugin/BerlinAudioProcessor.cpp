@@ -218,13 +218,15 @@ bool BerlinAudioProcessor::regenerate (bool drawNewSeed)
     return true;
 }
 
-StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active)
+StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active, std::optional<bool> skipped,
+                                          std::optional<int> velocity)
 {
-    // Validate first (index, then note), then busy: neither touches state.
-    switch (validateStepEdit (currentSequence, scaleNotesFor (generationParams), index, note))
+    // Validate first (index, note, then velocity), then busy: neither touches state.
+    switch (validateStepEdit (currentSequence, scaleNotesFor (generationParams), index, note, velocity))
     {
         case StepEditError::stepOutOfRange: return StepEditResult::stepOutOfRange;
         case StepEditError::noteOutOfScale: return StepEditResult::noteOutOfScale;
+        case StepEditError::velocityOutOfRange: return StepEditResult::velocityOutOfRange;
         case StepEditError::none:           break;
     }
 
@@ -233,7 +235,16 @@ StepEditResult BerlinAudioProcessor::editStep (int index, int note, bool active)
         return StepEditResult::busy;
 
     auto next = currentSequence;
-    next[index] = Step { note, active };
+    // Field by field, so a field this edit does not name can never be reset.
+    Step& step = next[index];
+    step.note = note;
+    step.active = active;
+
+    if (skipped)
+        step.skipped = *skipped;
+
+    if (velocity)
+        step.velocity = *velocity;
 
     // publishSequence swaps through its argument, so publish a COPY (same
     // reasoning as regenerate()).
@@ -332,7 +343,7 @@ MidiFileWriteResult BerlinAudioProcessor::exportMidiTo (const juce::File& destin
     if (status != MidiExportStatus::ok)
         return MidiFileWriteResult::invalidTimeline;
 
-    const MidiFileWriter writer (kMidiChannel, MidiEventTranslator::kNoteVelocity);
+    const MidiFileWriter writer (kMidiChannel);
     return writer.writeToFile (timeline, currentBpm, destination);
 }
 

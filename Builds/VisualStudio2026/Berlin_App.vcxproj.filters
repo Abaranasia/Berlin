@@ -4230,6 +4230,9 @@
     <ClInclude Include="..\..\Source\core\Step.h">
       <Filter>Berlin\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\core\StepCursor.h">
+      <Filter>Berlin\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\core\Sequence.h">
       <Filter>Berlin\core</Filter>
     </ClInclude>
