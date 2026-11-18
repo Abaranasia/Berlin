@@ -37,6 +37,7 @@
 
 #include <juce_core/juce_core.h>
 
+#include <iterator>
 #include <vector>
 
 #include "core/Scale.h"
@@ -263,6 +264,28 @@ public:
             const berlin::Sequence actual = berlin::buildSeededSequence (seed, defaultParams);
 
             expect (actual == golden);
+        }
+
+        beginTest ("Smooth golden (seed 777777, default params, melody = smooth) pins cross-platform determinism");
+        {
+            // Characterization captured once tests for the Smooth picker were green.
+            // -1 marks a rest. The Random golden above is untouched and still the
+            // default; changing this table means the Smooth algorithm changed.
+            constexpr int smoothGolden[] = { 53, 55, 56, 55, -1, 51, -1, -1, 46, 48, 51, -1, 51, 56, 60, -1 };
+
+            berlin::GenerationParams smoothParams;
+            smoothParams.melody = berlin::MelodyStyle::smooth;
+            const berlin::Sequence actual = berlin::buildSeededSequence (777777, smoothParams);
+
+            expectEquals (actual.size(), static_cast<int> (std::size (smoothGolden)));
+
+            for (int i = 0; i < actual.size(); ++i)
+            {
+                expect (actual[i].active == (smoothGolden[i] != -1));
+
+                if (smoothGolden[i] != -1)
+                    expectEquals (actual[i].note, smoothGolden[i]);
+            }
         }
 
         beginTest ("Same seed + same scale/root/range reproduces identically; changing them alters pitch only, not rhythm");
