@@ -3,6 +3,7 @@ export const WAVEFORMS = ['saw', 'square', 'pulse', 'triangle'] as const;
 export const LFO_DESTINATIONS = ['pitch', 'cutoff', 'amplitude', 'pulseWidth'] as const;
 export const DELAY_DIVISIONS = ['half', 'quarter', 'dottedEighth', 'eighth', 'eighthTriplet', 'sixteenth'] as const;
 export const RHYTHM_MODES = ['random', 'euclidean', 'probability'] as const;
+export const MELODY_STYLES = ['random', 'smooth'] as const;
 export const SCALE_TYPES = ['minor', 'major', 'dorian', 'phrygian', 'mixolydian', 'harmonicMinor'] as const;
 
 export type Waveform = (typeof WAVEFORMS)[number];
@@ -10,6 +11,7 @@ export type LfoDestination = (typeof LFO_DESTINATIONS)[number];
 export type DelayDivision = (typeof DELAY_DIVISIONS)[number];
 export type RhythmMode = (typeof RHYTHM_MODES)[number];
 export type ScaleType = (typeof SCALE_TYPES)[number];
+export type MelodyStyle = (typeof MELODY_STYLES)[number];
 
 export interface Patch {
   waveform: Waveform;
@@ -46,6 +48,7 @@ export interface GenerationParams {
   rootPitchClass: number;
   rangeLow: number;
   rangeHigh: number;
+  melody: MelodyStyle; // applies on the next Generate, Randomize or preset load
 }
 
 export interface Snapshot {

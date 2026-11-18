@@ -53,6 +53,28 @@ namespace
         return true;
     }
 
+    // musical-notes schema v4: same "name string, not a raw ordinal" convention.
+    // Order MUST match berlin::MelodyStyle's declaration order.
+    const juce::StringArray& melodyNames()
+    {
+        static const juce::StringArray names { "random", "smooth" };
+        return names;
+    }
+
+    juce::String melodyStyleToName (berlin::MelodyStyle style)
+    {
+        return melodyNames()[static_cast<int> (style)];
+    }
+
+    bool melodyStyleFromName (const juce::String& name, berlin::MelodyStyle& out)
+    {
+        const int index = melodyNames().indexOf (name);
+        if (index < 0)
+            return false;
+        out = static_cast<berlin::MelodyStyle> (index);
+        return true;
+    }
+
     // tempo-delay-ui schema v3 (design.md D7): mirrors scaleNames()'s "name
     // string, not a raw ordinal" convention. Order MUST match
     // berlin::SyncDivision's declaration order (TempoSync.h's own doc
@@ -146,6 +168,9 @@ bool PresetManager::parseLfoDestination (const juce::String& name, LfoDestinatio
 juce::String PresetManager::scaleTypeName (ScaleType type) { return scaleTypeToName (type); }
 bool PresetManager::parseScaleType (const juce::String& name, ScaleType& out) { return scaleTypeFromName (name, out); }
 
+juce::String PresetManager::melodyStyleName (MelodyStyle style) { return melodyStyleToName (style); }
+bool PresetManager::parseMelodyStyle (const juce::String& name, MelodyStyle& out) { return melodyStyleFromName (name, out); }
+
 juce::String PresetManager::divisionName (SyncDivision division) { return divisionToName (division); }
 bool PresetManager::parseDivision (const juce::String& name, SyncDivision& out) { return divisionFromName (name, out); }
 
@@ -197,6 +222,7 @@ juce::ValueTree PresetManager::toValueTree (const Preset& preset)
     generationNode.setProperty ("rootPitchClass", juce::String (preset.rootPitchClass), nullptr);
     generationNode.setProperty ("rangeLow",       juce::String (preset.rangeLow), nullptr);
     generationNode.setProperty ("rangeHigh",      juce::String (preset.rangeHigh), nullptr);
+    generationNode.setProperty ("melody",         melodyStyleToName (preset.melody), nullptr);   // schema v4
     root.appendChild (generationNode, nullptr);
 
     // tempo-delay-ui schema v3 (design.md D7): BPM is a Preset-level field
@@ -359,8 +385,23 @@ PresetResult PresetManager::fromValueTree (const juce::ValueTree& tree, Preset& 
         normalizePitchRange (rangeLow, rangeHigh);
     }
 
+    // musical-notes schema v4: `melody` is REQUIRED for version >= 4 (missing
+    // or unknown name -> parseFailed, nothing applied); a v1-v3 file is missing
+    // it by definition and loads as Random (byte-identical regeneration).
+    MelodyStyle melody = MelodyStyle::random;
+
+    if (version >= 4)
+    {
+        if (! generationNode.hasProperty ("melody"))
+            return PresetResult::parseFailed;
+
+        if (! melodyStyleFromName (generationNode.getProperty ("melody").toString(), melody))
+            return PresetResult::parseFailed;
+    }
+
     Preset result;
     result.name                 = tree.getProperty ("name").toString();
+    result.melody               = melody;
     result.scaleType            = scaleType;
     result.rootPitchClass       = rootPitchClass;
     result.rangeLow             = rangeLow;

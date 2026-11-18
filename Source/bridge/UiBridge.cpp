@@ -337,7 +337,7 @@ namespace
         static const std::initializer_list<const char*> known =
         {
             "mode", "pulses", "rotation", "stepProbability", "lockSeed", "length",
-            "scaleType", "rootPitchClass", "rangeLow", "rangeHigh",
+            "scaleType", "rootPitchClass", "rangeLow", "rangeHigh", "melody",
         };
 
         for (auto* k : known)
@@ -499,6 +499,19 @@ namespace
             params.scaleType = parsed;
         }
 
+        if (args.hasProperty ("melody"))
+        {
+            juce::String name;
+            if (auto err = readRequiredString (args, "melody", name); err.isNotEmpty())
+                return err;
+
+            MelodyStyle parsed {};
+            if (! PresetManager::parseMelodyStyle (name, parsed))
+                return "invalid enum: melody";
+
+            params.melody = parsed;
+        }
+
         // D12/REL-1: normalizePitchRange only when both are supplied; otherwise span-clamp the lone one.
         const bool rangeLowSupplied  = args.hasProperty ("rangeLow");
         const bool rangeHighSupplied = args.hasProperty ("rangeHigh");
@@ -551,6 +564,7 @@ namespace
             obj->setProperty (f.name, params.*(f.member));
 
         obj->setProperty ("scaleType", PresetManager::scaleTypeName (params.scaleType));
+        obj->setProperty ("melody", PresetManager::melodyStyleName (params.melody));
 
         return juce::var (obj);
     }

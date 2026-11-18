@@ -28,6 +28,7 @@
 #include "generation/MutationEngine.h"
 #include "generation/SequenceBuilder.h"
 #include "plugin/BerlinAudioProcessor.h"
+#include "preset/PresetManager.h"
 
 namespace
 {
@@ -1713,6 +1714,166 @@ public:
             expect (processor.isEdited());
 
             processor.setAutoEvolveEnabled (false);
+        }
+
+        // ---- musical-notes slice 1b: melody through the 4 processor sites ----
+
+        beginTest ("melody: getStateInformation carries melody; setStateInformation restores it and regenerates the Smooth sequence from the restored seed");
+        {
+            berlin::BerlinAudioProcessor source;
+            auto params = source.getGenerationParams();
+            params.melody = berlin::MelodyStyle::smooth;
+            source.setGenerationParams (params);
+            source.setSeed (777);
+
+            juce::MemoryBlock state;
+            source.getStateInformation (state);
+
+            auto xml = juce::AudioProcessor::getXmlFromBinary (state.getData(), (int) state.getSize());
+            expect (xml != nullptr);
+            if (xml != nullptr)
+            {
+                const auto tree = juce::ValueTree::fromXml (*xml);
+                expectEquals (tree.getChildWithName ("Generation").getProperty ("melody").toString(), juce::String ("smooth"));
+            }
+
+            berlin::BerlinAudioProcessor first, second;
+            first.setStateInformation (state.getData(), (int) state.getSize());
+            second.setStateInformation (state.getData(), (int) state.getSize());
+
+            expect (first.getGenerationParams().melody == berlin::MelodyStyle::smooth);
+            expect (first.getSeed() == 777);
+
+            auto expectedParams = first.getGenerationParams();
+            expect (first.getCurrentSequence() == berlin::buildSeededSequence (777, expectedParams));
+            expect (first.getCurrentSequence() == second.getCurrentSequence());
+
+            auto randomParams = expectedParams;
+            randomParams.melody = berlin::MelodyStyle::random;
+            expect (! (first.getCurrentSequence() == berlin::buildSeededSequence (777, randomParams)));
+        }
+
+        beginTest ("melody: save and loadPreset round-trip melody and loading applies it");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor saver (temp.dir);
+            auto params = saver.getGenerationParams();
+            params.melody = berlin::MelodyStyle::smooth;
+            saver.setGenerationParams (params);
+            saver.setSeed (4711);
+            expect (saver.save ("SmoothPreset") == berlin::PresetResult::ok);
+
+            berlin::BerlinAudioProcessor loader (temp.dir);
+            expect (loader.getGenerationParams().melody == berlin::MelodyStyle::random);
+            expect (loader.loadPreset ("SmoothPreset") == berlin::PresetResult::ok);
+            expect (loader.getGenerationParams().melody == berlin::MelodyStyle::smooth);
+            expect (loader.getCurrentSequence() == berlin::buildSeededSequence (4711, loader.getGenerationParams()));
+        }
+
+        beginTest ("melody: a pre-change (v3) state blob restores as random and regenerates the same notes");
+        {
+            berlin::BerlinAudioProcessor source;
+            source.setSeed (2024);
+            const auto original = berlin::buildSeededSequence (2024, source.getGenerationParams());
+
+            berlin::Preset preset;
+            preset.patch = source.getPatch();
+            preset.seed = 2024;
+            auto tree = berlin::PresetManager::toValueTree (preset);
+            tree.setProperty ("schemaVersion", juce::String (3), nullptr);
+            tree.getChildWithName ("Generation").removeProperty ("melody", nullptr);
+
+            juce::MemoryBlock v3Blob;
+            if (auto xml = tree.createXml())
+                juce::AudioProcessor::copyXmlToBinary (*xml, v3Blob);
+
+            berlin::BerlinAudioProcessor restored;
+            auto params = restored.getGenerationParams();
+            params.melody = berlin::MelodyStyle::smooth;   // proves the restore resets it to random
+            restored.setGenerationParams (params);
+            restored.setStateInformation (v3Blob.getData(), (int) v3Blob.getSize());
+
+            expect (restored.getGenerationParams().melody == berlin::MelodyStyle::random);
+            expect (restored.getCurrentSequence() == original);
+        }
+
+        beginTest ("melody: a state block with an unknown melody name leaves patch, seed and melody untouched");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.setSeed (1357);
+            auto params = processor.getGenerationParams();
+            params.melody = berlin::MelodyStyle::smooth;
+            processor.setGenerationParams (params);
+            const auto patchBefore = processor.getPatch();
+
+            berlin::Preset preset;
+            preset.seed = 999;
+            preset.patch.cutoffHz = 3333.0f;
+            auto tree = berlin::PresetManager::toValueTree (preset);
+            tree.getChildWithName ("Generation").setProperty ("melody", "wobbly", nullptr);
+
+            juce::MemoryBlock badBlob;
+            if (auto xml = tree.createXml())
+                juce::AudioProcessor::copyXmlToBinary (*xml, badBlob);
+
+            processor.setStateInformation (badBlob.getData(), (int) badBlob.getSize());
+
+            expect (processor.getSeed() == 1357);
+            expectEquals (processor.getPatch().cutoffHz, patchBefore.cutoffHz);
+            expect (processor.getGenerationParams().melody == berlin::MelodyStyle::smooth);
+            expect (! processor.isRestorePending());
+        }
+
+        beginTest ("melody: changing live melody does not alter the playing sequence; Generate applies it; Randomize keeps it");
+        {
+            berlin::BerlinAudioProcessor processor;
+            processor.prepareToPlay (44100.0, 64);
+            const auto before = processor.getCurrentSequence();
+
+            auto params = processor.getGenerationParams();
+            params.melody = berlin::MelodyStyle::smooth;
+            processor.setGenerationParams (params);
+
+            expect (processor.getCurrentSequence() == before);
+            expect (processor.regenerate (false));
+            expect (processor.getCurrentSequence() == berlin::buildSeededSequence (processor.getSeed(), params));
+            adoptPending (processor);
+
+            // Same active mask (rhythm) as the Random build for the same seed.
+            auto randomParams = params;
+            randomParams.melody = berlin::MelodyStyle::random;
+            const auto randomSeq = berlin::buildSeededSequence (processor.getSeed(), randomParams);
+            const auto smoothSeq = processor.getCurrentSequence();
+            expectEquals (smoothSeq.size(), randomSeq.size());
+            for (int i = 0; i < smoothSeq.size(); ++i)
+                expect (smoothSeq[i].active == randomSeq[i].active);
+
+            expect (processor.regenerate (true));
+            expect (processor.getGenerationParams().melody == berlin::MelodyStyle::smooth);
+        }
+
+        beginTest ("melody: loadPreset with a Smooth preset sets live melody while rhythm mode/pulses/rotation stay");
+        {
+            TempPresetDir temp;
+            berlin::BerlinAudioProcessor saver (temp.dir);
+            auto saved = saver.getGenerationParams();
+            saved.melody = berlin::MelodyStyle::smooth;
+            saver.setGenerationParams (saved);
+            expect (saver.save ("SmoothRhythm") == berlin::PresetResult::ok);
+
+            berlin::BerlinAudioProcessor loader (temp.dir);
+            auto staged = loader.getGenerationParams();
+            staged.mode     = berlin::RhythmMode::euclidean;
+            staged.pulses   = 9;
+            staged.rotation = 3;
+            loader.setGenerationParams (staged);
+
+            expect (loader.loadPreset ("SmoothRhythm") == berlin::PresetResult::ok);
+            const auto& result = loader.getGenerationParams();
+            expect (result.melody == berlin::MelodyStyle::smooth);
+            expect (result.mode == berlin::RhythmMode::euclidean);
+            expectEquals (result.pulses, 9);
+            expectEquals (result.rotation, 3);
         }
     }
 };

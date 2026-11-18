@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <iterator>
+#include <optional>
 #include <vector>
 
 #include "../core/Scale.h"
@@ -30,12 +32,31 @@
 namespace berlin
 {
 
+// Smooth melody weighting (musical-notes design.md D2/D3/D4): integer-only,
+// weight = P[d] * M * K, where d is the distance in candidate-index
+// (scale-degree) steps from the previous active note. Calibrated, not sourced.
+namespace melody
+{
+inline constexpr int kProximityWeights[] = { 6, 16, 8, 3, 1 };   // d = 0..4; d >= 5 weighs 0
+inline constexpr int kWindow = static_cast<int> (std::size (kProximityWeights)) - 1;   // 4: furthest reachable index distance
+inline constexpr int kTonicWeight = 2;
+inline constexpr int kOtherWeight = 1;
+
+// previousIndex empty (first active step): the weight is K alone. count is the
+// candidate count (>= 1); isTonic is (note - root) mod 12 == 0.
+int smoothWeight (int candidateIndex, std::optional<int> previousIndex, int count, bool isTonic) noexcept;
+} // namespace melody
+
 class PitchGenerator
 {
 public:
     PitchGenerator (Scale scale, int rangeLow, int rangeHigh); // swaps if inverted
 
     int generateNextNote (DeterministicRandom& random) const; // config immutable
+
+    // Smooth pick: exactly ONE nextInt draw per call (none when the range has no
+    // in-scale note, which returns the same fallbackNote as generateNextNote).
+    int generateMelodyNote (DeterministicRandom& random, std::optional<int> previousNote) const;
 
 private:
     Scale scale;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  COMMAND_NAMES, WAVEFORMS, LFO_DESTINATIONS, DELAY_DIVISIONS, RHYTHM_MODES, SCALE_TYPES,
+  COMMAND_NAMES, WAVEFORMS, LFO_DESTINATIONS, DELAY_DIVISIONS, RHYTHM_MODES, SCALE_TYPES, MELODY_STYLES,
   type Command, type DispatchResult, type ErrorToken, type GenerationParams, type Snapshot,
 } from './protocol';
 import { DEFAULT_GATE, DEFAULT_VELOCITY, GATE } from './limits';
@@ -12,6 +12,7 @@ describe('enum lists match the bridge encoding', () => {
   it('scaleType', () => expect([...SCALE_TYPES]).toEqual(['minor', 'major', 'dorian', 'phrygian', 'mixolydian', 'harmonicMinor']));
   it('delayDivision', () =>
     expect([...DELAY_DIVISIONS]).toEqual(['half', 'quarter', 'dottedEighth', 'eighth', 'eighthTriplet', 'sixteenth']));
+  it('melody style', () => expect([...MELODY_STYLES]).toEqual(['random', 'smooth']));
   it('rhythm mode', () => expect([...RHYTHM_MODES]).toEqual(['random', 'euclidean', 'probability']));
 });
 
@@ -88,5 +89,21 @@ describe('step editing protocol', () => {
     const tokens: ErrorToken[] = ['step-out-of-range', 'note-out-of-scale'];
     const results: DispatchResult[] = tokens.map((error) => ({ ok: false, error }));
     expect(results.map((r) => r.ok === false && r.error)).toEqual(['step-out-of-range', 'note-out-of-scale']);
+  });
+});
+
+describe('melody protocol', () => {
+  it('setGenerationParams melody is typed to the style list', () => {
+    const ok: Command = { name: 'setGenerationParams', args: { melody: 'smooth' } };
+    // @ts-expect-error not a MelodyStyle
+    const bad: Command = { name: 'setGenerationParams', args: { melody: 'wobbly' } };
+    expect(ok.args).toEqual({ melody: 'smooth' });
+    expect(bad.name).toBe('setGenerationParams');
+  });
+
+  it('the snapshot generationParams.melody is typed "random" | "smooth"', () => {
+    const melody: GenerationParams['melody'] = 'random';
+    const widened: 'random' | 'smooth' = melody;
+    expect(widened).toBe('random');
   });
 });

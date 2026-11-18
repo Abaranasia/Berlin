@@ -304,3 +304,25 @@ describe('mock bridge length mirrors the host (staged)', () => {
     expect(snapshotOf(await run(mock, { name: 'regenerate', args: { randomize: true } })).steps).toHaveLength(5);
   });
 });
+
+describe('mock bridge melody', () => {
+  const melodyOf = (r: DispatchResult) => snapshotOf(r).generationParams.melody;
+
+  it('starts at random', async () => {
+    expect((await createMockBridge().getSnapshot())!.generationParams.melody).toBe('random');
+  });
+
+  it('setGenerationParams {melody} is echoed in the snapshot', async () => {
+    const mock = createMockBridge();
+    expect(melodyOf(await run(mock, { name: 'setGenerationParams', args: { melody: 'smooth' } }))).toBe('smooth');
+    expect(melodyOf(await run(mock, { name: 'setGenerationParams', args: { melody: 'random' } }))).toBe('random');
+  });
+
+  it('an unknown name is invalid enum and a non-string is invalid type, leaving the snapshot unchanged', async () => {
+    const mock = createMockBridge();
+    const before = await mock.getSnapshot();
+    expect(await run(mock, { name: 'setGenerationParams', args: { melody: 'wobbly' } })).toEqual({ ok: false, error: 'invalid enum: melody' });
+    expect(await run(mock, { name: 'setGenerationParams', args: { melody: 1 } })).toEqual({ ok: false, error: 'invalid type: melody' });
+    expect(await mock.getSnapshot()).toEqual(before);
+  });
+});
